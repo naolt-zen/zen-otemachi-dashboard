@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>禅大手町 経営ダッシュボード</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
+:root{--bg:#0d0f14;--surface:#161a24;--surface2:#1e2436;--border:#2a3050;--accent:#4f8ef7;--accent2:#2dd4bf;--accent3:#f97316;--accent4:#a78bfa;--text:#e8eaf0;--muted:#7a8299;--red:#ef4444;--green:#22c55e;--yellow:#eab308;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* ===== HEADER ===== */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:15px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;gap:12px;flex-wrap:wrap;}
+.logo{display:flex;align-items:center;gap:12px;}
+.logo-mark{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.logo h1{font-size:16px;font-weight:700;letter-spacing:.05em;}
+.logo span{font-size:11px;color:var(--muted);display:block;}
+.header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.period-badge{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 13px;font-size:12px;color:var(--accent);font-family:'DM Mono',monospace;white-space:nowrap;}
+
+/* ===== UPLOAD ZONE ===== */
+.upload-zone{background:var(--surface2);border:2px dashed var(--border);border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .2s;font-size:12px;color:var(--muted);}
+.upload-zone:hover{border-color:var(--accent);color:var(--text);}
+.upload-zone input{display:none;}
+.upload-zone .icon{font-size:18px;}
+.upload-badges{display:flex;gap:6px;flex-wrap:wrap;}
+.upload-badge{font-size:11px;background:rgba(79,142,247,.15);color:var(--accent);border:1px solid rgba(79,142,247,.3);border-radius:20px;padding:2px 9px;white-space:nowrap;}
+.upload-badge.new{background:rgba(34,197,94,.15);color:var(--green);border-color:rgba(34,197,94,.3);}
+
+/* ===== NAV ===== */
+nav{display:flex;gap:3px;padding:10px 28px;border-bottom:1px solid var(--border);overflow-x:auto;background:var(--surface);}
+nav button{background:none;border:1px solid transparent;color:var(--muted);padding:7px 13px;border-radius:8px;cursor:pointer;font-size:12px;font-family:'Noto Sans JP',sans-serif;white-space:nowrap;transition:all .2s;}
+nav button:hover{color:var(--text);background:var(--surface2);}
+nav button.active{background:var(--surface2);border-color:var(--accent);color:var(--accent);}
+
+/* ===== MAIN ===== */
+main{padding:20px 28px;max-width:1440px;margin:0 auto;}
+.section{display:none;}.section.active{display:block;}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px;margin-bottom:20px;}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;overflow:hidden;transition:border-color .2s;}
+.kpi-card:hover{border-color:var(--accent);}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--ac,var(--accent));}
+.kpi-label{font-size:11px;color:var(--muted);margin-bottom:6px;letter-spacing:.05em;}
+.kpi-value{font-size:23px;font-weight:700;font-family:'DM Mono',monospace;line-height:1;margin-bottom:5px;}
+.kpi-sub{font-size:11px;color:var(--muted);}
+.up{color:var(--green);}.down{color:var(--red);}.warn{color:var(--yellow);}
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:20px;}
+.chart-grid.full{grid-template-columns:1fr;}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;}
+.chart-title{font-size:13px;font-weight:500;margin-bottom:15px;display:flex;align-items:center;gap:8px;}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+canvas{max-height:260px;}
+.sec-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin:20px 0 12px;display:flex;align-items:center;gap:8px;}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:15px;}
+.table-hdr{padding:12px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:space-between;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{background:var(--surface2);padding:9px 12px;text-align:right;color:var(--muted);font-weight:500;font-size:11px;}
+th:first-child{text-align:left;}
+td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;}
+td:first-child{text-align:left;font-family:'Noto Sans JP',sans-serif;font-size:12px;color:var(--muted);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface2);}
+.pos{color:var(--green);}.neg{color:var(--red);}.hl td{background:rgba(79,142,247,.05);}
+.rb{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;}
+.rd{background:rgba(239,68,68,.15);color:var(--red);}
+.rw{background:rgba(234,179,8,.15);color:var(--yellow);}
+.ro{background:rgba(79,142,247,.15);color:var(--accent);}
+.rg{background:rgba(34,197,94,.15);color:var(--green);}
+
+/* ===== UPLOAD SECTION ===== */
+.import-section{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:20px;}
+.import-title{font-size:15px;font-weight:600;margin-bottom:8px;}
+.import-desc{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;}
+.import-drop{border:2px dashed var(--border);border-radius:10px;padding:32px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
+.import-drop:hover,.import-drop.dragover{border-color:var(--accent);background:rgba(79,142,247,.05);}
+.import-drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.import-drop .drop-icon{font-size:40px;margin-bottom:12px;}
+.import-drop p{font-size:14px;margin-bottom:6px;}
+.import-drop small{font-size:12px;color:var(--muted);}
+.import-log{margin-top:16px;display:grid;gap:8px;}
+.log-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:12px;display:flex;align-items:center;gap:10px;}
+.log-item.success{border-color:rgba(34,197,94,.3);}
+.log-item.error{border-color:rgba(239,68,68,.3);}
+.log-icon{font-size:16px;}
+.log-detail{flex:1;}
+.log-month{font-weight:500;}
+.log-meta{color:var(--muted);font-size:11px;margin-top:2px;}
+
+/* ===== DAY CHART ===== */
+.day-filter button.active{border-color:var(--accent);color:var(--accent);}
+
+.btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:12px;font-family:'Noto Sans JP',sans-serif;font-weight:500;transition:opacity .2s;white-space:nowrap;}
+.btn:hover{opacity:.85;}
+.btn-ghost{background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
+.btn-ghost:hover{color:var(--text);}
+.camp-add input{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:7px 11px;font-size:13px;font-family:'Noto Sans JP',sans-serif;}
+
+@media(max-width:768px){
+  main{padding:12px;}nav{padding:8px 12px;}header{padding:12px 14px;}
+  .chart-grid{grid-template-columns:1fr;}.kpi-grid{grid-template-columns:repeat(2,1fr);}
+}
+
+/* ===== STAFF ===== */
+.staff-ctrl{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:12px;}
+.staff-ctrl-left,.staff-ctrl-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.staff-ctrl select,.staff-ctrl input{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:7px 12px;font-size:13px;font-family:'Noto Sans JP',sans-serif;}
+.staff-ctrl input{width:130px;}
+.staff-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;}
+.staff-header{display:flex;align-items:center;gap:14px;margin-bottom:14px;}
+.staff-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;flex-shrink:0;}
+.staff-name{font-size:15px;font-weight:700;}
+.staff-total{font-size:21px;font-weight:700;font-family:'DM Mono',monospace;}
+.staff-rate{font-size:12px;margin-top:2px;}
+.staff-body{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+.staff-section{background:var(--surface2);border-radius:8px;padding:11px;}
+.staff-section-title{font-size:11px;color:var(--muted);margin-bottom:7px;letter-spacing:.05em;}
+.staff-dept-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border);}
+.staff-dept-row:last-child{border-bottom:none;}
+.staff-dept-name{color:var(--muted);}
+.staff-dept-val{font-family:'DM Mono',monospace;}
+.progress-bar-wrap{background:var(--surface2);border-radius:4px;height:7px;overflow:hidden;margin-top:8px;}
+.progress-bar-fill{height:100%;border-radius:4px;transition:width .5s;}
+.week-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;}
+.week-cell{background:var(--surface);border-radius:6px;padding:7px;text-align:center;}
+.week-label{font-size:10px;color:var(--muted);margin-bottom:3px;}
+.week-val{font-size:12px;font-weight:700;font-family:'DM Mono',monospace;}
+.week-rate{font-size:10px;margin-top:2px;}
+/* ヒートマップ */
+.heatmap-table{border-collapse:collapse;font-size:12px;min-width:600px;}
+.heatmap-table th{padding:6px 10px;color:var(--muted);font-weight:500;font-size:11px;text-align:center;white-space:nowrap;}
+.heatmap-table td{padding:5px 8px;text-align:center;border:1px solid var(--bg);border-radius:4px;font-family:'DM Mono',monospace;font-size:12px;min-width:64px;}
+.hm-none{background:var(--surface2);color:var(--muted);}
+.hm-low{background:rgba(239,68,68,.25);color:#fca5a5;}
+.hm-mid{background:rgba(234,179,8,.25);color:#fde68a;}
+.hm-ok{background:rgba(79,142,247,.25);color:#93c5fd;}
+.hm-good{background:rgba(34,197,94,.25);color:#86efac;}
+@media(max-width:600px){.staff-body{grid-template-columns:1fr;}}
+
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">禅</div>
+    <div><h1>禅大手町</h1><span>経営ダッシュボード</span></div>
+  </div>
+  <div class="header-right">
+    <div id="uploadedBadges" class="upload-badges"></div>
+    <label class="upload-zone" title="日計表XLSXをアップロード">
+      <input type="file" id="quickUpload" accept=".xlsx" multiple onchange="handleFiles(this.files)">
+      <span class="icon">📂</span>
+      <span>日計表を追加</span>
+    </label>
+    <div class="period-badge">第５期 2025.5 – 2026.4</div>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="show('overview',this)">📊 総合概要</button>
+  <button onclick="show('sales',this)">💴 売上分析</button>
+  <button onclick="show('members',this)">👥 会員・新規</button>
+  <button onclick="show('contracts',this)">📝 契約率</button>
+  <button onclick="show('collection',this)">📣 集客部門</button>
+  <button onclick="show('staff',this)">👤 個人売上</button>
+  <button onclick="show('import',this)">⬆️ データ取込</button>
+</nav>
+
+<main>
+
+<!-- 総合概要 -->
+<div id="overview" class="section active">
+  <div class="sec-title">主要KPI（５期 2025.5〜2026.1 実績）</div>
+  <div class="kpi-grid" id="kpi_overview">
+    <div class="kpi-card" style="--ac:#4f8ef7"><div class="kpi-label">総売上（9ヶ月累計）</div><div class="kpi-value" style="font-size:20px">4,900万</div><div class="kpi-sub">年間予測: 5,876万</div></div>
+    <div class="kpi-card" style="--ac:#2dd4bf"><div class="kpi-label">前年比</div><div class="kpi-value up">142.4%</div><div class="kpi-sub">前年: 4,127万</div></div>
+    <div class="kpi-card" style="--ac:#f97316"><div class="kpi-label">最高月 総売上</div><div class="kpi-value" style="font-size:20px">728万</div><div class="kpi-sub">9月</div></div>
+    <div class="kpi-card" style="--ac:#a78bfa"><div class="kpi-label">平均来院頻度</div><div class="kpi-value">2.88</div><div class="kpi-sub">回/月（治療）</div></div>
+    <div class="kpi-card" style="--ac:#22c55e"><div class="kpi-label">矯正 平均契約率</div><div class="kpi-value up">62.1%</div><div class="kpi-sub">新規のみ</div></div>
+    <div class="kpi-card" style="--ac:#ef4444"><div class="kpi-label">会員数（1月末）</div><div class="kpi-value" id="kpi_member_count">53件</div><div class="kpi-sub" id="kpi_member_sub">5月:81件 → 減少傾向</div></div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-card"><div class="chart-title"><span class="dot"></span>月別 総売上推移（今期 vs 前年）</div><canvas id="c_total"></canvas></div>
+    <div class="chart-card"><div class="chart-title"><span class="dot" style="background:var(--accent2)"></span>部門別売上構成</div><canvas id="c_donut"></canvas></div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-card"><div class="chart-title"><span class="dot" style="background:var(--accent3)"></span>治療 月別目標対比</div><canvas id="c_target"></canvas></div>
+    <div class="chart-card"><div class="chart-title"><span class="dot" style="background:var(--accent4)"></span>会員数推移</div><canvas id="c_member"></canvas></div>
+  </div>
+</div>
+
+<!-- 売上分析 -->
+<div id="sales" class="section">
+  <div class="sec-title">部門別月別売上</div>
+  <div class="table-card">
+    <div class="table-hdr">部門別売上（円）</div>
+    <table>
+      <thead><tr><th>部門</th><th>5月</th><th>6月</th><th>7月</th><th>8月</th><th>9月</th><th>10月</th><th>11月</th><th>12月</th><th>1月</th><th>2月</th><th>3月</th><th>累計</th></tr></thead>
+      <tbody id="sales_table_body">
+        <tr class="hl"><td>治療合計</td><td>2,124,796</td><td>1,638,967</td><td>2,152,863</td><td>1,667,412</td><td>1,711,580</td><td>1,670,613</td><td>1,436,152</td><td>1,062,932</td><td>1,380,692</td><td id="sales_치료_2">—</td><td id="sales_치료_3">—</td><td id="sales_치료_total">14,845,007</td></tr>
+        <tr><td>矯正</td><td>710,737</td><td>1,926,880</td><td>2,041,137</td><td>1,100,177</td><td>2,953,677</td><td>1,779,277</td><td>1,524,656</td><td>1,327,040</td><td>1,607,860</td><td id="sales_矯正_2">—</td><td id="sales_矯正_3">—</td><td id="sales_矯正_total">14,971,444</td></tr>
+        <tr><td>エステ</td><td>1,791,950</td><td>1,526,080</td><td>269,900</td><td>2,222,220</td><td>1,957,400</td><td>476,040</td><td>485,920</td><td>261,980</td><td>1,865,880</td><td id="sales_エステ_2">—</td><td id="sales_エステ_3">—</td><td id="sales_エステ_total">10,857,370</td></tr>
+        <tr class="hl"><td><b>総売上</b></td><td>5,160,281</td><td>5,359,367</td><td>4,924,431</td><td>5,397,203</td><td>7,279,075</td><td>4,585,058</td><td>4,352,741</td><td>3,162,450</td><td>4,787,260</td><td id="sales_total_2">—</td><td id="sales_total_3">—</td><td id="sales_grand_total">49,008,866</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-card"><div class="chart-title"><span class="dot"></span>部門別売上推移</div><canvas id="c_dept"></canvas></div>
+    <div class="chart-card"><div class="chart-title"><span class="dot" style="background:var(--accent3)"></span>前年度比較</div><canvas id="c_yoy"></canvas></div>
+  </div>
+</div>
+
+<!-- 会員・新規 -->
+<div id="members" class="section">
+  <div class="sec-title">新規・会員状況</div>
+  <div class="kpi-grid">
+    <div class="kpi-card" style="--ac:#4f8ef7"><div class="kpi-label">治療 累計新規</div><div class="kpi-value" id="kpi_shin_chiryo">105</div><div class="kpi-sub">5月〜1月</div></div>
+    <div class="kpi-card" style="--ac:#2dd4bf"><div class="kpi-label">矯正 累計新規</div><div class="kpi-value" id="kpi_shin_kyosei">151</div><div class="kpi-sub">5月〜1月</div></div>
+    <div class="kpi-card" style="--ac:#f97316"><div class="kpi-label">エステ 累計新規</div><div class="kpi-value" id="kpi_shin_este">61</div><div class="kpi-sub">5月〜1月</div></div>
+    <div class="kpi-card" style="--ac:#ef4444"><div class="kpi-label">会員 純減</div><div class="kpi-value down">-28</div><div class="kpi-sub">81件→53件</div></div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-card"><div class="chart-title"><span class="dot"></span>部門別 月次新規数</div><canvas id="c_new"></canvas></div>
+    <div class="chart-card"><div class="chart-title"><span class="dot" style="background:var(--accent2)"></span>会員 入退会推移</div><canvas id="c_flow"></canvas></div>
+  </div>
+  <div class="chart-grid full">
+    <div class="chart-card"><div class="chart-title"><span class="dot" style="background:var(--red)"></span>離反率推移（治療・会員）</div><canvas id="c_churn"></canvas></div>
+  </div>
+</div>
+
+<!-- 契約率 -->
+<div id="contracts" class="section">
+  <div class="sec-title">部門別 契約率推移</div>
+  <div class="chart-grid full"><div class="chart-card"><div class="chart-title"><span class="dot"></span>月別 契約率比較</div><canvas id="c_contract"></canvas></div></div>
+  <div class="table-card">
+    <div class="table-hdr">契約率・施術回数詳細</div>
+    <table>
+      <thead><tr><th>項目</th><th>5月</th><th>6月</th><th>7月</th><th>8月</th><th>9月</th><th>10月</th><th>11月</th><th>12月</th><th>1月</th></tr></thead>
+      <tbody>
+        <tr><td>治療 新規数</td><td>16</td><td>17</td><td>17</td><td>15</td><td>11</td><td>12</td><td>9</td><td>5</td><td>12</td></tr>
+        <tr><td>治療 契約率</td><td>50.0%</td><td>52.9%</td><td>58.8%</td><td>60.0%</td><td>45.5%</td><td>41.7%</td><td class="neg">20.0%</td><td>50.0%</td><td class="pos">62.5%</td></tr>
+        <tr><td>矯正 新規数</td><td>9</td><td>20</td><td>20</td><td>20</td><td>31</td><td>23</td><td>13</td><td>12</td><td>22</td></tr>
+        <tr><td>矯正 契約率</td><td>66.7%</td><td class="pos">75.0%</td><td class="pos">80.0%</td><td>50.0%</td><td>61.3%</td><td class="pos">73.9%</td><td>53.8%</td><td>58.3%</td><td>50.0%</td></tr>
+        <tr><td>エステ 新規数</td><td>12</td><td>5</td><td>5</td><td>9</td><td>11</td><td>9</td><td>5</td><td>1</td><td>6</td></tr>
+        <tr><td>エステ 契約率</td><td>58.3%</td><td class="pos">80.0%</td><td class="neg">20.0%</td><td>55.6%</td><td>45.5%</td><td class="neg">22.2%</td><td class="neg">20.0%</td><td class="pos">100%</td><td>66.7%</td></tr>
+        <tr><td>レセ枚数（自賠除く）</td><td>180</td><td>185</td><td>199</td><td>192</td><td>212</td><td>215</td><td>200</td><td>177</td><td>193</td></tr>
+        <tr><td>平均来院頻度</td><td>2.99</td><td>3.07</td><td>3.28</td><td>3.00</td><td>3.12</td><td>2.93</td><td>2.63</td><td>2.64</td><td>2.68</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 集客部門 -->
+<div id="collection" class="section">
+  <div class="sec-title">集客 KPI サマリー</div>
+  <div class="kpi-grid">
+    <div class="kpi-card" style="--ac:#4f8ef7"><div class="kpi-label">合計問い合わせ（月平均）</div><div class="kpi-value">52件</div><div class="kpi-sub">5〜1月合計: 466件</div></div>
+    <div class="kpi-card" style="--ac:#ef4444"><div class="kpi-label">治療 ROAS（平均）</div><div class="kpi-value warn">263%</div><div class="kpi-sub">目標: 700%以上 ⚠️</div></div>
+    <div class="kpi-card" style="--ac:#2dd4bf"><div class="kpi-label">産後矯正 ROAS（平均）</div><div class="kpi-value up">1,525%</div><div class="kpi-sub">✅ 目標達成</div></div>
+    <div class="kpi-card" style="--ac:#f97316"><div class="kpi-label">ダイエット ROAS（平均）</div><div class="kpi-value up">843%</div><div class="kpi-sub">目標: 900〜1200%</div></div>
+    <div class="kpi-card" style="--ac:#22c55e"><div class="kpi-label">月間総広告費（平均）</div><div class="kpi-value" style="font-size:18px">43万</div><div class="kpi-sub">コンサル費込</div></div>
+    <div class="kpi-card" style="--ac:#a78bfa"><div class="kpi-label">治療 来店率（平均）</div><div class="kpi-value warn">67%</div><div class="kpi-sub">最低: 12月 50%</div></div>
+  </div>
+  <div class="sec-title">ROAS評価基準</div>
+  <div class="chart-card" style="margin-bottom:15px;"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center;padding:4px 0;">
+    <div><div class="rb rd" style="font-size:13px;">〜500%</div><div style="font-size:11px;color:var(--muted);margin-top:6px;">🔴 危険</div></div>
+    <div><div class="rb rw" style="font-size:13px;">600%</div><div style="font-size:11px;color:var(--muted);margin-top:6px;">🟡 ギリギリ</div></div>
+    <div><div class="rb ro" style="font-size:13px;">700〜900%</div><div style="font-size:11px;color:var(--muted);margin-top:6px;">🔵 健康ゾーン</div></div>
+    <div><div class="rb rg" style="font-size:13px;">1000%以上</div><div style="font-size:11px;color:var(--muted);margin-top:6px;">🟢 かなり強い</div></div>
+  </div></div>
+  <div class="chart-grid">
+    <div class="chart-card"><div class="chart-title"><span class="dot"></span>部門別 ROAS推移</div><canvas id="c_roas"></canvas></div>
+    <div class="chart-card"><div class="chart-title"><span class="dot" style="background:var(--accent2)"></span>問い合わせ数推移</div><canvas id="c_inquiry"></canvas></div>
+  </div>
+  <div class="sec-title">治療 集客詳細</div>
+  <div class="table-card"><div class="table-hdr">治療部門（広告費・ROAS・CPA）</div><table>
+    <thead><tr><th>項目</th><th>5月</th><th>6月</th><th>7月</th><th>8月</th><th>9月</th><th>10月</th><th>11月</th><th>12月</th><th>1月</th><th>平均</th></tr></thead>
+    <tbody>
+      <tr><td>問い合わせ数</td><td>22</td><td>17</td><td>27</td><td>25</td><td>19</td><td>23</td><td>10</td><td>10</td><td>20</td><td>19</td></tr>
+      <tr><td>来店率</td><td>73%</td><td>100%</td><td>63%</td><td>60%</td><td>58%</td><td>52%</td><td>90%</td><td>50%</td><td>60%</td><td>67%</td></tr>
+      <tr><td>ROAS</td><td><span class="rb rd">271%</span></td><td><span class="rb rd">348%</span></td><td><span class="rb rd">427%</span></td><td><span class="rb rd">410%</span></td><td><span class="rb rd">72%</span></td><td><span class="rb rd">378%</span></td><td><span class="rb rd">181%</span></td><td><span class="rb rd">36%</span></td><td><span class="rb rd">238%</span></td><td>—</td></tr>
+      <tr><td>CPA</td><td>5,011</td><td>6,540</td><td>4,424</td><td>4,680</td><td>6,311</td><td>5,845</td><td>11,190</td><td>9,830</td><td>4,925</td><td>5,876</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+
+<!-- 個人売上 -->
+<div id="staff" class="section">
+
+  <!-- コントロールバー -->
+  <div class="staff-ctrl">
+    <div class="staff-ctrl-left">
+      <select id="staffViewSel" onchange="renderStaff()">
+        <option value="trend">📈 全期間 月次推移</option>
+        <option value="achievement">🎯 目標達成率の推移</option>
+        <option value="month">📅 月別詳細</option>
+      </select>
+      <select id="staffMonthSel" onchange="renderStaff()" style="display:none;">
+        <option value="">月を選択</option>
+      </select>
+      <select id="staffPersonSel" onchange="renderStaff()">
+        <option value="all">全員</option>
+        <option value="行時">行時さん</option>
+        <option value="諸永">諸永さん</option>
+        <option value="田中">田中さん</option>
+        <option value="岩丸">岩丸さん</option>
+        <option value="西田">西田さん</option>
+      </select>
+    </div>
+    <div class="staff-ctrl-right">
+      <label style="font-size:12px;color:var(--muted);">月間目標</label>
+      <input type="number" id="staffTarget" value="1100000" step="50000"
+        onchange="storageSet('zen_staff_target',this.value);_staffTargetCache=this.value;renderStaff()">
+      <span style="font-size:11px;color:var(--muted);">円/人</span>
+    </div>
+  </div>
+
+  <!-- KPIサマリー -->
+  <div class="kpi-grid" id="staff_kpi"></div>
+
+  <!-- メイングラフ（ビューによって切り替わる） -->
+  <div class="chart-grid full" id="staff_main_chart_wrap">
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot"></span><span id="staff_chart_title">担当者別 月次売上推移</span></div>
+      <canvas id="c_staff_main" style="max-height:320px;"></canvas>
+    </div>
+  </div>
+
+  <!-- 達成率ヒートマップ -->
+  <div id="staff_heatmap_wrap" style="display:none;">
+    <div class="sec-title">月別 目標達成率 ヒートマップ</div>
+    <div class="chart-card" style="overflow-x:auto;">
+      <div id="staff_heatmap"></div>
+    </div>
+  </div>
+
+  <!-- 月別詳細（月選択時） -->
+  <div id="staff_month_detail" style="display:none;">
+    <div class="chart-grid">
+      <div class="chart-card"><div class="chart-title"><span class="dot" style="background:var(--accent2)"></span>部門別売上（積み上げ）</div><canvas id="c_staff_dept"></canvas></div>
+      <div class="chart-card"><div class="chart-title"><span class="dot" style="background:var(--accent3)"></span>週別進捗</div><canvas id="c_staff_weekly"></canvas></div>
+    </div>
+    <div class="sec-title">個人カード</div>
+    <div id="staff_cards" style="display:grid;gap:12px;"></div>
+  </div>
+
+</div>
+
+<!-- データ取込 -->
+<div id="import" class="section">
+  <div class="import-section">
+    <div class="import-title">📥 日計表 自動取込</div>
+    <div class="import-desc">
+      毎月作成している「R○_○月_日計表_大手町.xlsx」をアップロードすると、月計表・報告書シートから自動的にデータを読み取り、ダッシュボードに反映します。<br>
+      複数ファイルを同時にドロップすることも可能です。
+    </div>
+    <!-- ファイル種別タブ -->
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <button id="importTab1" onclick="switchImportTab(1)" class="btn" style="font-size:12px;padding:7px 16px;">📋 日計表XLSX</button>
+      <button id="importTab2" onclick="switchImportTab(2)" class="btn btn-ghost" style="font-size:12px;padding:7px 16px;">📊 NAOLT集計XLSX</button>
+    </div>
+
+    <!-- 日計表ドロップゾーン -->
+    <div id="importZone1" class="import-drop">
+      <input type="file" id="fileInput" accept=".xlsx" multiple onchange="handleFiles(this.files)">
+      <div class="drop-icon">📋</div>
+      <p>XLSXファイルをドロップ、またはクリックして選択</p>
+      <small>R○_○月_日計表_大手町.xlsx 形式に対応</small>
+    </div>
+
+    <!-- NAOLT集計ドロップゾーン -->
+    <div id="importZone2" class="import-drop" style="display:none;">
+      <input type="file" id="fileInputNAOLT" accept=".xlsx" onchange="handleNAOLTFile(this.files[0])">
+      <div class="drop-icon">📊</div>
+      <p>NAOLT集計.xlsxをドロップ、またはクリックして選択</p>
+      <small>５期KPI・５期集客部門シートを自動取込</small>
+    </div>
+    <div class="import-log" id="importLog"></div>
+  </div>
+
+  <div class="import-section">
+    <div class="import-title">📊 取込済みデータ一覧</div>
+    <div id="importedList" style="color:var(--muted);font-size:13px;padding:12px 0;">まだデータが取り込まれていません</div>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ============================================================
+// GLOBAL STATE
+// ============================================================
+const M=['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月','3月','4月'];
+const CD={plugins:{legend:{labels:{color:'#7a8299',font:{size:11}}}},scales:{x:{ticks:{color:'#7a8299',font:{size:11}},grid:{color:'#1e2436'}},y:{ticks:{color:'#7a8299',font:{size:11}},grid:{color:'#1e2436'}}}};
+
+// 既存KPIデータ（5期 5〜1月）
+const BASE_DATA = {
+  months: ['5月','6月','7月','8月','9月','10月','11月','12月','1月'],
+  totalSales: [5160281,5359367,4924431,5397203,7279075,4585058,4352741,3162450,4787260],
+  prevSales:  [3296099,3657254,3774143,3991435,2968523,2994409,4740825,3382796,2954093],
+  chiryo:     [2124796,1638967,2152863,1667412,1711580,1670613,1436152,1062932,1380692],
+  kyosei:     [710737,1926880,2041137,1100177,2953677,1779277,1524656,1327040,1607860],
+  este:       [1791950,1526080,269900,2222220,1957400,476040,485920,261980,1865880],
+  members:    [81,77,74,72,66,69,66,63,57,53],
+  shinChiryo: [16,17,17,15,11,12,9,5,12],
+  shinKyosei: [9,20,20,20,31,23,13,12,22],
+  shinEste:   [12,5,5,9,11,9,5,1,6],
+  memberIn:   [7,3,7,5,5,15,2,2,2],
+  memberOut:  [-12,-7,-10,-7,-11,-12,-5,-5,-8],
+  churnChiryo:[11.5,16.7,15.3,19.3,21.8,12.9,20.6,20.4,11.5],
+  churnMember:[14.8,9.1,13.5,9.7,16.7,17.4,7.6,7.9,14.0],
+  contractChiryo: [50,52.9,58.8,60,45.5,41.7,66.7,20,50],
+  contractKyosei: [66.7,75,80,50,61.3,73.9,53.8,58.3,50],
+  contractEste:   [58.3,80,20,55.6,45.5,22.2,20,100,66.7],
+  targetDiff: [124796,-361033,152863,-332588,-288420,-329387,-563848,-841528,-937068],
+  roas_chiryo:[271,348,427,410,72,378,181,36,238],
+  roas_kyosei:[740,2007,2126,1146,3077,1772,1524,1111,1244],
+  roas_este:  [1035,983,162,1037,1180,356,356,208,1478],
+  inquiry_c:  [22,17,27,25,19,23,10,10,20],
+  inquiry_k:  [9,26,27,22,34,22,16,14,26],
+  inquiry_e:  [15,7,4,14,12,14,6,1,12],
+};
+
+// 取込データの保存場所
+let importedMonths = {};
+let _staffTargetCache = '1100000';
+let dailyData = {};
+
+// ===== Persistent Storage ヘルパー =====
+async function storageGet(key) {
+  try {
+    const r = await window.storage.get(key);
+    return r ? JSON.parse(r.value) : null;
+  } catch(e) { return null; }
+}
+async function storageSet(key, value) {
+  try { await window.storage.set(key, JSON.stringify(value)); } catch(e) {}
+}
+async function storageDelete(key) {
+  try { await window.storage.delete(key); } catch(e) {}
+}
+
+// 起動時にストレージからデータを読み込む
+async function initStorage() {
+  const tgt = await storageGet('zen_staff_target');
+  if (tgt) { _staffTargetCache = tgt; const el=document.getElementById('staffTarget'); if(el) el.value=tgt; }
+  const imp = await storageGet('zen_imported');
+  const day = await storageGet('zen_daily');
+  if (imp) importedMonths = imp;
+  if (day) dailyData = day;
+  updateBadges();
+  updateImportedList();
+  updateSalesTable();
+  updateCharts();
+  renderStaff();
+}
+
+// ============================================================
+// NAV
+// ============================================================
+function show(id,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='staff') renderStaff();
+}
+
+// ============================================================
+// XLSX PARSING
+// ============================================================
+async function handleFiles(files){
+  for(const f of files){ await parseXLSX(f); }
+}
+
+// Drag & Drop
+const dz = document.getElementById('importZone1');
+dz.addEventListener('dragover', e=>{e.preventDefault();dz.classList.add('dragover');});
+dz.addEventListener('dragleave', ()=>dz.classList.remove('dragover'));
+dz.addEventListener('drop', e=>{e.preventDefault();dz.classList.remove('dragover');handleFiles(e.dataTransfer.files);});
+
+async function parseXLSX(file){
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try {
+      const wb = XLSX.read(e.target.result, {type:'array', cellDates:false});
+      console.log('[DEBUG] シート一覧:', wb.SheetNames);
+
+      // 月を特定
+      const month = detectMonth(file.name, wb);
+      if(!month){ logImport(file.name, 'error', 'ファイル名または日付から月を特定できませんでした'); return; }
+
+      // 月計表パース
+      const daily = parseMonthlySummary(wb);
+      // 報告書パース
+      const report = parseReport(wb);
+
+      // 保存
+      importedMonths[month] = { ...report, fileName: file.name, importedAt: new Date().toLocaleString('ja') };
+      dailyData[month] = daily;
+      await storageSet('zen_imported', importedMonths);
+      await storageSet('zen_daily', dailyData);
+
+      logImport(file.name, 'success', `${month}分 取込完了 — 総売上: ${fmt(report.totalSales || 0)}円 / 来院日数: ${daily.length}日 / スタッフ: ${(report.staffData||[]).filter(s=>s.total>0).length}名`);
+      updateBadges();
+      updateSalesTable();
+      updateCharts();
+      renderStaff();
+  renderStaff();
+
+    } catch(err){
+      logImport(file.name, 'error', 'パースエラー: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function detectMonth(filename, wb){
+  // ファイル名からRX（年度）と月を取得
+  // 例: R4_5月_, R8_2月_, R8_3月_日計表_大手町
+  const rYear  = filename.match(/R(\d+)/i);
+  const mMonth = filename.match(/(\d+)月/);
+
+  let year = rYear  ? parseInt(rYear[1])  : null;
+  let mon  = mMonth ? parseInt(mMonth[1]) : null;
+
+  // 月計表のセルから年・月を取得（ファイル名不明時のフォールバック）
+  const sheet = wb.Sheets['月計表'];
+  if(sheet){
+    const raw = XLSX.utils.sheet_to_json(sheet, {header:1, defval:null, raw:true});
+    outer: for(let r of raw){
+      for(let c of r){
+        if(typeof c === 'number' && c > 40000){
+          const d = XLSX.SSF.parse_date_code(c);
+          if(!mon)  mon  = d.m;
+          if(!year) year = d.y - 1988; // 西暦→令和換算（2019=R1）
+          break outer;
+        }
+        if(typeof c === 'string'){
+          const dm = c.match(/(\d{4})\/(\d+)/);
+          if(dm){
+            if(!mon)  mon  = parseInt(dm[2]);
+            if(!year) year = parseInt(dm[1]) - 1988;
+            break outer;
+          }
+        }
+      }
+    }
+  }
+
+  if(!mon) return null;
+  // R年度が分かれば "R8-2月" 形式、不明なら "2月" のみ
+  return year ? `R${year}-${mon}月` : `${mon}月`;
+}
+
+// キーから表示用ラベルを返す（"R8-2月" → "R8 2月", "2月" → "2月"）
+function monthLabel(key){
+  const m = key.match(/^R(\d+)-(\d+)月$/);
+  return m ? `R${m[1]} ${m[2]}月` : key;
+}
+
+// キーのソート用数値（"R8-2月"→802, "R4-5月"→405）
+function monthSortKey(key){
+  const m = key.match(/^R(\d+)-(\d+)月$/);
+  return m ? parseInt(m[1])*100+parseInt(m[2]) : parseInt(key)*1 || 0;
+}
+
+function parseMonthlySummary(wb){
+  const sheet = wb.Sheets['月計表'];
+  if(!sheet) return [];
+  // raw:true で読むとdatetimeはシリアル値(数値)になる
+  const rawNum = XLSX.utils.sheet_to_json(sheet, {header:1, defval:null, raw:true});
+  const rawStr = XLSX.utils.sheet_to_json(sheet, {header:1, defval:null, raw:false});
+  const records = [];
+  let i = 0;
+  while(i < rawNum.length){
+    const v0 = rawNum[i][0];
+    // 日付セル: Excelシリアル値（数値）かDateオブジェクト
+    let dateLabel = null;
+    if(typeof v0 === 'number' && v0 > 40000){
+      // Excelシリアル値→日付変換
+      const d = XLSX.SSF.parse_date_code(v0);
+      dateLabel = `${d.m}/${d.d}`;
+    } else if(v0 instanceof Date){
+      dateLabel = `${v0.getMonth()+1}/${v0.getDate()}`;
+    } else if(typeof v0 === 'string' && v0.match(/\d/)){
+      // 文字列日付（例: "2026/2/1"）
+      const m = v0.match(/(\d+)\/(\d+)(?:\/(\d+))?/);
+      if(m) dateLabel = m[3] ? `${m[2]}/${m[3]}` : `${m[1]}/${m[2]}`;
+    }
+    if(dateLabel && i+8 < rawNum.length){
+      const block = rawNum.slice(i, i+9);
+      const subtotal = block[8];
+      records.push({
+        date: dateLabel,
+        raiin: toNum(block[1][12]),
+        madoguchi: toNum(subtotal[12]),
+        jibai: toNum(block[3][15]),
+        total: toNum(subtotal[15])
+      });
+      i += 9;
+      continue;
+    }
+    i++;
+  }
+  return records;
+}
+
+function parseStaffData(wb) {
+  // 集計シートを探す（○月集計 形式）
+  const sheetName = wb.SheetNames.find(n => /集計/.test(n) && !/施術/.test(n));
+  console.log('[DEBUG] 集計シート:', sheetName);
+  if (!sheetName) return [];
+  const raw = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {header:1, defval:null, raw:true});
+
+  function toN(v){
+    if(v === null || v === undefined || v === '') return 0;
+    if(typeof v === 'number') return v;
+    const s = String(v).replace(/[¥,\s人]/g,'');
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
+  }
+  function parseNU(v){ // '1人 / 126720' -> {n, v}
+    if(!v) return {n:0, v:0};
+    const m = String(v).match(/(\d+)人\s*\/\s*([\d,]+)/);
+    return m ? {n:parseInt(m[1]), v:parseInt(m[2].replace(/,/g,''))} : {n:0, v:0};
+  }
+
+  const nameMap = {'行':'行時','諸':'諸永','田':'田中','岩':'岩丸','西':'西田'};
+  const names = ['行時','諸永','田中','岩丸','西田'];
+
+  // 施術人数_新規既存シートをパース
+  const seizetsuData = {};
+  try {
+    const sSheet = wb.SheetNames.find(n => n.includes('施術人数'));
+    if (sSheet) {
+      const sRaw = XLSX.utils.sheet_to_json(wb.Sheets[sSheet], {header:1, defval:0, raw:true});
+      for (let i = 1; i < sRaw.length; i++) {
+        const r = sRaw[i];
+        const rawN = String(r[0]||'').trim();
+        const fullN = nameMap[rawN] || rawN;
+        if (names.includes(fullN)) {
+          seizetsuData[fullN] = {
+            shinki: toN(r[1]),
+            kizon:  toN(r[2]),
+            total:  toN(r[3])
+          };
+        }
+      }
+    }
+  } catch(e) {}
+  const staffs = [];
+
+  // row0がヘッダー、row1〜5が担当者データ
+  // 週別進捗はrow15がヘッダー、row16〜20が各担当者
+  for(let i = 1; i <= 5; i++){
+    const row = raw[i];
+    if(!row) continue;
+    const rawName = String(row[0]||'').trim();
+    const name = nameMap[rawName] || rawName;
+    if(!names.includes(name)) continue;
+
+    const c = parseNU(row[7]);
+    const k = parseNU(row[8]);
+    const e = parseNU(row[9]);
+
+    // 週別進捗: row15がヘッダー → 担当者は row16〜20
+    // i=1→行=row16, i=2→諸=row17 ... → pr_row = 15 + i
+    const pr = raw[15 + i] || [];
+
+    console.log('[DEBUG] staff:', name, 'total:', toN(row[15]), 'w1:', pr[7]);
+  staffs.push({
+      name,
+      seizetsu_shinki: seizetsuData[name]?.shinki || 0,
+      seizetsu_kizon:  seizetsuData[name]?.kizon  || 0,
+      seizetsu_total:  seizetsuData[name]?.total  || 0,
+      chiryo_n: c.n, chiryo_v: c.v,
+      kyosei_n: k.n, kyosei_v: k.v,
+      este_n: e.n, este_v: e.v,
+      total: toN(row[15]),
+      kizon: toN(row[11]),
+      w1: toN(pr[7]),  w1r: Math.round(toN(pr[8])  * 1000) / 10,
+      w2: toN(pr[9]),  w2r: Math.round(toN(pr[10]) * 1000) / 10,
+      w3: toN(pr[11]), w3r: Math.round(toN(pr[12]) * 1000) / 10,
+      w4: toN(pr[13]), w4r: Math.round(toN(pr[14]) * 1000) / 10,
+      monthly_rate: Math.round(toN(pr[16]) * 1000) / 10,
+      diff: toN(pr[17])
+    });
+  }
+  return staffs;
+}
+
+function parseReport(wb){
+  // 報告書シートからサマリーを取得
+  const sheetName = wb.SheetNames.find(n=>n==='報告書');
+  if(!sheetName) return {};
+  const raw = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {header:1,defval:null});
+  const res = {};
+  try{
+    res.chiryo   = toNum(raw[10]?.[8]);
+    res.kyosei   = toNum(raw[12]?.[8]);
+    res.totalSales = toNum(raw[14]?.[8]);
+    res.shinChiryo = toNum(raw[20]?.[3]);
+    res.shinJibai  = toNum(raw[20]?.[5]);
+    res.shinKyosei = toNum(raw[20]?.[7]);
+    res.koreaCurrent = toNum(raw[23]?.[7]);
+    res.koreaLast    = toNum(raw[23]?.[9]);
+    res.mainteCurrent= toNum(raw[27]?.[7]);
+    res.mainteLast   = toNum(raw[27]?.[9]);
+    res.memberTotal  = (res.koreaCurrent||0) + (res.mainteCurrent||0);
+  } catch(e){}
+  try { res.staffData = parseStaffData(wb); } catch(e){}
+  return res;
+}
+
+function toNum(v){
+  if(v===null||v===undefined) return 0;
+  if(typeof v==='number') return v;
+  const s = String(v).replace(/[¥,\s]/g,'');
+  const n = parseFloat(s);
+  return isNaN(n)?0:n;
+}
+
+function fmt(n){ return Math.round(n).toLocaleString('ja'); }
+
+// ============================================================
+// LOG
+// ============================================================
+function logImport(filename, type, msg){
+  const log = document.getElementById('importLog');
+  const el = document.createElement('div');
+  el.className = `log-item ${type}`;
+  el.innerHTML = `<span class="log-icon">${type==='success'?'✅':'❌'}</span><div class="log-detail"><div class="log-month">${filename}</div><div class="log-meta">${msg}</div></div>`;
+  log.prepend(el);
+  updateImportedList();
+}
+
+function updateImportedList(){
+  const el = document.getElementById('importedList');
+  const keys = Object.keys(importedMonths);
+  // NAOLT集計データも表示
+  const naoltData = JSON.parse(localStorage.getItem('zen_naolt') || 'null');
+  let naoltHtml = '';
+  if(naoltData) {
+    naoltHtml = `<div class="log-item success" style="margin-bottom:12px;border-color:rgba(45,212,191,.3);">
+      <span class="log-icon">📊</span>
+      <div class="log-detail">
+        <div class="log-month" style="color:var(--accent2);">NAOLT集計 — ５期KPI・集客部門</div>
+        <div class="log-meta">取込月: ${naoltData.months?.join('、') || '—'} ／ 取込: ${naoltData.importedAt}</div>
+      </div>
+      <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;" onclick="deleteNAOLT()">削除</button>
+    </div>`;
+  }
+  if(!keys.length && !naoltData){ el.innerHTML='<span style="color:var(--muted);font-size:13px;">まだデータが取り込まれていません</span>'; return; }
+  el.innerHTML = naoltHtml + keys.sort((a,b)=>parseInt(a)-parseInt(b)).map(m=>{
+    const d = importedMonths[m] || {};
+    return `<div class="log-item success" style="margin-bottom:6px;">
+      <span class="log-icon">📅</span>
+      <div class="log-detail">
+        <div class="log-month">${m} — 総売上: ${fmt(d.totalSales||0)}円 / 新規 治療:${d.shinChiryo||0}件 矯正:${d.shinKyosei||0}件</div>
+        <div class="log-meta">会員数: コアレ${d.koreaCurrent||0}件 メンテ${d.mainteCurrent||0}件 ／ 取込: ${d.importedAt}</div>
+      </div>
+      <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;" onclick="deleteImport('${m}')">削除</button>
+    </div>`;
+  }).join('');
+}
+
+async function deleteImport(month){
+  if(!confirm(`${month}のデータを削除しますか？`)) return;
+  delete importedMonths[month];
+  delete dailyData[month];
+  await storageSet('zen_imported', importedMonths);
+  await storageSet('zen_daily', dailyData);
+  updateImportedList();
+  updateBadges();
+  updateSalesTable();
+  updateCharts();
+  renderStaff();
+}
+
+function updateBadges(){
+  const el = document.getElementById('uploadedBadges');
+  const keys = Object.keys(importedMonths).sort((a,b)=>parseInt(a)-parseInt(b));
+  el.innerHTML = keys.map(m=>`<span class="upload-badge new">${m} ✓</span>`).join('');
+}
+
+// ============================================================
+// SALES TABLE UPDATE
+// ============================================================
+function updateSalesTable(){
+  ['2','3'].forEach(mNum => {
+    const month = mNum+'月';
+    // "2月" にマッチするキー（"R8-2月"等）を探す
+    const key = Object.keys(importedMonths).find(k => k.endsWith('-'+month) || k === month);
+    const d = key ? importedMonths[key] : null;
+    if(!d) return;
+    const setCell = (id,val)=>{ const el=document.getElementById(id); if(el) el.textContent=val?fmt(val):'—'; };
+    setCell(`sales_치료_${mNum}`, d.chiryo);
+    setCell(`sales_矯正_${mNum}`, d.kyosei);
+    setCell(`sales_エステ_${mNum}`, d.totalSales ? d.totalSales - (d.chiryo||0) - (d.kyosei||0) : null);
+    setCell(`sales_total_${mNum}`, d.totalSales);
+    // 会員数更新
+    if(d.memberTotal){
+      document.getElementById('kpi_member_count').textContent = d.memberTotal+'件';
+      document.getElementById('kpi_member_sub').textContent = `コアレ${d.koreaCurrent}件 + メンテ${d.mainteCurrent}件`;
+    }
+  });
+}
+
+// ============================================================
+// DAILY TAB
+// ============================================================
+
+
+
+// ============================================================
+// STAFF DATA
+// ============================================================
+// ============================================================
+// 個人売上 JS
+// ============================================================
+const STAFF_COLORS = {'行時':'#4f8ef7','諸永':'#2dd4bf','田中':'#f97316','岩丸':'#a78bfa','西田':'#22c55e'};
+const STAFF_NAMES  = ['行時','諸永','田中','岩丸','西田'];
+const STAFF_CHARTS = {};
+
+function getSortedMonthKeys(){
+  return Object.keys(importedMonths).sort((a,b) => monthSortKey(a) - monthSortKey(b));
+}
+function getStaffTarget(){
+  return parseInt(_staffTargetCache || '1100000');
+}
+function initStaffChart(id, config){
+  if(STAFF_CHARTS[id]) STAFF_CHARTS[id].destroy();
+  const el = document.getElementById(id);
+  if(el) STAFF_CHARTS[id] = new Chart(el, config);
+}
+
+// ---- メインのrenderStaff ----
+function renderStaff(){
+  const keys   = getSortedMonthKeys();
+  const target = getStaffTarget();
+  const view   = document.getElementById('staffViewSel')?.value || 'trend';
+  const person = document.getElementById('staffPersonSel')?.value || 'all';
+
+  // 月選択の表示制御
+  const mSel = document.getElementById('staffMonthSel');
+  if(mSel){
+    mSel.style.display = view === 'month' ? 'block' : 'none';
+    // セレクト更新
+    const cur = mSel.value;
+    mSel.innerHTML = '<option value="">月を選択</option>';
+    keys.forEach(k => {
+      const o = document.createElement('option');
+      o.value = k; o.textContent = monthLabel(k);
+      mSel.appendChild(o);
+    });
+    if(keys.includes(cur)) mSel.value = cur;
+    else if(keys.length) mSel.value = keys[keys.length - 1];
+  }
+
+  if(!keys.length){
+    document.getElementById('staff_kpi').innerHTML =
+      '<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted);font-size:13px;">📂 日計表XLSXを取込むと個人売上データが表示されます</div>';
+    return;
+  }
+
+  // KPI: 取込済み全月の担当者別累計
+  const names = person === 'all' ? STAFF_NAMES : [person];
+  const totals = {}, achieves = {};
+  STAFF_NAMES.forEach(n => { totals[n] = 0; achieves[n] = 0; });
+  keys.forEach(k => {
+    (importedMonths[k]?.staffData || []).forEach(s => {
+      if(totals[s.name] !== undefined){ totals[s.name] += s.total || 0; achieves[s.name]++; }
+    });
+  });
+
+  document.getElementById('staff_kpi').innerHTML = names
+    .filter(n => totals[n] > 0)
+    .map(n => {
+      const avg = achieves[n] ? Math.round(totals[n] / achieves[n]) : 0;
+      const avgRate = target ? Math.round(avg / target * 100) : 0;
+      const c = avgRate >= 100 ? 'var(--green)' : avgRate >= 70 ? 'var(--yellow)' : 'var(--red)';
+      return `<div class="kpi-card" style="--ac:${STAFF_COLORS[n]}">
+        <div class="kpi-label">${n}さん 累計</div>
+        <div class="kpi-value" style="font-size:17px;">${Math.round(totals[n]/10000)}万円</div>
+        <div class="kpi-sub" style="color:${c}">月平均 ${Math.round(avg/10000*10)/10}万（達成率 ${avgRate}%）</div>
+      </div>`;
+    }).join('');
+
+  // ビューごとに分岐
+  document.getElementById('staff_heatmap_wrap').style.display  = 'none';
+  document.getElementById('staff_month_detail').style.display  = 'none';
+  document.getElementById('staff_main_chart_wrap').style.display = 'block';
+
+  if(view === 'trend')       renderStaffTrend(keys, names, target);
+  else if(view === 'achievement') renderStaffAchievement(keys, names, target);
+  else if(view === 'month')  renderStaffMonthDetail(mSel?.value || keys[keys.length-1], names, target, keys);
+}
+
+// ---- 全期間 月次推移 ----
+function renderStaffTrend(keys, names, target){
+  document.getElementById('staff_chart_title').textContent = '担当者別 月次売上推移（全期間）';
+  const datasets = names
+    .filter(n => keys.some(k => (importedMonths[k]?.staffData||[]).find(s=>s.name===n && s.total>0)))
+    .map(n => ({
+      label: n + 'さん',
+      data: keys.map(k => {
+        const s = (importedMonths[k]?.staffData||[]).find(x => x.name === n);
+        return s?.total || null;
+      }),
+      borderColor: STAFF_COLORS[n], backgroundColor: STAFF_COLORS[n] + '20',
+      fill: false, tension: .4, pointRadius: 4, spanGaps: true
+    }));
+
+  // 目標ライン
+  datasets.push({
+    label: `目標 ${Math.round(target/10000)}万`,
+    data: keys.map(() => target),
+    borderColor: 'rgba(255,255,255,.25)', borderDash: [6,4],
+    pointRadius: 0, fill: false, tension: 0
+  });
+
+  initStaffChart('c_staff_main', {
+    type: 'line',
+    data: { labels: keys.map(monthLabel), datasets },
+    options: {
+      ...CD, responsive: true,
+      scales: { ...CD.scales, y: { ...CD.scales.y, ticks: { callback: v => Math.round(v/10000)+'万', color:'#7a8299' } } }
+    }
+  });
+}
+
+// ---- 目標達成率の推移 ----
+function renderStaffAchievement(keys, names, target){
+  document.getElementById('staff_chart_title').textContent = '担当者別 月間達成率の推移（全期間）';
+  const datasets = names
+    .filter(n => keys.some(k => (importedMonths[k]?.staffData||[]).find(s=>s.name===n && s.total>0)))
+    .map(n => ({
+      label: n + 'さん',
+      data: keys.map(k => {
+        const s = (importedMonths[k]?.staffData||[]).find(x => x.name === n);
+        return s?.monthly_rate ?? null;
+      }),
+      borderColor: STAFF_COLORS[n], backgroundColor: STAFF_COLORS[n] + '15',
+      fill: true, tension: .4, pointRadius: 5, spanGaps: true,
+      pointBackgroundColor: keys.map(k => {
+        const s = (importedMonths[k]?.staffData||[]).find(x => x.name === n);
+        const r = s?.monthly_rate ?? 0;
+        return r >= 100 ? STAFF_COLORS[n] : 'var(--surface)';
+      }),
+      pointBorderColor: STAFF_COLORS[n], pointBorderWidth: 2
+    }));
+
+  // 100%ライン
+  datasets.push({
+    label: '目標 100%',
+    data: keys.map(() => 100),
+    borderColor: 'rgba(255,255,255,.3)', borderDash: [6,4],
+    pointRadius: 0, fill: false, tension: 0
+  });
+
+  initStaffChart('c_staff_main', {
+    type: 'line',
+    data: { labels: keys.map(monthLabel), datasets },
+    options: {
+      ...CD, responsive: true,
+      scales: { ...CD.scales, y: { ...CD.scales.y, ticks: { callback: v => v+'%', color:'#7a8299' } } }
+    }
+  });
+
+  // ヒートマップ
+  document.getElementById('staff_heatmap_wrap').style.display = 'block';
+  renderHeatmap(keys, names, target);
+}
+
+// ---- ヒートマップ描画 ----
+function renderHeatmap(keys, names, target){
+  const active = names.filter(n =>
+    keys.some(k => (importedMonths[k]?.staffData||[]).find(s => s.name === n && s.total > 0))
+  );
+  let html = `<table class="heatmap-table"><thead><tr><th>担当者</th>`;
+  keys.forEach(k => { html += `<th>${monthLabel(k)}</th>`; });
+  html += `<th>達成月数</th><th>平均達成率</th></tr></thead><tbody>`;
+
+  active.forEach(n => {
+    const rates = keys.map(k => {
+      const s = (importedMonths[k]?.staffData||[]).find(x => x.name === n);
+      return s?.total > 0 ? s.monthly_rate : null;
+    });
+    const valid = rates.filter(r => r !== null);
+    const avg   = valid.length ? Math.round(valid.reduce((a,v)=>a+v,0) / valid.length * 10) / 10 : 0;
+    const hits  = valid.filter(r => r >= 100).length;
+
+    html += `<tr><td style="text-align:left;font-family:'Noto Sans JP',sans-serif;font-weight:500;color:${STAFF_COLORS[n]}">${n}</td>`;
+    rates.forEach(r => {
+      if(r === null){ html += `<td class="hm-none">—</td>`; return; }
+      const cls = r >= 100 ? 'hm-good' : r >= 70 ? 'hm-ok' : r >= 50 ? 'hm-mid' : 'hm-low';
+      html += `<td class="${cls}">${r}%</td>`;
+    });
+    const avgCls = avg >= 100 ? 'hm-good' : avg >= 70 ? 'hm-ok' : avg >= 50 ? 'hm-mid' : 'hm-low';
+    html += `<td style="font-weight:600;">${hits}/${valid.length}月</td><td class="${avgCls}" style="font-weight:600;">${avg}%</td></tr>`;
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('staff_heatmap').innerHTML = html;
+}
+
+// ---- 月別詳細 ----
+function renderStaffMonthDetail(key, names, target, allKeys){
+  if(!key || !importedMonths[key]) return;
+  document.getElementById('staff_main_chart_wrap').style.display = 'none';
+  document.getElementById('staff_month_detail').style.display = 'block';
+
+  const staffs = importedMonths[key]?.staffData || [];
+  const active = staffs.filter(s => s.total > 0 && names.includes(s.name));
+
+  // 部門別積み上げ
+  const depts = [
+    {key:'chiryo_v', label:'治療',  color:'rgba(79,142,247,.75)'},
+    {key:'kyosei_v', label:'矯正',  color:'rgba(45,212,191,.75)'},
+    {key:'este_v',   label:'エステ',color:'rgba(249,115,22,.75)'},
+    {key:'kizon',    label:'既存',  color:'rgba(167,139,250,.75)'},
+  ];
+  initStaffChart('c_staff_dept', {
+    type: 'bar',
+    data: {
+      labels: active.map(s => s.name + 'さん'),
+      datasets: depts.map(d => ({
+        label: d.label,
+        data: active.map(s => s[d.key] || 0),
+        backgroundColor: d.color, borderRadius: 3
+      }))
+    },
+    options: { ...CD, responsive: true,
+      scales: {
+        x: { stacked:true, ticks:{color:'#7a8299'}, grid:{color:'#1e2436'} },
+        y: { stacked:true, ticks:{callback:v=>Math.round(v/10000)+'万', color:'#7a8299'}, grid:{color:'#1e2436'} }
+      }
+    }
+  });
+
+  // 週別進捗
+  const weekTarget = Math.round(target / 4);
+  const wDS = active.map(s => {
+    const col = STAFF_COLORS[s.name] || '#7a8299';
+    return { label: s.name+'さん', data: [s.w1,s.w2,s.w3,s.w4],
+      backgroundColor: col+'bb', borderRadius: 3 };
+  });
+  wDS.push({ label:`週目標 ${Math.round(weekTarget/10000)}万`, data:[weekTarget,weekTarget,weekTarget,weekTarget],
+    type:'line', borderColor:'rgba(255,255,255,.3)', borderDash:[5,4], pointRadius:0, fill:false });
+  initStaffChart('c_staff_weekly', {
+    type: 'bar',
+    data: { labels:['1週目','2週目','3週目','4週目'], datasets: wDS },
+    options: { ...CD, responsive: true }
+  });
+
+  // 個人カード
+  document.getElementById('staff_cards').innerHTML = active.map(s => {
+    const col    = STAFF_COLORS[s.name] || '#7a8299';
+    const pct    = Math.min(s.monthly_rate, 120);
+    const barCol = s.monthly_rate >= 100 ? 'var(--green)' : s.monthly_rate >= 70 ? 'var(--yellow)' : 'var(--red)';
+    const sign   = s.diff >= 0 ? '+' : '';
+
+    // ミニ推移バー（全期間）
+    const vals = allKeys.map(k => {
+      const f = (importedMonths[k]?.staffData||[]).find(x => x.name === s.name);
+      return f?.total || 0;
+    });
+    const maxV = Math.max(...vals, 1);
+    const miniBar = `<div class="staff-section" style="grid-column:1/-1;">
+      <div class="staff-section-title">全期間 月別推移（🟩 目標達成月）</div>
+      <div style="display:flex;gap:3px;align-items:flex-end;height:44px;margin-bottom:4px;">
+        ${allKeys.map((k,i) => {
+          const h = Math.round(vals[i] / maxV * 40);
+          const hit = vals[i] >= target;
+          return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+            <div title="${monthLabel(k)}: ${vals[i].toLocaleString('ja')}円"
+              style="width:100%;height:${h||2}px;background:${hit?'var(--green)':col};opacity:.8;border-radius:2px 2px 0 0;
+              ${k===key?'outline:2px solid white;':''}"></div>
+            <div style="font-size:8px;color:var(--muted);">${monthLabel(k).replace(/R\d+ /,'')}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+
+    return `<div class="staff-card">
+      <div class="staff-header">
+        <div class="staff-avatar" style="background:${col}22;color:${col}">${s.name}</div>
+        <div style="flex:1;">
+          <div class="staff-name">${s.name}さん <span style="font-size:12px;color:var(--muted);font-weight:400;">${monthLabel(key)}</span></div>
+          <div class="staff-total" style="color:${barCol}">${Math.round(s.total).toLocaleString('ja')}円</div>
+          <div class="staff-rate" style="color:${barCol}">達成率 ${s.monthly_rate}%
+            <span style="color:var(--muted);">/ 目標 ${target.toLocaleString('ja')}円</span></div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;color:var(--muted);">目標差額</div>
+          <div style="font-size:14px;font-weight:700;font-family:'DM Mono',monospace;color:${s.diff>=0?'var(--green)':'var(--red)'}">
+            ${sign}${Math.round(s.diff).toLocaleString('ja')}</div>
+        </div>
+      </div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${barCol};"></div></div>
+      <div class="staff-body" style="margin-top:12px;">
+        <div class="staff-section">
+          <div class="staff-section-title">部門別 新規売上</div>
+          <div class="staff-dept-row"><span class="staff-dept-name">治療</span><span class="staff-dept-val">${s.chiryo_n}件 / ${Math.round(s.chiryo_v).toLocaleString('ja')}円</span></div>
+          <div class="staff-dept-row"><span class="staff-dept-name">矯正</span><span class="staff-dept-val">${s.kyosei_n}件 / ${Math.round(s.kyosei_v).toLocaleString('ja')}円</span></div>
+          <div class="staff-dept-row"><span class="staff-dept-name">エステ</span><span class="staff-dept-val">${s.este_n}件 / ${Math.round(s.este_v).toLocaleString('ja')}円</span></div>
+          <div class="staff-dept-row"><span class="staff-dept-name">既存</span><span class="staff-dept-val">${Math.round(s.kizon).toLocaleString('ja')}円</span></div>
+        </div>
+        ${(s.seizetsu_total > 0) ? `
+        <div class="staff-section" style="grid-column:1/-1;">
+          <div class="staff-section-title">施術人数（延べ）</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px;">
+            <div style="text-align:center;padding:10px;background:var(--surface);border-radius:8px;">
+              <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">新規</div>
+              <div style="font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent);">${s.seizetsu_shinki}</div>
+              <div style="font-size:10px;color:var(--muted);">人</div>
+            </div>
+            <div style="text-align:center;padding:10px;background:var(--surface);border-radius:8px;">
+              <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">既存</div>
+              <div style="font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent2);">${s.seizetsu_kizon}</div>
+              <div style="font-size:10px;color:var(--muted);">人</div>
+            </div>
+            <div style="text-align:center;padding:10px;background:var(--surface);border-radius:8px;border:1px solid var(--border);">
+              <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">合計</div>
+              <div style="font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--text);">${s.seizetsu_total}</div>
+              <div style="font-size:10px;color:var(--muted);">人</div>
+            </div>
+          </div>
+          <div style="margin-top:8px;background:var(--surface);border-radius:6px;height:6px;overflow:hidden;">
+            <div style="height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:6px;width:${s.seizetsu_total ? Math.min(Math.round(s.seizetsu_kizon/s.seizetsu_total*100),100) : 0}%;"></div>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px;">既存比率 ${s.seizetsu_total ? Math.round(s.seizetsu_kizon/s.seizetsu_total*100) : 0}%</div>
+        </div>` : ''}
+        <div class="staff-section">
+          <div class="staff-section-title">週別進捗</div>
+          <div class="week-grid">
+            ${[1,2,3,4].map(w => {
+              const wv = s[`w${w}`], wr = s[`w${w}r`];
+              const wc = wr>=100?'var(--green)':wr>=70?'var(--yellow)':'var(--red)';
+              return `<div class="week-cell">
+                <div class="week-label">${w}週目</div>
+                <div class="week-val">${wv ? Math.round(wv/10000*10)/10+'万' : '—'}</div>
+                <div class="week-rate" style="color:${wv?wc:'var(--muted)'}">${wv ? wr+'%' : '—'}</div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+        ${allKeys.length > 1 ? miniBar : ''}
+        <div style="grid-column:1/-1;">${getEGComment(s.name, s, target)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+
+// ============================================================
+// EG プロファイル × 個人売上 AIコメント
+// ============================================================
+const EG_PROFILES = {"行時": {"profile": {"分析型": 10, "構造型": 24, "社交型": 29, "コンセプト型": 37}, "traits": ["創造的・アイデア豊富", "社交性を重視する", "相手との関係を大切にする", "新しいことを試みる"], "motivate": "コンセプト型×社交型。新しいアイデアや挑戦を任されると燃える。チームへの貢献を実感できる仕事が◎", "workstyle": "自由度のある環境でアイデアを活かせるとき力を発揮。細かすぎる手順より「目的」を伝えると動きやすい", "request": "「あなたならどう思う？」と意見を聞く形でお願いすると◎。信頼を示してから依頼すると快く引き受ける", "color": "#4f8ef7"}, "諸永": {"profile": {"分析型": 16, "構造型": 31, "社交型": 25, "コンセプト型": 28}, "traits": ["手順を大切にする", "美見性を重視", "計画的に進める", "自分の経験をもとに判断"], "motivate": "構造型・バランス型。「任せた」と明確に役割を渡されると責任感が発揮される。段取りが決まっていると安心", "workstyle": "具体的なゴールと手順が見えているとスムーズ。急な変更より事前共有が大事。丁寧さと正確さが強み", "request": "「○○を○日までにお願いしたい」と具体的に。なぜその仕事が重要かを伝えると動き出しが早い", "color": "#2dd4bf"}, "田中": {"profile": {"分析型": 43, "構造型": 20, "社交型": 7, "コンセプト型": 25}, "traits": ["論理的・データ重視", "明確な思考", "分析することで学ぶ", "理性的"], "motivate": "分析型が突出。データや数字で結果が見える仕事にやりがいを感じる。根拠のある評価が力になる", "workstyle": "情報が整理されていると実力を発揮。「なぜそうするか」の理由を先に伝えると納得感が高まる", "request": "数字・事実ベースで話すと響く。「データを見ると○○だから、あなたに頼みたい」という伝え方が◎", "color": "#f97316"}, "岩丸": {"profile": {"分析型": 20, "構造型": 12, "社交型": 13, "コンセプト型": 77}, "traits": ["創造的・アイデア直感型", "発想が広い", "変わったことが好き", "いろいろ試してみる"], "motivate": "コンセプト型が圧倒的。自由に考えて良い仕事・新しい挑戦にワクワクする。制約より可能性を示す方が動く", "workstyle": "自分なりのやり方で試行錯誤できる環境が最適。「こうしなければ」より「どうすればいい？」という問いかけが合う", "request": "「アイデア聞かせて」「あなたに自由にやってほしい」という形が刺さる。枠を広めに設定するとよい", "color": "#a78bfa"}, "西田": {"profile": {"分析型": 6, "構造型": 13, "社交型": 48, "コンセプト型": 33}, "traits": ["相手との関係を重視", "社会性・協調性が高い", "間しやすい", "人から学ぶことが多い"], "motivate": "社交型が最大。人との関わりや「一緒に頑張ろう」という雰囲気が力になる。感謝や承認の言葉が効く", "workstyle": "誰かと一緒に取り組む・相談しながら進める環境が◎。孤独な作業より対話のある仕事が向いている", "request": "「あなたと一緒にやりたい」「頼りにしてるよ」という温かい言葉を添えてお願いすると快く動いてくれる", "color": "#22c55e"}};
+
+function getEGComment(name, staffData, target) {
+  const eg = EG_PROFILES[name];
+  if (!eg || !staffData) return '';
+
+  // 初期表示：ローディングUI（AIが生成中）
+  const containerId = `eg_comment_${name}_${(staffData.month||'').replace(/\s/g,'')}`;
+
+  // 非同期でAPIコメントを生成して差し込む
+  // staffDataをキャッシュ（再生成ボタン用）
+  _staffDataCache[containerId] = staffData;
+  setTimeout(() => generateAIComment(containerId, name, staffData, target, eg), 50);
+
+  return `
+    <div id="${containerId}" style="margin-top:12px;">
+      <div style="background:${eg.color}12;border:1px solid ${eg.color}40;border-radius:10px;padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div style="width:32px;height:32px;border-radius:50%;background:${eg.color};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🤖</div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:${eg.color};">${name}専属コーチ</div>
+            <div style="font-size:11px;color:var(--muted);">EGプロファイル分析中...</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--surface2);border-radius:8px;">
+          <div style="display:flex;gap:4px;">
+            <span style="width:8px;height:8px;border-radius:50%;background:${eg.color};animation:pulse 1s infinite;"></span>
+            <span style="width:8px;height:8px;border-radius:50%;background:${eg.color};animation:pulse 1s infinite .2s;"></span>
+            <span style="width:8px;height:8px;border-radius:50%;background:${eg.color};animation:pulse 1s infinite .4s;"></span>
+          </div>
+          <span style="font-size:12px;color:var(--muted);">コメントを生成中...</span>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+          ${Object.entries(eg.profile).map(([k,v]) =>
+            `<span style="font-size:11px;padding:2px 9px;border-radius:20px;background:${eg.color}20;color:${eg.color};border:1px solid ${eg.color}40;">${k} ${v}%</span>`
+          ).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+async function generateAIComment(containerId, name, staffData, target, eg) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+
+  const rate    = staffData.monthly_rate || 0;
+  const diff    = staffData.diff || 0;
+  const total   = staffData.total || 0;
+  const w1r = staffData.w1r||0, w2r = staffData.w2r||0;
+  const w3r = staffData.w3r||0, w4r = staffData.w4r||0;
+  const weekData = [w1r,w2r,w3r,w4r].filter(r=>r>0);
+  const maxWeek  = weekData.length ? Math.max(...weekData) : 0;
+  const minWeek  = weekData.length ? Math.min(...weekData) : 0;
+
+  // プロファイル別キャラクター設定
+  const characters = {
+    '行時': { emoji:'🌟', role:'行時さん専属の熱血コーチ', vibe:'明るくエネルギッシュで、新しいことへの挑戦を全力で応援するキャラ。コンセプト型×社交型の強みを引き出す言葉を使う。' },
+    '諸永': { emoji:'🎯', role:'諸永さん専属の戦略コーチ', vibe:'クールで頼りがいがある。データと計画を重んじ、具体的なアドバイスをくれる。構造型の計画力を称え、丁寧に背中を押すキャラ。' },
+    '田中': { emoji:'📊', role:'田中さん専属の分析コーチ', vibe:'論理的で鋭い。数字をベースに話し、田中さんの分析力を認めつつ「次の一手」を明確に示すキャラ。' },
+    '岩丸': { emoji:'💡', role:'岩丸さん専属のクリエイティブコーチ', vibe:'自由でワクワクさせる。「可能性は無限大」というスタンスで、コンセプト型の発想力を最大限に引き出す言葉を使うキャラ。' },
+    '西田': { emoji:'🤝', role:'西田さん専属のハートフルコーチ', vibe:'温かく寄り添う。人との繋がりを大切にする西田さんに共感しながら、社交型の強みを自信に変えてあげるキャラ。' },
+  };
+  const ch = characters[name] || { emoji:'🤖', role:'専属コーチ', vibe:'熱血なコーチ' };
+
+  const prompt = `あなたは${ch.role}です。
+キャラクター: ${ch.vibe}
+
+今月の${name}さんの売上データ:
+- 月間売上: ${Math.round(total).toLocaleString('ja')}円
+- 目標達成率: ${rate}%（目標: ${Math.round(target).toLocaleString('ja')}円）
+- 目標との差額: ${diff >= 0 ? '+' : ''}${Math.round(diff).toLocaleString('ja')}円
+- 週別達成率: 1週目${w1r}% / 2週目${w2r}% / 3週目${w3r}% / 4週目${w4r}%
+- 施術人数: 新規${staffData.seizetsu_shinki||0}人 / 既存${staffData.seizetsu_kizon||0}人 / 合計${staffData.seizetsu_total||0}人（既存比率${staffData.seizetsu_total ? Math.round((staffData.seizetsu_kizon||0)/staffData.seizetsu_total*100) : 0}%）
+- 最高週: ${maxWeek}% / 最低週: ${minWeek}%
+
+EGプロファイル（思考・行動スタイル）:
+${Object.entries(eg.profile).map(([k,v])=>`- ${k}: ${v}%`).join('\n')}
+特徴: ${eg.traits.join('、')}
+やる気の出る関わり方: ${eg.motivate}
+
+このデータを見て、${name}さんへのコメントを書いてください。
+
+ルール:
+- 200文字以内
+- キャラクターの口調・雰囲気を徹底する
+- 数字を具体的に使って「今月の${name}さん」に語りかける
+- 達成率に応じてトーンを変える（100%超: 大称賛、80-99%: あと一歩の熱い激励、50-79%: 前向きな分析と応援、50%未満: 立て直しへの力強いサポート）
+- モチベーションが上がる言葉を使う
+- 絵文字を2〜3個使う
+- 来月への具体的な一言で締める`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const comment = data.content?.[0]?.text || 'コメントを生成できませんでした。';
+
+    el.innerHTML = `
+      <div style="margin-top:12px;background:${eg.color}12;border:1px solid ${eg.color}40;border-radius:10px;padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,${eg.color},${eg.color}99);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 2px 8px ${eg.color}40;">${ch.emoji}</div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:${eg.color};">${ch.role}</div>
+            <div style="font-size:11px;color:var(--muted);">EGプロファイル分析</div>
+          </div>
+          <div style="margin-left:auto;">
+            <button onclick="regenerateComment('${containerId}','${name}')" 
+              style="background:none;border:1px solid ${eg.color}40;border-radius:6px;color:${eg.color};font-size:11px;padding:4px 10px;cursor:pointer;">
+              🔄 再生成
+            </button>
+          </div>
+        </div>
+        <div style="font-size:14px;line-height:1.8;color:var(--text);padding:12px;background:var(--surface2);border-radius:8px;border-left:3px solid ${eg.color};">
+          ${comment.replace(/\n/g,'<br>')}
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+          ${Object.entries(eg.profile).map(([k,v]) =>
+            `<span style="font-size:11px;padding:2px 9px;border-radius:20px;background:${eg.color}20;color:${eg.color};border:1px solid ${eg.color}40;">${k} ${v}%</span>`
+          ).join('')}
+        </div>
+      </div>`;
+  } catch(err) {
+    el.innerHTML = `
+      <div style="margin-top:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
+        <div style="font-size:12px;color:var(--muted);">⚠️ コメント生成に失敗しました（${err.message}）</div>
+      </div>`;
+  }
+}
+
+// staffDataキャッシュ（再生成ボタン用）
+const _staffDataCache = {};
+
+// 再生成ボタン用
+function regenerateComment(containerId, name) {
+  const eg = EG_PROFILES[name];
+  if (!eg) return;
+  const target = getStaffTarget();
+  const staffData = _staffDataCache[containerId] || {};
+  const el = document.getElementById(containerId);
+  if (el) {
+    el.innerHTML = `
+      <div style="margin-top:12px;background:${eg.color}12;border:1px solid ${eg.color}40;border-radius:10px;padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div style="width:32px;height:32px;border-radius:50%;background:${eg.color};display:flex;align-items:center;justify-content:center;font-size:16px;">🤖</div>
+          <div style="font-size:13px;color:var(--muted);">再生成中...</div>
+        </div>
+        <div style="height:40px;background:var(--surface2);border-radius:8px;"></div>
+      </div>`;
+  }
+  generateAIComment(containerId, name, staffData, target, eg);
+}
+
+
+// ============================================================
+// NAOLT集計 取込
+// ============================================================
+
+function switchImportTab(n) {
+  document.getElementById('importZone1').style.display = n===1 ? 'block' : 'none';
+  document.getElementById('importZone2').style.display = n===2 ? 'block' : 'none';
+  document.getElementById('importTab1').className = n===1 ? 'btn' : 'btn btn-ghost';
+  document.getElementById('importTab2').className = n===2 ? 'btn' : 'btn btn-ghost';
+  // ドラッグアンドドロップを切り替え
+  setupNAOLTDrop();
+}
+
+function setupNAOLTDrop(){
+  const dz2 = document.getElementById('importZone2');
+  if(!dz2) return;
+  dz2.addEventListener('dragover', e=>{e.preventDefault();dz2.classList.add('dragover');});
+  dz2.addEventListener('dragleave', ()=>dz2.classList.remove('dragover'));
+  dz2.addEventListener('drop', e=>{
+    e.preventDefault(); dz2.classList.remove('dragover');
+    if(e.dataTransfer.files[0]) handleNAOLTFile(e.dataTransfer.files[0]);
+  });
+}
+setupNAOLTDrop();
+
+function handleNAOLTFile(file) {
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, {type:'array', cellDates:false});
+      console.log('[NAOLT] シート:', wb.SheetNames);
+      const result = parseNAOLT(wb);
+      localStorage.setItem('zen_naolt', JSON.stringify({
+        ...result,
+        fileName: file.name,
+        importedAt: new Date().toLocaleString('ja')
+      }));
+      logImport(file.name, 'success',
+        `NAOLT集計 取込完了 — KPIデータ ${result.months?.length || 0}ヶ月分 / 集客データ ${result.collectionMonths?.length || 0}ヶ月分`
+      );
+      updateCharts();
+      updateImportedList();
+    } catch(err) {
+      logImport(file.name, 'error', 'パースエラー: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseNAOLT(wb) {
+  const result = { kpi:{}, collection:{}, months:[], collectionMonths:[] };
+  const monthCols = {2:1, 3:2, 4:3, 5:4, 6:5, 7:6, 8:7, 9:8, 10:9, 11:10, 12:11, 1:12}; // 月→列インデックス（0始まり、col0=ラベル、col1=5月...）
+
+  // ===== ５期KPIシート =====
+  const kpiSheet = wb.SheetNames.find(n => n.includes('KPI'));
+  if(kpiSheet) {
+    const raw = XLSX.utils.sheet_to_json(wb.Sheets[kpiSheet], {header:1, defval:null, raw:true});
+    // row1がヘッダー（5月〜4月）、col2〜col13が5月〜4月
+    // col2=5月, col3=6月, ..., col11=2月, col12=3月, col13=4月
+    const ROW = {
+      prevSales: 2, totalSales: 3, chiryo: 4, shinKizon: 5, shinNum: 6, keiyakuNum: 8,
+      keiyakuRate: 9, receNum: 10, 離反率: 11, kizonSales: 12, soShijutsu: 14,
+      memberSales: 18, memberCount: 19, memberIn: 20, memberOut: 21,
+      kyoseiSales: 25, kyoseiShinNum: 26, kyoseiKeiyaku: 28, kyoseiKeiyakuRate: 29,
+      esteSales: 33, esteShinNum: 34, esteKeiyaku: 35,
+      jibaiSales: 41, buhanSales: 46,
+    };
+    // 月→列のマッピング（row1から読む）
+    const headerRow = raw[1] || [];
+    const monthColMap = {};
+    const ORDER = ['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月','3月','4月'];
+    headerRow.forEach((v, ci) => {
+      if(v && ORDER.includes(String(v).trim())) monthColMap[String(v).trim()] = ci;
+    });
+    result.months = Object.keys(monthColMap);
+
+    Object.entries(ROW).forEach(([key, ri]) => {
+      result.kpi[key] = {};
+      Object.entries(monthColMap).forEach(([m, ci]) => {
+        const v = raw[ri]?.[ci];
+        result.kpi[key][m] = (v !== null && v !== undefined && !isNaN(Number(v))) ? Number(v) : null;
+      });
+    });
+  }
+
+  // ===== ５期集客部門シート =====
+  const colSheet = wb.SheetNames.find(n => n.includes('集客'));
+  if(colSheet) {
+    const raw2 = XLSX.utils.sheet_to_json(wb.Sheets[colSheet], {header:1, defval:null, raw:true});
+    // row0がヘッダー
+    const headerRow2 = raw2[0] || [];
+    const ORDER2 = ['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月','3月','4月'];
+    const colMap2 = {};
+    headerRow2.forEach((v, ci) => {
+      if(v && ORDER2.includes(String(v).trim())) colMap2[String(v).trim()] = ci;
+    });
+    result.collectionMonths = Object.keys(colMap2).filter(m => {
+      // 有効なデータがある月のみ
+      return Object.values(colMap2).some(ci => {
+        return raw2.some(r => r[ci] !== null && r[ci] !== undefined);
+      });
+    });
+
+    const COL_ROW = {
+      chIryo_inquiry: 1, chiryo_shin: 2, chiryo_来店率: 5,
+      chiryo_roas: 11, chiryo_cpa: 12, chiryo_shinSales: 10,
+      sangoIinquiry: 13, sango_shin: 14, sango_来店率: 17,
+      sango_roas: 24, sango_cpa: 25, sango_shinSales: 23,
+      este_inquiry: 26, este_shin: 27, este_来店率: 30,
+      este_roas: 37, este_cpa: 38, este_shinSales: 36,
+      totalCost: 47,
+    };
+    Object.entries(COL_ROW).forEach(([key, ri]) => {
+      result.collection[key] = {};
+      Object.entries(colMap2).forEach(([m, ci]) => {
+        const v = raw2[ri]?.[ci];
+        result.collection[key][m] = (v !== null && v !== undefined && !isNaN(Number(v))) ? Number(v) : null;
+      });
+    });
+  }
+
+  return result;
+}
+
+function deleteNAOLT(){
+  if(!confirm('NAOLT集計データを削除しますか？')) return;
+  localStorage.removeItem('zen_naolt');
+  updateImportedList();
+  updateCharts();
+}
+
+function getNAOLT(){ return JSON.parse(localStorage.getItem('zen_naolt') || 'null'); }
+
+// ============================================================
+// CHARTS（取込データと合算して更新可能）
+// ============================================================
+const CHARTS = {};
+
+function buildMonthlyData() {
+  // BASE_DATA（5〜1月）+ importedMonths（2月以降）を合算
+  const ORDER = ['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月','3月','4月'];
+  const imported = Object.keys(importedMonths).sort((a,b) => monthSortKey(a) - monthSortKey(b));
+
+  // BASE_DATAの月リスト
+  const baseMonths = BASE_DATA.months;
+
+  // importedMonthsのキーを「月のみ」に正規化するヘルパー
+  // "R8-2月" → "2月", "2月" → "2月"
+  function toMonthOnly(key) {
+    const m = key.match(/(\d+)月$/);
+    return m ? m[1] + '月' : key;
+  }
+
+  // 取込済み月をORDER形式（"2月"等）に変換したリスト
+  const importedNorm = imported.map(k => toMonthOnly(k));
+
+  // NAOLTに含まれる月も追加対象に含める
+  const naoltForMonths = getNAOLT();
+  const naoltMonths = naoltForMonths?.months || [];
+
+  // 追加月（BASEにない月のみ）— 日計表 OR NAOLTのどちらかにあればOK
+  const extraMonths = ORDER.filter(m =>
+    !baseMonths.includes(m) && (importedNorm.includes(m) || naoltMonths.includes(m))
+  );
+
+  // 全月リスト（順序通り）
+  const allMonths = ORDER.filter(m => baseMonths.includes(m) || extraMonths.includes(m));
+
+  // キー正規化版のimportedMonthsを参照するヘルパー
+  function getImported(monthOnly) {
+    // "2月" → "R8-2月" のような実際のキーを探す
+    const key = imported.find(k => toMonthOnly(k) === monthOnly);
+    return key ? importedMonths[key] : null;
+  }
+
+  // 各指標の配列をallMonthsの順で構築
+  function arr(baseArr, key) {
+    const naolt = getNAOLT();
+    const nk = naolt?.kpi;
+    return allMonths.map((m, i) => {
+      const bi = baseMonths.indexOf(m);
+      if(bi >= 0) return baseArr[bi];
+      // NAOLTデータ優先、なければ日計表データ
+      const d = getImported(m);
+      if(key === 'totalSales') return nk?.totalSales?.[m] ?? d?.totalSales ?? 0;
+      if(key === 'chiryo')     return nk?.chiryo?.[m] ?? d?.chiryo ?? 0;
+      if(key === 'kyosei')     return nk?.kyoseiSales?.[m] ?? d?.kyosei ?? 0;
+      if(key === 'este')       return nk?.esteSales?.[m] ?? ((d?.totalSales||0)-(d?.chiryo||0)-(d?.kyosei||0)) ?? 0;
+      if(key === 'memberTotal') return nk?.memberCount?.[m] ?? d?.memberTotal ?? 0;
+      if(key === 'shinChiryo') return nk?.shinNum?.[m] ?? d?.shinChiryo ?? 0;
+      if(key === 'shinKyosei') return nk?.kyoseiShinNum?.[m] ?? d?.shinKyosei ?? 0;
+      if(!d) return 0;
+      return 0;
+    });
+  }
+
+  return {
+    months: allMonths,
+    totalSales: arr(BASE_DATA.totalSales, 'totalSales'),
+    prevSales:  allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); if(bi>=0) return BASE_DATA.prevSales[bi]; const naolt=getNAOLT(); return naolt?.kpi?.prevSales?.[m] ?? null; }),
+    chiryo:     arr(BASE_DATA.chiryo, 'chiryo'),
+    kyosei:     arr(BASE_DATA.kyosei, 'kyosei'),
+    este:       arr(BASE_DATA.este, 'este'),
+    members:    allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); if(bi>=0) return BASE_DATA.members[bi]; const d=getImported(m); return d&&d.memberTotal?d.memberTotal:null; }),
+    shinChiryo: arr(BASE_DATA.shinChiryo, 'shinChiryo'),
+    shinKyosei: arr(BASE_DATA.shinKyosei, 'shinKyosei'),
+    shinEste:   arr(BASE_DATA.shinEste, 'shinEste'),
+    memberIn:   allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.memberIn[bi]:null; }),
+    memberOut:  allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.memberOut[bi]:null; }),
+    churnChiryo:allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.churnChiryo[bi]:null; }),
+    churnMember:allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.churnMember[bi]:null; }),
+    contractChiryo: allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.contractChiryo[bi]:null; }),
+    contractKyosei: allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.contractKyosei[bi]:null; }),
+    contractEste:   allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.contractEste[bi]:null; }),
+    targetDiff: allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.targetDiff[bi]:null; }),
+    roas_chiryo:allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.roas_chiryo[bi]:null; }),
+    roas_kyosei:allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.roas_kyosei[bi]:null; }),
+    roas_este:  allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.roas_este[bi]:null; }),
+    inquiry_c:  allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.inquiry_c[bi]:null; }),
+    inquiry_k:  allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.inquiry_k[bi]:null; }),
+    inquiry_e:  allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.inquiry_e[bi]:null; }),
+  };
+}
+
+function initChart(id, config) {
+  if(CHARTS[id]) { CHARTS[id].destroy(); }
+  CHARTS[id] = new Chart(document.getElementById(id), config);
+}
+
+function updateCharts() {
+  const D = buildMonthlyData();
+  const M = D.months;
+
+  initChart('c_total',{type:'bar',data:{labels:M,datasets:[
+    {label:'今期',data:D.totalSales,backgroundColor:'rgba(79,142,247,.7)',borderRadius:4},
+    {label:'前年',data:D.prevSales.map(v=>v||0),backgroundColor:'rgba(122,130,153,.3)',borderRadius:4}
+  ]},options:{...CD,responsive:true}});
+
+  initChart('c_donut',{type:'doughnut',data:{
+    labels:['治療','矯正','エステ','その他'],
+    datasets:[{data:[
+      D.chiryo.reduce((a,v)=>a+(v||0),0),
+      D.kyosei.reduce((a,v)=>a+(v||0),0),
+      D.este.reduce((a,v)=>a+(v||0),0),
+      D.totalSales.reduce((a,v)=>a+(v||0),0) - D.chiryo.reduce((a,v)=>a+(v||0),0) - D.kyosei.reduce((a,v)=>a+(v||0),0) - D.este.reduce((a,v)=>a+(v||0),0)
+    ],backgroundColor:['#4f8ef7','#2dd4bf','#f97316','#a78bfa'],borderWidth:0}]
+  },options:{responsive:true,plugins:{legend:{labels:{color:'#7a8299',font:{size:11}}}},cutout:'65%'}});
+
+  initChart('c_target',{type:'bar',data:{labels:M,datasets:[
+    {label:'治療 目標差',data:D.targetDiff,backgroundColor:function(ctx){return (ctx.raw||0)>=0?'rgba(34,197,94,.6)':'rgba(239,68,68,.6)'},borderRadius:3}
+  ]},options:{...CD,responsive:true}});
+
+  initChart('c_member',{type:'line',data:{labels:M,datasets:[
+    {label:'会員数',data:D.members,borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,.1)',fill:true,tension:.4,pointBackgroundColor:'#a78bfa',spanGaps:true}
+  ]},options:{...CD,responsive:true}});
+
+  initChart('c_dept',{type:'line',data:{labels:M,datasets:[
+    {label:'治療',data:D.chiryo,borderColor:'#4f8ef7',fill:false,tension:.4,spanGaps:true},
+    {label:'矯正',data:D.kyosei,borderColor:'#2dd4bf',fill:false,tension:.4,spanGaps:true},
+    {label:'エステ',data:D.este,borderColor:'#f97316',fill:false,tension:.4,spanGaps:true}
+  ]},options:{...CD,responsive:true}});
+
+  initChart('c_yoy',{type:'bar',data:{labels:M,datasets:[
+    {label:'今期',data:D.totalSales,backgroundColor:'rgba(79,142,247,.7)',borderRadius:4},
+    {label:'前年',data:D.prevSales.map(v=>v||0),backgroundColor:'rgba(122,130,153,.3)',borderRadius:4}
+  ]},options:{...CD,responsive:true}});
+
+  initChart('c_new',{type:'bar',data:{labels:M,datasets:[
+    {label:'治療',data:D.shinChiryo,backgroundColor:'rgba(79,142,247,.7)',borderRadius:3},
+    {label:'矯正',data:D.shinKyosei,backgroundColor:'rgba(45,212,191,.7)',borderRadius:3},
+    {label:'エステ',data:D.shinEste,backgroundColor:'rgba(249,115,22,.7)',borderRadius:3}
+  ]},options:{...CD,responsive:true}});
+
+  initChart('c_flow',{type:'bar',data:{labels:M,datasets:[
+    {label:'入会',data:D.memberIn,backgroundColor:'rgba(34,197,94,.7)',borderRadius:3},
+    {label:'退会',data:D.memberOut,backgroundColor:'rgba(239,68,68,.7)',borderRadius:3}
+  ]},options:{...CD,responsive:true}});
+
+  initChart('c_churn',{type:'line',data:{labels:M,datasets:[
+    {label:'治療',data:D.churnChiryo,borderColor:'#ef4444',fill:false,tension:.4,spanGaps:true},
+    {label:'会員',data:D.churnMember,borderColor:'#a78bfa',fill:false,tension:.4,spanGaps:true}
+  ]},options:{...CD,responsive:true,scales:{...CD.scales,y:{...CD.scales.y,ticks:{callback:v=>v+'%',color:'#7a8299'}}}}});
+
+  initChart('c_contract',{type:'line',data:{labels:M,datasets:[
+    {label:'治療',data:D.contractChiryo,borderColor:'#4f8ef7',fill:false,tension:.4,pointRadius:5,spanGaps:true},
+    {label:'矯正',data:D.contractKyosei,borderColor:'#2dd4bf',fill:false,tension:.4,pointRadius:5,spanGaps:true},
+    {label:'エステ',data:D.contractEste,borderColor:'#f97316',fill:false,tension:.4,pointRadius:5,spanGaps:true}
+  ]},options:{...CD,responsive:true,scales:{...CD.scales,y:{...CD.scales.y,ticks:{callback:v=>v+'%',color:'#7a8299'}}}}});
+
+  initChart('c_roas',{type:'line',data:{labels:M,datasets:[
+    {label:'治療',data:D.roas_chiryo,borderColor:'#ef4444',fill:false,tension:.4,spanGaps:true},
+    {label:'産後矯正',data:D.roas_kyosei,borderColor:'#2dd4bf',fill:false,tension:.4,spanGaps:true},
+    {label:'ダイエット',data:D.roas_este,borderColor:'#f97316',fill:false,tension:.4,spanGaps:true}
+  ]},options:{...CD,responsive:true,scales:{...CD.scales,y:{...CD.scales.y,ticks:{callback:v=>v+'%',color:'#7a8299'}}}}});
+
+  initChart('c_inquiry',{type:'bar',data:{labels:M,datasets:[
+    {label:'治療',data:D.inquiry_c,backgroundColor:'rgba(79,142,247,.7)',borderRadius:3},
+    {label:'産後矯正',data:D.inquiry_k,backgroundColor:'rgba(45,212,191,.7)',borderRadius:3},
+    {label:'ダイエット',data:D.inquiry_e,backgroundColor:'rgba(249,115,22,.7)',borderRadius:3}
+  ]},options:{...CD,responsive:true}});
+
+  // KPI累計も更新
+  const totalSum = D.totalSales.reduce((a,v)=>a+(v||0),0);
+  const maxMonth = D.months[D.totalSales.indexOf(Math.max(...D.totalSales))];
+  const maxVal   = Math.max(...D.totalSales);
+  document.querySelectorAll('.kpi-value').forEach(el=>{
+    if(el.closest('.kpi-card')?.querySelector('.kpi-label')?.textContent?.includes('総売上')){
+      el.textContent = Math.round(totalSum/10000)+'万';
+    }
+  });
+}
+
+initStorage();
+</script>
+</body>
+</html>
