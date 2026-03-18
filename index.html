@@ -408,8 +408,8 @@ const BASE_DATA = {
   months: ['5月','6月','7月','8月','9月','10月','11月','12月','1月'],
   totalSales: [5160281,5359367,4924431,5397203,7279075,4585058,4352741,3162450,4787260],
   prevSales:  [3296099,3657254,3774143,3991435,2968523,2994409,4740825,3382796,2954093],
-  chiryo:     [2124796,1638967,2152863,1667412,1711580,1670613,1436152,1062932,1380692],
-  kyosei:     [710737,1926880,2041137,1100177,2953677,1779277,1524656,1327040,1607860],
+  chiryo:     [2124796,1638967,2152863,1667412,1711580,1670613,1436152,1158472,1062932],
+  kyosei:     [710737,1926880,2041137,1100177,2953677,1779277,1524656,1152660,1327040],
   este:       [1791950,1526080,269900,2222220,1957400,476040,485920,261980,1865880],
   members:    [81,77,74,72,66,69,66,63,57,53],
   shinChiryo: [16,17,17,15,11,12,9,5,12],
@@ -1217,94 +1217,81 @@ async function generateAIComment(containerId, name, staffData, target, eg) {
   const total   = staffData.total || 0;
   const w1r = staffData.w1r||0, w2r = staffData.w2r||0;
   const w3r = staffData.w3r||0, w4r = staffData.w4r||0;
-  const weekData = [w1r,w2r,w3r,w4r].filter(r=>r>0);
-  const maxWeek  = weekData.length ? Math.max(...weekData) : 0;
-  const minWeek  = weekData.length ? Math.min(...weekData) : 0;
+  const weekRates = [w1r,w2r,w3r,w4r].filter(r=>r>0);
+  const maxWeek  = weekRates.length ? Math.max(...weekRates) : 0;
+  const minWeek  = weekRates.length ? Math.min(...weekRates) : 0;
+  const sz_total = staffData.seizetsu_total || 0;
+  const sz_kizon = staffData.seizetsu_kizon || 0;
 
-  // プロファイル別キャラクター設定
   const characters = {
-    '行時': { emoji:'🌟', role:'行時さん専属の熱血コーチ', vibe:'明るくエネルギッシュで、新しいことへの挑戦を全力で応援するキャラ。コンセプト型×社交型の強みを引き出す言葉を使う。' },
-    '諸永': { emoji:'🎯', role:'諸永さん専属の戦略コーチ', vibe:'クールで頼りがいがある。データと計画を重んじ、具体的なアドバイスをくれる。構造型の計画力を称え、丁寧に背中を押すキャラ。' },
-    '田中': { emoji:'📊', role:'田中さん専属の分析コーチ', vibe:'論理的で鋭い。数字をベースに話し、田中さんの分析力を認めつつ「次の一手」を明確に示すキャラ。' },
-    '岩丸': { emoji:'💡', role:'岩丸さん専属のクリエイティブコーチ', vibe:'自由でワクワクさせる。「可能性は無限大」というスタンスで、コンセプト型の発想力を最大限に引き出す言葉を使うキャラ。' },
-    '西田': { emoji:'🤝', role:'西田さん専属のハートフルコーチ', vibe:'温かく寄り添う。人との繋がりを大切にする西田さんに共感しながら、社交型の強みを自信に変えてあげるキャラ。' },
+    '行時': { emoji:'🌟', role:'行時さん専属の熱血コーチ' },
+    '諸永': { emoji:'🎯', role:'諸永さん専属の戦略コーチ' },
+    '田中': { emoji:'📊', role:'田中さん専属の分析コーチ' },
+    '岩丸': { emoji:'💡', role:'岩丸さん専属のクリエイティブコーチ' },
+    '西田': { emoji:'🤝', role:'西田さん専属のハートフルコーチ' },
   };
-  const ch = characters[name] || { emoji:'🤖', role:'専属コーチ', vibe:'熱血なコーチ' };
+  const ch = characters[name] || { emoji:'🤖', role:'専属コーチ' };
 
-  const prompt = `あなたは${ch.role}です。
-キャラクター: ${ch.vibe}
+  // EGプロファイル×達成率ベースのコメントパターン
+  const COMMENTS = {
+    '行時': {
+      high:  [`🌟 やった！${Math.round(total/10000)}万円、目標達成おめでとう！コンセプト型×社交型の綾ちゃんらしいアイデアと人への関わり方が結果に出たね。この勢いで来月もいこう！`, `🎉 ${Math.round(rate)}%達成！アイデアを形にする力と、人を巻き込む力が最高に発揮された月！${sz_total?`${sz_total}人に施術しながら`:''}この数字、誇っていいよ。来月はさらに上を目指そう！`],
+      mid:   [`📈 ${Math.round(total/10000)}万円、あと少し！行時さんの持ち味は「閃いたらすぐ動く」力。${maxWeek?`${maxWeek}%を出した週があった`:''}んだから、その感覚を全週に広げれば絶対届く！`, `💫 惜しい！達成率${Math.round(rate)}%。コンセプト型の直感を信じて、残りの期間で一気に駆け抜けよう。行時さんがエンジン全開になれば止まらないよ！`],
+      low:   [`🔄 今月は仕込みの月にしよう！コンセプト型の行時さんは「試行錯誤」が強み。うまくいかなかったことも全部次への財産。来月どう動くか、作戦を一緒に考えよう！`, `💪 まだまだこれから！${sz_total?`${sz_total}人と向き合った`:'頑張った'}経験は絶対に活きる。社交型の強みを活かして、お客様との会話からヒントを見つけよう！`],
+    },
+    '諸永': {
+      high:  [`🎯 完璧な計画実行力！${Math.round(total/10000)}万円達成。諸永さんの「丁寧に段取りを組む」強みが結果に直結した月。この型を来月も再現しよう！`, `✅ ${Math.round(rate)}%達成！構造型の諸永さんらしい着実な積み上げが数字に出たね。${sz_total?`${sz_total}人の施術`:'丁寧な対応'}が信頼につながってる。来月も同じペースで！`],
+      mid:   [`🎯 ${Math.round(total/10000)}万円、あと${Math.abs(Math.round(diff/10000*10)/10)}万で達成。どの工程で止まったか振り返ってみよう。諸永さんの分析力があれば必ず改善ポイントが見える！`, `📋 惜しい！計画と実績のズレを具体的にチェックしよう。構造型の強みを活かして「来月の修正版プラン」を作れば、次は必ず届く！`],
+      low:   [`🔄 リセットして来月の計画を一から組み直そう！何がうまくいかなかったか言語化することが諸永さんの得意技。丁寧な計画が整えば結果はついてくる！`, `💡 今月の経験を次の計画に活かそう。${sz_total?`${sz_total}人と向き合った`:'積み重ねた'}一つひとつが来月の土台になってる。段取り力で巻き返そう！`],
+    },
+    '田中': {
+      high:  [`📊 データで勝った月！${Math.round(total/10000)}万円達成。分析型の田中さんらしく、数字を武器に結果を出した。何がうまくいったか記録しておくと来月も再現できるよ！`, `🎉 ${Math.round(rate)}%達成！論理的に積み上げた結果がここに出た。${sz_total?`${sz_total}人の施術データも`:'数字も'}しっかり活用して、この勝ちパターンを言語化しよう！`],
+      mid:   [`📊 あと${Math.abs(Math.round(diff/10000*10)/10)}万！どのフェーズでギャップが生まれたか因数分解してみよう。${maxWeek?`最高${maxWeek}%の週`:''}に何が違ったか分析すれば突破口が見える！`, `🔍 達成率${Math.round(rate)}%。田中さんの強みは「原因を数字で特定する」力。週別データをもとに、来月の仮説を立てよう。データが揃えば答えは出る！`],
+      low:   [`📈 まずは今月のデータを整理しよう。分析型の田中さんは「現状を数字で把握する」ことが一番の強み。原因が見えれば、次の行動は自然と決まる！`, `💡 今月は分析と仕込みの月。${sz_total?`${sz_total}人の施術`:'現場'}から得たデータを来月の戦略に変えよう。田中さんの論理力があれば必ず巻き返せる！`],
+    },
+    '岩丸': {
+      high:  [`💡 コンセプト型77%の爆発力が炸裂した月！${Math.round(total/10000)}万円達成🎉 自由に動いた直感が数字になった。この感覚、絶対に記録しておいて！`, `🚀 ${Math.round(rate)}%達成！岩丸さんのアイデア力と行動力が全開の月。${sz_total?`${sz_total}人に価値を届けながら`:''}この結果、すごい。来月はさらに新しいこと試してみよう！`],
+      mid:   [`💫 アイデアはある、あとは「届け方」の精度を上げるだけ。${maxWeek?`${maxWeek}%を出した週`:''}に何をしたか思い出して。コンセプト型の直感を信じて突き進もう！`, `🌈 達成率${Math.round(rate)}%、波がある月はコンセプト型あるある！エネルギーが高い週に集中して動く仕組みを作ると、もっと安定して大きな数字が出るよ！`],
+      low:   [`🔮 今月は仕込みの月！コンセプト型の岩丸さんは「試してみる」が最大の強み。うまくいかなかった経験も全部アイデアの種。来月に活きる新しいやり方を探そう！`, `💡 可能性は無限大！${sz_total?`${sz_total}人の施術`:'現場'}から新しいヒントを拾ってみて。岩丸さんの発想力があれば、次のブレイクスルーはすぐそこ！`],
+    },
+    '西田': {
+      high:  [`🤝 人との繋がりが結果を生んだ月！${Math.round(total/10000)}万円達成🎉 社交型の西田さんの温かさがお客様に伝わってる証拠。この関係性が最大の武器だよ！`, `✨ ${Math.round(rate)}%達成！お客様との絆が数字になった月。${sz_total?`${sz_total}人に`:''}「また来たい」と思ってもらえる接客が売上の土台。来月もこの調子で！`],
+      mid:   [`💛 あと少し！社交型の西田さんはお客様との会話の中に答えがある。もう少し深い関係を作る時間を意識的に増やしてみよう。信頼が積み重なれば数字はついてくる！`, `🌸 達成率${Math.round(rate)}%。${sz_total?`${sz_total}人と向き合った`:'積み重ねた'}経験は本物。既存のお客様との関係をもっと深めることが達成への近道だよ！`],
+      low:   [`🤗 まずは身近な繋がりを大切に！社交型の西田さんにとって、周りとの関係が整うと自然と力が出てくる。チームで一緒に考えよう。あなたの温かさは絶対に武器になる！`, `💪 今月は関係構築の月にしよう！${sz_total?`${sz_total}人の施術`:'お客様'}一人ひとりとの会話を大切に。社交型の強みを全開にすれば、来月は必ず巻き返せる！`],
+    },
+  };
 
-今月の${name}さんの売上データ:
-- 月間売上: ${Math.round(total).toLocaleString('ja')}円
-- 目標達成率: ${rate}%（目標: ${Math.round(target).toLocaleString('ja')}円）
-- 目標との差額: ${diff >= 0 ? '+' : ''}${Math.round(diff).toLocaleString('ja')}円
-- 週別達成率: 1週目${w1r}% / 2週目${w2r}% / 3週目${w3r}% / 4週目${w4r}%
-- 施術人数: 新規${staffData.seizetsu_shinki||0}人 / 既存${staffData.seizetsu_kizon||0}人 / 合計${staffData.seizetsu_total||0}人（既存比率${staffData.seizetsu_total ? Math.round((staffData.seizetsu_kizon||0)/staffData.seizetsu_total*100) : 0}%）
-- 最高週: ${maxWeek}% / 最低週: ${minWeek}%
+  const tier = rate >= 100 ? 'high' : rate >= 70 ? 'mid' : 'low';
+  const patterns = COMMENTS[name]?.[tier] || [`頑張ってます！達成率${Math.round(rate)}%。来月も一緒に頑張りましょう！`];
+  // ランダムで1つ選ぶ（再生成のたびに変わる）
+  const comment = patterns[Math.floor(Math.random() * patterns.length)];
 
-EGプロファイル（思考・行動スタイル）:
-${Object.entries(eg.profile).map(([k,v])=>`- ${k}: ${v}%`).join('\n')}
-特徴: ${eg.traits.join('、')}
-やる気の出る関わり方: ${eg.motivate}
-
-このデータを見て、${name}さんへのコメントを書いてください。
-
-ルール:
-- 200文字以内
-- キャラクターの口調・雰囲気を徹底する
-- 数字を具体的に使って「今月の${name}さん」に語りかける
-- 達成率に応じてトーンを変える（100%超: 大称賛、80-99%: あと一歩の熱い激励、50-79%: 前向きな分析と応援、50%未満: 立て直しへの力強いサポート）
-- モチベーションが上がる言葉を使う
-- 絵文字を2〜3個使う
-- 来月への具体的な一言で締める`;
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    const data = await res.json();
-    const comment = data.content?.[0]?.text || 'コメントを生成できませんでした。';
-
-    el.innerHTML = `
-      <div style="margin-top:12px;background:${eg.color}12;border:1px solid ${eg.color}40;border-radius:10px;padding:14px 16px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,${eg.color},${eg.color}99);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 2px 8px ${eg.color}40;">${ch.emoji}</div>
-          <div>
-            <div style="font-size:13px;font-weight:700;color:${eg.color};">${ch.role}</div>
-            <div style="font-size:11px;color:var(--muted);">EGプロファイル分析</div>
-          </div>
-          <div style="margin-left:auto;">
-            <button onclick="regenerateComment('${containerId}','${name}')" 
-              style="background:none;border:1px solid ${eg.color}40;border-radius:6px;color:${eg.color};font-size:11px;padding:4px 10px;cursor:pointer;">
-              🔄 再生成
-            </button>
-          </div>
+  el.innerHTML = `
+    <div style="margin-top:12px;background:${eg.color}12;border:1px solid ${eg.color}40;border-radius:10px;padding:14px 16px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,${eg.color},${eg.color}99);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 2px 8px ${eg.color}40;">${ch.emoji}</div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:${eg.color};">${ch.role}</div>
+          <div style="font-size:11px;color:var(--muted);">EGプロファイル分析</div>
         </div>
-        <div style="font-size:14px;line-height:1.8;color:var(--text);padding:12px;background:var(--surface2);border-radius:8px;border-left:3px solid ${eg.color};">
-          ${comment.replace(/\n/g,'<br>')}
+        <div style="margin-left:auto;">
+          <button onclick="regenerateComment('${containerId}','${name}')"
+            style="background:none;border:1px solid ${eg.color}40;border-radius:6px;color:${eg.color};font-size:11px;padding:4px 10px;cursor:pointer;">
+            🔄 別パターン
+          </button>
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
-          ${Object.entries(eg.profile).map(([k,v]) =>
-            `<span style="font-size:11px;padding:2px 9px;border-radius:20px;background:${eg.color}20;color:${eg.color};border:1px solid ${eg.color}40;">${k} ${v}%</span>`
-          ).join('')}
-        </div>
-      </div>`;
-  } catch(err) {
-    el.innerHTML = `
-      <div style="margin-top:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
-        <div style="font-size:12px;color:var(--muted);">⚠️ コメント生成に失敗しました（${err.message}）</div>
-      </div>`;
-  }
+      </div>
+      <div style="font-size:14px;line-height:1.8;color:var(--text);padding:12px;background:var(--surface2);border-radius:8px;border-left:3px solid ${eg.color};">
+        ${comment}
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+        ${Object.entries(eg.profile).map(([k,v]) =>
+          `<span style="font-size:11px;padding:2px 9px;border-radius:20px;background:${eg.color}20;color:${eg.color};border:1px solid ${eg.color}40;">${k} ${v}%</span>`
+        ).join('')}
+      </div>
+    </div>`;
 }
 
-// staffDataキャッシュ（再生成ボタン用）
-const _staffDataCache = {};
 
 // 再生成ボタン用
 function regenerateComment(containerId, name) {
