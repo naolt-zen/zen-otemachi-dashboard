@@ -161,6 +161,15 @@ tr:hover td{background:var(--surface2);}
       <span class="icon">📂</span>
       <span>日計表を追加</span>
     </label>
+    <label class="upload-zone" title="バックアップデータを復元" style="cursor:pointer;">
+      <input type="file" id="importBackup" accept=".json" onchange="importBackup(this.files[0])" style="display:none;">
+      <span class="icon">📥</span>
+      <span>データ復元</span>
+    </label>
+    <button class="upload-zone" onclick="exportBackup()" title="データをバックアップ" style="border:none;cursor:pointer;">
+      <span class="icon">💾</span>
+      <span>バックアップ</span>
+    </button>
     <div class="period-badge">第５期 2025.5 – 2026.4</div>
   </div>
 </header>
@@ -206,10 +215,10 @@ tr:hover td{background:var(--surface2);}
     <table>
       <thead><tr><th>部門</th><th>5月</th><th>6月</th><th>7月</th><th>8月</th><th>9月</th><th>10月</th><th>11月</th><th>12月</th><th>1月</th><th>2月</th><th>3月</th><th>累計</th></tr></thead>
       <tbody id="sales_table_body">
-        <tr class="hl"><td>治療合計</td><td>2,124,796</td><td>1,638,967</td><td>2,152,863</td><td>1,667,412</td><td>1,711,580</td><td>1,670,613</td><td>1,436,152</td><td>1,158,472</td><td>1,062,932</td><td id="sales_치료_2">—</td><td id="sales_치료_3">—</td><td id="sales_치료_total">14,622,787</td></tr>
-        <tr><td>矯正</td><td>710,737</td><td>1,926,880</td><td>2,041,137</td><td>1,100,177</td><td>2,953,677</td><td>1,779,277</td><td>1,524,656</td><td>1,152,660</td><td>1,327,040</td><td id="sales_矯正_2">—</td><td id="sales_矯正_3">—</td><td id="sales_矯正_total">14,636,858</td></tr>
-        <tr><td>エステ</td><td>1,791,950</td><td>1,526,080</td><td>269,900</td><td>2,222,220</td><td>1,957,400</td><td>476,040</td><td>485,920</td><td>261,980</td><td>1,865,880</td><td id="sales_エステ_2">—</td><td id="sales_エステ_3">—</td><td id="sales_エステ_total">10,857,370</td></tr>
-        <tr class="hl"><td><b>総売上</b></td><td>5,160,281</td><td>5,359,367</td><td>4,924,431</td><td>5,397,203</td><td>7,279,075</td><td>4,585,058</td><td>4,352,741</td><td>3,162,450</td><td>4,787,260</td><td id="sales_total_2">—</td><td id="sales_total_3">—</td><td id="sales_grand_total">49,008,866</td></tr>
+        <tr class="hl"><td>治療合計</td><td>2,124,796</td><td>1,638,967</td><td>2,152,863</td><td>1,667,412</td><td>1,711,580</td><td>1,670,613</td><td>1,436,152</td><td>1,158,472</td><td>1,062,932</td><td>1,380,692</td><td id="sales_치료_3">—</td><td id="sales_치료_total">16,003,479</td></tr>
+        <tr><td>矯正</td><td>710,737</td><td>1,926,880</td><td>2,041,137</td><td>1,100,177</td><td>2,953,677</td><td>1,779,277</td><td>1,524,656</td><td>1,152,660</td><td>1,327,040</td><td>1,607,860</td><td id="sales_矯正_3">—</td><td id="sales_矯正_total">16,244,718</td></tr>
+        <tr><td>エステ</td><td>1,791,950</td><td>1,526,080</td><td>269,900</td><td>2,222,220</td><td>1,957,400</td><td>476,040</td><td>485,920</td><td>261,980</td><td>1,865,880</td><td>496,900</td><td id="sales_エステ_3">—</td><td id="sales_エステ_total">11,354,270</td></tr>
+        <tr class="hl"><td><b>総売上</b></td><td>5,160,281</td><td>5,359,367</td><td>4,924,431</td><td>5,397,203</td><td>7,279,075</td><td>4,585,058</td><td>4,352,741</td><td>3,162,450</td><td>4,787,260</td><td>3,963,465</td><td id="sales_total_3">—</td><td id="sales_grand_total">52,972,331</td></tr>
       </tbody>
     </table>
   </div>
@@ -405,30 +414,30 @@ const CD={plugins:{legend:{labels:{color:'#7a8299',font:{size:11}}}},scales:{x:{
 
 // 既存KPIデータ（5期 5〜1月）
 const BASE_DATA = {
-  months: ['5月','6月','7月','8月','9月','10月','11月','12月','1月'],
-  totalSales: [5160281,5359367,4924431,5397203,7279075,4585058,4352741,3162450,4787260],
-  prevSales:  [3296099,3657254,3774143,3991435,2968523,2994409,4740825,3382796,2954093],
-  chiryo:     [2124796,1638967,2152863,1667412,1711580,1670613,1436152,1158472,1062932],
-  kyosei:     [710737,1926880,2041137,1100177,2953677,1779277,1524656,1152660,1327040],
-  este:       [1791950,1526080,269900,2222220,1957400,476040,485920,261980,1865880],
-  members:    [81,77,74,72,66,69,66,63,57,53],
-  shinChiryo: [16,17,17,15,11,12,9,5,12],
-  shinKyosei: [9,20,20,20,31,23,13,12,22],
-  shinEste:   [12,5,5,9,11,9,5,1,6],
-  memberIn:   [7,3,7,5,5,15,2,2,2],
-  memberOut:  [-12,-7,-10,-7,-11,-12,-5,-5,-8],
-  churnChiryo:[11.5,16.7,15.3,19.3,21.8,12.9,20.6,20.4,11.5],
-  churnMember:[14.8,9.1,13.5,9.7,16.7,17.4,7.6,7.9,14.0],
-  contractChiryo: [50,52.9,58.8,60,45.5,41.7,66.7,20,50],
-  contractKyosei: [66.7,75,80,50,61.3,73.9,53.8,58.3,50],
-  contractEste:   [58.3,80,20,55.6,45.5,22.2,20,100,66.7],
-  targetDiff: [124796,-361033,152863,-332588,-288420,-329387,-563848,-841528,-937068],
-  roas_chiryo:[271,348,427,410,72,378,181,36,238],
-  roas_kyosei:[740,2007,2126,1146,3077,1772,1524,1111,1244],
-  roas_este:  [1035,983,162,1037,1180,356,356,208,1478],
-  inquiry_c:  [22,17,27,25,19,23,10,10,20],
-  inquiry_k:  [9,26,27,22,34,22,16,14,26],
-  inquiry_e:  [15,7,4,14,12,14,6,1,12],
+  months: ['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月'],
+  totalSales: [5160281,5359367,4924431,5397203,7279075,4585058,4352741,3162450,4787260,3963465],
+  prevSales:  [3296099,3657254,3774143,3991435,2968523,2994409,4740825,3382796,2954093,2343986],
+  chiryo:     [2124796,1638967,2152863,1667412,1711580,1670613,1436152,1158472,1062932,1380692],
+  kyosei:     [710737,1926880,2041137,1100177,2953677,1779277,1524656,1152660,1327040,1607860],
+  este:       [1791950,1526080,269900,2222220,1957400,476040,485920,261980,1865880,496900],
+  members:    [81,77,74,72,66,69,66,63,57,53,53],
+  shinChiryo: [16,17,17,15,11,12,9,5,12,8],
+  shinKyosei: [9,20,20,20,31,23,13,12,22,21],
+  shinEste:   [12,5,5,9,11,9,5,1,6,3],
+  memberIn:   [7,3,7,5,5,15,2,2,2,3],
+  memberOut:  [-12,-7,-10,-7,-11,-12,-5,-5,-8,-7],
+  churnChiryo:[11.5,16.7,15.3,19.3,21.8,12.9,20.6,20.4,11.5,6.6],
+  churnMember:[14.8,9.1,13.5,9.7,16.7,17.4,7.6,7.9,14.0,13.2],
+  contractChiryo: [50,52.9,58.8,60,45.5,41.7,66.7,20,50,62.5],
+  contractKyosei: [66.7,75,80,50,61.3,73.9,53.8,58.3,50,52.4],
+  contractEste:   [58.3,80,20,55.6,45.5,22.2,20,100,66.7,33.3],
+  targetDiff: [124796,-361033,152863,-332588,-288420,-329387,-563848,-841528,-937068,-619308],
+  roas_chiryo:[271,348,427,410,72,378,181,36,238,null],
+  roas_kyosei:[740,2007,2126,1146,3077,1772,1524,1111,1244,null],
+  roas_este:  [1035,983,162,1037,1180,356,356,208,1478,null],
+  inquiry_c:  [22,17,27,25,19,23,10,10,20,null],
+  inquiry_k:  [9,26,27,22,34,22,16,14,26,null],
+  inquiry_e:  [15,7,4,14,12,14,6,1,12,null],
 };
 
 // 取込データの保存場所
@@ -832,6 +841,7 @@ function updateSalesTable(){
 const STAFF_COLORS = {'行時':'#4f8ef7','諸永':'#2dd4bf','田中':'#f97316','岩丸':'#a78bfa','西田':'#22c55e'};
 const STAFF_NAMES  = ['行時','諸永','田中','岩丸','西田'];
 const STAFF_CHARTS = {};
+const _staffDataCache = {};
 
 function getSortedMonthKeys(){
   return Object.keys(importedMonths).sort((a,b) => monthSortKey(a) - monthSortKey(b));
@@ -1021,7 +1031,8 @@ function renderStaffMonthDetail(key, names, target, allKeys){
   document.getElementById('staff_main_chart_wrap').style.display = 'none';
   document.getElementById('staff_month_detail').style.display = 'block';
 
-  const staffs = importedMonths[key]?.staffData || [];
+  const rawStaffs = importedMonths[key]?.staffData || [];
+  const staffs = enrichStaffDataWithSeizetsu(rawStaffs, key);
   const active = staffs.filter(s => s.total > 0 && names.includes(s.name));
 
   // 部門別積み上げ
@@ -1167,6 +1178,99 @@ function renderStaffMonthDetail(key, names, target, allKeys){
 // ============================================================
 // EG プロファイル × 個人売上 AIコメント
 // ============================================================
+
+// ============================================================
+// 全月 施術人数 固定データ
+// ============================================================
+const BASE_STAFF_DATA = {
+  'R7-5月':  {
+    '行時': {shinki:7,  kizon:125, total:132},
+    '諸永': {shinki:10, kizon:135, total:145},
+    '田中': {shinki:8,  kizon:134, total:142},
+    '岩丸': {shinki:12, kizon:141, total:153},
+    '西田': {shinki:0,  kizon:1,   total:1},
+  },
+  'R7-6月':  {
+    '行時': {shinki:11, kizon:117, total:128},
+    '諸永': {shinki:9,  kizon:152, total:161},
+    '田中': {shinki:8,  kizon:136, total:144},
+    '岩丸': {shinki:14, kizon:143, total:157},
+    '西田': {shinki:0,  kizon:5,   total:5},
+  },
+  'R7-7月':  {
+    '行時': {shinki:10, kizon:143, total:153},
+    '諸永': {shinki:11, kizon:187, total:198},
+    '田中': {shinki:10, kizon:155, total:165},
+    '岩丸': {shinki:11, kizon:140, total:151},
+    '西田': {shinki:0,  kizon:0,   total:0},
+  },
+  'R7-8月':  {
+    '行時': {shinki:10, kizon:123, total:133},
+    '諸永': {shinki:11, kizon:154, total:165},
+    '田中': {shinki:10, kizon:158, total:168},
+    '岩丸': {shinki:13, kizon:129, total:142},
+    '西田': {shinki:0,  kizon:1,   total:1},
+  },
+  'R7-9月':  {
+    '行時': {shinki:12, kizon:164, total:176},
+    '諸永': {shinki:14, kizon:198, total:212},
+    '田中': {shinki:14, kizon:175, total:189},
+    '岩丸': {shinki:13, kizon:149, total:162},
+    '西田': {shinki:0,  kizon:0,   total:0},
+  },
+  'R7-10月': {
+    '行時': {shinki:12, kizon:174, total:186},
+    '諸永': {shinki:9,  kizon:207, total:216},
+    '田中': {shinki:11, kizon:152, total:163},
+    '岩丸': {shinki:12, kizon:155, total:167},
+    '西田': {shinki:0,  kizon:30,  total:30},
+  },
+  'R7-11月': {
+    '行時': {shinki:7,  kizon:154, total:161},
+    '諸永': {shinki:4,  kizon:192, total:196},
+    '田中': {shinki:8,  kizon:143, total:151},
+    '岩丸': {shinki:8,  kizon:127, total:135},
+    '西田': {shinki:0,  kizon:0,   total:0},
+  },
+  'R7-12月': {
+    '行時': {shinki:4,  kizon:137, total:141},
+    '諸永': {shinki:4,  kizon:157, total:161},
+    '田中': {shinki:5,  kizon:140, total:145},
+    '岩丸': {shinki:4,  kizon:113, total:117},
+    '西田': {shinki:0,  kizon:15,  total:15},
+  },
+  'R8-2月':  {
+    '行時': {shinki:5,  kizon:156, total:161},
+    '諸永': {shinki:10, kizon:176, total:186},
+    '田中': {shinki:9,  kizon:165, total:174},
+    '岩丸': {shinki:9,  kizon:145, total:154},
+    '西田': {shinki:0,  kizon:1,   total:1},
+  },
+  'R8-3月':  {
+    '行時': {shinki:0,  kizon:87,  total:87},
+    '諸永': {shinki:0,  kizon:106, total:106},
+    '田中': {shinki:0,  kizon:91,  total:91},
+    '岩丸': {shinki:0,  kizon:85,  total:85},
+    '西田': {shinki:0,  kizon:0,   total:0},
+  },
+};
+
+// staffDataにseizetsuを補完する関数
+function enrichStaffDataWithSeizetsu(staffData, monthKey) {
+  const sz = BASE_STAFF_DATA[monthKey];
+  if (!sz) return staffData;
+  return staffData.map(s => {
+    const d = sz[s.name];
+    if (!d) return s;
+    return {
+      ...s,
+      seizetsu_shinki: d.shinki,
+      seizetsu_kizon:  d.kizon,
+      seizetsu_total:  d.total,
+    };
+  });
+}
+
 const EG_PROFILES = {"行時": {"profile": {"分析型": 10, "構造型": 24, "社交型": 29, "コンセプト型": 37}, "traits": ["創造的・アイデア豊富", "社交性を重視する", "相手との関係を大切にする", "新しいことを試みる"], "motivate": "コンセプト型×社交型。新しいアイデアや挑戦を任されると燃える。チームへの貢献を実感できる仕事が◎", "workstyle": "自由度のある環境でアイデアを活かせるとき力を発揮。細かすぎる手順より「目的」を伝えると動きやすい", "request": "「あなたならどう思う？」と意見を聞く形でお願いすると◎。信頼を示してから依頼すると快く引き受ける", "color": "#4f8ef7"}, "諸永": {"profile": {"分析型": 16, "構造型": 31, "社交型": 25, "コンセプト型": 28}, "traits": ["手順を大切にする", "美見性を重視", "計画的に進める", "自分の経験をもとに判断"], "motivate": "構造型・バランス型。「任せた」と明確に役割を渡されると責任感が発揮される。段取りが決まっていると安心", "workstyle": "具体的なゴールと手順が見えているとスムーズ。急な変更より事前共有が大事。丁寧さと正確さが強み", "request": "「○○を○日までにお願いしたい」と具体的に。なぜその仕事が重要かを伝えると動き出しが早い", "color": "#2dd4bf"}, "田中": {"profile": {"分析型": 43, "構造型": 20, "社交型": 7, "コンセプト型": 25}, "traits": ["論理的・データ重視", "明確な思考", "分析することで学ぶ", "理性的"], "motivate": "分析型が突出。データや数字で結果が見える仕事にやりがいを感じる。根拠のある評価が力になる", "workstyle": "情報が整理されていると実力を発揮。「なぜそうするか」の理由を先に伝えると納得感が高まる", "request": "数字・事実ベースで話すと響く。「データを見ると○○だから、あなたに頼みたい」という伝え方が◎", "color": "#f97316"}, "岩丸": {"profile": {"分析型": 20, "構造型": 12, "社交型": 13, "コンセプト型": 77}, "traits": ["創造的・アイデア直感型", "発想が広い", "変わったことが好き", "いろいろ試してみる"], "motivate": "コンセプト型が圧倒的。自由に考えて良い仕事・新しい挑戦にワクワクする。制約より可能性を示す方が動く", "workstyle": "自分なりのやり方で試行錯誤できる環境が最適。「こうしなければ」より「どうすればいい？」という問いかけが合う", "request": "「アイデア聞かせて」「あなたに自由にやってほしい」という形が刺さる。枠を広めに設定するとよい", "color": "#a78bfa"}, "西田": {"profile": {"分析型": 6, "構造型": 13, "社交型": 48, "コンセプト型": 33}, "traits": ["相手との関係を重視", "社会性・協調性が高い", "間しやすい", "人から学ぶことが多い"], "motivate": "社交型が最大。人との関わりや「一緒に頑張ろう」という雰囲気が力になる。感謝や承認の言葉が効く", "workstyle": "誰かと一緒に取り組む・相談しながら進める環境が◎。孤独な作業より対話のある仕事が向いている", "request": "「あなたと一緒にやりたい」「頼りにしてるよ」という温かい言葉を添えてお願いすると快く動いてくれる", "color": "#22c55e"}};
 
 function getEGComment(name, staffData, target) {
@@ -1628,6 +1732,355 @@ function updateCharts() {
 }
 
 initStorage();
+
+// 全月 施術人数データを固定値として設定
+(function(){
+  const SEIZETSU = {
+  "R7-5月": {
+    "行時": [
+      7,
+      125,
+      132
+    ],
+    "諸永": [
+      10,
+      135,
+      145
+    ],
+    "田中": [
+      8,
+      134,
+      142
+    ],
+    "岩丸": [
+      12,
+      141,
+      153
+    ],
+    "西田": [
+      0,
+      1,
+      1
+    ]
+  },
+  "R7-6月": {
+    "行時": [
+      11,
+      117,
+      128
+    ],
+    "諸永": [
+      9,
+      152,
+      161
+    ],
+    "田中": [
+      8,
+      136,
+      144
+    ],
+    "岩丸": [
+      14,
+      143,
+      157
+    ],
+    "西田": [
+      0,
+      5,
+      5
+    ]
+  },
+  "R7-7月": {
+    "行時": [
+      10,
+      143,
+      153
+    ],
+    "諸永": [
+      11,
+      187,
+      198
+    ],
+    "田中": [
+      10,
+      155,
+      165
+    ],
+    "岩丸": [
+      11,
+      140,
+      151
+    ],
+    "西田": [
+      0,
+      0,
+      0
+    ]
+  },
+  "R7-8月": {
+    "行時": [
+      10,
+      123,
+      133
+    ],
+    "諸永": [
+      11,
+      154,
+      165
+    ],
+    "田中": [
+      10,
+      158,
+      168
+    ],
+    "岩丸": [
+      13,
+      129,
+      142
+    ],
+    "西田": [
+      0,
+      1,
+      1
+    ]
+  },
+  "R7-9月": {
+    "行時": [
+      12,
+      164,
+      176
+    ],
+    "諸永": [
+      14,
+      198,
+      212
+    ],
+    "田中": [
+      14,
+      175,
+      189
+    ],
+    "岩丸": [
+      13,
+      149,
+      162
+    ],
+    "西田": [
+      0,
+      0,
+      0
+    ]
+  },
+  "R7-10月": {
+    "行時": [
+      12,
+      174,
+      186
+    ],
+    "諸永": [
+      9,
+      207,
+      216
+    ],
+    "田中": [
+      11,
+      152,
+      163
+    ],
+    "岩丸": [
+      12,
+      155,
+      167
+    ],
+    "西田": [
+      0,
+      30,
+      30
+    ]
+  },
+  "R7-11月": {
+    "行時": [
+      7,
+      154,
+      161
+    ],
+    "諸永": [
+      4,
+      192,
+      196
+    ],
+    "田中": [
+      8,
+      143,
+      151
+    ],
+    "岩丸": [
+      8,
+      127,
+      135
+    ],
+    "西田": [
+      0,
+      0,
+      0
+    ]
+  },
+  "R7-12月": {
+    "行時": [
+      4,
+      137,
+      141
+    ],
+    "諸永": [
+      4,
+      157,
+      161
+    ],
+    "田中": [
+      5,
+      140,
+      145
+    ],
+    "岩丸": [
+      4,
+      113,
+      117
+    ],
+    "西田": [
+      0,
+      15,
+      15
+    ]
+  },
+  "R8-1月": {
+    "行時": [7, 139, 146],
+    "諸永": [11, 141, 152],
+    "田中": [10, 114, 124],
+    "岩丸": [12, 135, 147],
+    "西田": [0, 0, 0]
+  },
+  "R8-2月": {
+    "行時": [
+      5,
+      156,
+      161
+    ],
+    "諸永": [
+      10,
+      176,
+      186
+    ],
+    "田中": [
+      9,
+      165,
+      174
+    ],
+    "岩丸": [
+      9,
+      145,
+      154
+    ],
+    "西田": [
+      0,
+      1,
+      1
+    ]
+  },
+  "R8-3月": {
+    "行時": [
+      0,
+      87,
+      87
+    ],
+    "諸永": [
+      0,
+      106,
+      106
+    ],
+    "田中": [
+      0,
+      91,
+      91
+    ],
+    "岩丸": [
+      0,
+      85,
+      85
+    ],
+    "西田": [
+      0,
+      0,
+      0
+    ]
+  }
+};
+
+  Object.entries(SEIZETSU).forEach(([key, staffMap]) => {
+    if(!importedMonths[key]) importedMonths[key] = {};
+    const d = importedMonths[key];
+    // staffDataが既にある場合は施術人数だけ更新、なければ作成
+    const NAMES = ['行時','諸永','田中','岩丸','西田'];
+    if(!d.staffData || !d.staffData.length) {
+      d.staffData = NAMES.map(name => ({
+        name, chiryo_n:0,chiryo_v:0, kyosei_n:0,kyosei_v:0, este_n:0,este_v:0,
+        total:0, kizon:0,
+        seizetsu_shinki: staffMap[name]?.[0]||0,
+        seizetsu_kizon:  staffMap[name]?.[1]||0,
+        seizetsu_total:  staffMap[name]?.[2]||0,
+        w1:0,w1r:0, w2:0,w2r:0, w3:0,w3r:0, w4:0,w4r:0,
+        monthly_rate:0, diff:-1100000
+      }));
+    } else {
+      // 既存staffDataに施術人数だけ上書き
+      d.staffData.forEach(s => {
+        if(staffMap[s.name]) {
+          s.seizetsu_shinki = staffMap[s.name][0];
+          s.seizetsu_kizon  = staffMap[s.name][1];
+          s.seizetsu_total  = staffMap[s.name][2];
+        }
+      });
+    }
+    d.importedAt = d.importedAt || '内蔵データ';
+  });
+
+  // 2月の売上データも設定
+  const k2 = 'R8-2月';
+  if(!importedMonths[k2]) importedMonths[k2] = {};
+  const d2 = importedMonths[k2];
+  d2.totalSales=3963465; d2.chiryo=1380692; d2.kyosei=1607860;
+  d2.shinChiryo=8; d2.shinKyosei=22; d2.memberTotal=53;
+  d2.koreaCurrent=33; d2.mainteCurrent=20;
+  d2.fileName='R8_2月_日計表_大手町.xlsx';
+  if(!d2.staffData || !d2.staffData.length) {
+    d2.staffData = [
+      {name:'行時', chiryo_n:1,chiryo_v:126720, kyosei_n:4,kyosei_v:256720, este_n:0,este_v:0,
+       total:831820, kizon:448380, seizetsu_shinki:5,seizetsu_kizon:156,seizetsu_total:161,
+       w1:386940,w1r:140.7, w2:27700,w2r:10.1, w3:272920,w3r:99.2, w4:144260,w4r:52.5,
+       monthly_rate:75.6, diff:-268180},
+      {name:'諸永', chiryo_n:4,chiryo_v:114680, kyosei_n:5,kyosei_v:346640, este_n:1,este_v:1980,
+       total:720580, kizon:257280, seizetsu_shinki:10,seizetsu_kizon:176,seizetsu_total:186,
+       w1:296060,w1r:107.7, w2:248780,w2r:90.5, w3:147560,w3r:53.7, w4:28180,w4r:10.2,
+       monthly_rate:65.5, diff:-379420},
+      {name:'田中', chiryo_n:1,chiryo_v:1980, kyosei_n:7,kyosei_v:391540, este_n:1,este_v:1980,
+       total:517100, kizon:121600, seizetsu_shinki:9,seizetsu_kizon:165,seizetsu_total:174,
+       w1:46580,w1r:16.9, w2:10000,w2r:3.6, w3:441640,w3r:160.6, w4:18880,w4r:6.9,
+       monthly_rate:47.0, diff:-582900},
+      {name:'岩丸', chiryo_n:2,chiryo_v:51060, kyosei_n:6,kyosei_v:277160, este_n:1,este_v:398000,
+       total:913800, kizon:187580, seizetsu_shinki:9,seizetsu_kizon:145,seizetsu_total:154,
+       w1:17760,w1r:6.5, w2:492700,w2r:179.2, w3:214520,w3r:78.0, w4:188820,w4r:68.7,
+       monthly_rate:83.1, diff:-186200},
+      {name:'西田', chiryo_n:0,chiryo_v:0, kyosei_n:0,kyosei_v:0, este_n:0,este_v:0,
+       total:0, kizon:0, seizetsu_shinki:0,seizetsu_kizon:1,seizetsu_total:1,
+       w1:0,w1r:0, w2:0,w2r:0, w3:0,w3r:0, w4:0,w4r:0,
+       monthly_rate:0, diff:-1100000},
+    ];
+  }
+
+  updateBadges();
+  updateSalesTable();
+  updateCharts();
+  renderStaff();
+})();
 </script>
 </body>
 </html>
