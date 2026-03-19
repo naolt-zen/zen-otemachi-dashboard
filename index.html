@@ -448,15 +448,15 @@ let dailyData = {};
 // ===== Persistent Storage ヘルパー =====
 async function storageGet(key) {
   try {
-    const r = await window.storage.get(key);
-    return r ? JSON.parse(r.value) : null;
+    const v = localStorage.getItem(key);
+    return v ? JSON.parse(v) : null;
   } catch(e) { return null; }
 }
 async function storageSet(key, value) {
-  try { await window.storage.set(key, JSON.stringify(value)); } catch(e) {}
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch(e) {}
 }
 async function storageDelete(key) {
-  try { await window.storage.delete(key); } catch(e) {}
+  try { localStorage.removeItem(key); } catch(e) {}
 }
 
 // 起動時にストレージからデータを読み込む
@@ -1731,10 +1731,9 @@ function updateCharts() {
   });
 }
 
-initStorage();
 
-// 全月 施術人数データを固定値として設定
-(function(){
+initStorage().then(() => {
+  // 全月 施術人数データを固定値として設定
   const SEIZETSU = {
   "R7-5月": {
     "行時": [
@@ -2080,7 +2079,7 @@ initStorage();
   updateSalesTable();
   updateCharts();
   renderStaff();
-})();
+});
 </script>
 </body>
 </html>
