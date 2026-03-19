@@ -921,7 +921,7 @@ const STAFF_CHARTS = {};
 const _staffDataCache = {};
 
 function getSortedMonthKeys(){
-  return Object.keys(importedMonths).sort((a,b) => monthSortKey(a) - monthSortKey(b));
+  return [...new Set(Object.keys(importedMonths))].sort((a,b) => monthSortKey(a) - monthSortKey(b));
 }
 function getStaffTarget(name){
   if(_useIndividual && name && _individualTargets && _individualTargets[name])
@@ -945,10 +945,12 @@ function renderStaff(){
   const mSel = document.getElementById('staffMonthSel');
   if(mSel){
     mSel.style.display = view === 'month' ? 'block' : 'none';
-    // セレクト更新
+    // セレクト更新（重複排除）
     const cur = mSel.value;
     mSel.innerHTML = '<option value="">月を選択</option>';
+    const seen = new Set();
     keys.forEach(k => {
+      if(seen.has(k)) return; seen.add(k);
       const o = document.createElement('option');
       o.value = k; o.textContent = monthLabel(k);
       mSel.appendChild(o);
@@ -1105,7 +1107,7 @@ function renderHeatmap(keys, names, target){
 }
 
 // ---- 月別詳細 ----
-function renderStaffMonthDetail(key, names, _target, allKeys){
+function renderStaffMonthDetail(key, names, target, allKeys){
   if(!key || !importedMonths[key]) return;
   document.getElementById('staff_main_chart_wrap').style.display = 'none';
   document.getElementById('staff_month_detail').style.display = 'block';
@@ -1927,4 +1929,589 @@ function updateCollectionDetail() {
     const adRows = [
       // 治療
       { label:'治療 Google', key:'chiryo_google', color:'#4f8ef7' },
-      { label:'治療 P-MAX',  key:'chiryo_pmax',   color:'
+      { label:'治療 P-MAX',  key:'chiryo_pmax',   color:'#4f8ef7' },
+      { label:'治療 Yahoo!', key:'chiryo_yahoo',  color:'#4f8ef7' },
+      { label:'治療 メタ',   key:'chiryo_meta',   color:'#4f8ef7' },
+      // 産後矯正
+      { label:'矯正 Google', key:'sango_google',  color:'#2dd4bf' },
+      { label:'矯正 P-MAX',  key:'sango_pmax',    color:'#2dd4bf' },
+      { label:'矯正 Yahoo!', key:'sango_yahoo',   color:'#2dd4bf' },
+      { label:'矯正 メタ',   key:'sango_meta',    color:'#2dd4bf' },
+      { label:'矯正 HPB',    key:'sango_hpb',     color:'#2dd4bf' },
+      // ダイエット
+      { label:'ダイエット Google', key:'este_google', color:'#f97316' },
+      { label:'ダイエット P-MAX',  key:'este_pmax',   color:'#f97316' },
+      { label:'ダイエット Yahoo!', key:'este_yahoo',  color:'#f97316' },
+      { label:'ダイエット メタ',   key:'este_meta',   color:'#f97316' },
+      { label:'ダイエット HPB',    key:'este_hpb',    color:'#f97316' },
+      // コンサル・合計
+      { label:'アクセル（コンサル）', key:'consul',     color:'#7a8299', divider:true },
+      { label:'🔢 合計（コンサル込）', key:'totalCost', color:'#e8eaf0', bold:true },
+    ];
+
+    const bodyRows = adRows.map(row => {
+      const vals = validMonths.map(m => {
+        const v = c?.[row.key]?.[m];
+        return (v != null && v > 0) ? Math.round(v) : null;
+      });
+      const total = vals.reduce((a,v)=>a+(v||0), 0);
+      if(total === 0 && !row.bold) return ''; // データなし行はスキップ
+      const cells = vals.map(v => v ? `<td>${(v/10000).toFixed(1)}万</td>` : '<td style="color:var(--muted)">—</td>').join('');
+      const dividerStyle = row.divider ? 'border-top:2px solid var(--border);' : '';
+      const boldStyle = row.bold ? 'font-weight:700;' : '';
+      const colorDot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${row.color};margin-right:6px;"></span>`;
+      return `<tr style="${dividerStyle}${boldStyle}">
+        <td style="white-space:nowrap;">${colorDot}${row.label}</td>
+        ${cells}
+        <td style="font-weight:600;">${total>0?(total/10000).toFixed(1)+'万':'—'}</td>
+      </tr>`;
+    }).join('');
+
+    return `
+      <div class="table-card" style="margin-bottom:15px;">
+        <div class="table-hdr" style="border-left:3px solid var(--muted);">📊 広告費内訳（媒体別・部門別）</div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>媒体</th>${headers}</tr></thead>
+            <tbody>${bodyRows}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+
+  wrap.innerHTML =
+    buildCostTable() +
+    buildTable('🔵 治療部門', '#4f8ef7', {
+      inquiry:'chIryo_inquiry', shin:'chiryo_shin', rate:'chiryo_来店率',
+      roas:'chiryo_roas', cpa:'chiryo_cpa', shinSales:'chiryo_shinSales'
+    }) +
+    buildTable('🟢 産後矯正部門', '#2dd4bf', {
+      inquiry:'sangoIinquiry', shin:'sango_shin', rate:'sango_来店率',
+      roas:'sango_roas', cpa:'sango_cpa', shinSales:'sango_shinSales'
+    }) +
+    buildTable('🟠 ダイエット部門', '#f97316', {
+      inquiry:'este_inquiry', shin:'este_shin', rate:'este_来店率',
+      roas:'este_roas', cpa:'este_cpa', shinSales:'este_shinSales'
+    });
+}
+
+function getNAOLT(){ return JSON.parse(localStorage.getItem('zen_naolt') || 'null'); }
+
+// ============================================================
+// CHARTS（取込データと合算して更新可能）
+// ============================================================
+const CHARTS = {};
+
+function buildMonthlyData() {
+  // BASE_DATA（5〜1月）+ importedMonths（2月以降）を合算
+  const ORDER = ['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月','3月','4月'];
+  const imported = Object.keys(importedMonths).sort((a,b) => monthSortKey(a) - monthSortKey(b));
+
+  // BASE_DATAの月リスト
+  const baseMonths = BASE_DATA.months;
+
+  // importedMonthsのキーを「月のみ」に正規化するヘルパー
+  // "R8-2月" → "2月", "2月" → "2月"
+  function toMonthOnly(key) {
+    const m = key.match(/(\d+)月$/);
+    return m ? m[1] + '月' : key;
+  }
+
+  // 取込済み月をORDER形式（"2月"等）に変換したリスト
+  const importedNorm = imported.map(k => toMonthOnly(k));
+
+  // NAOLTに含まれる月も追加対象に含める
+  const naoltForMonths = getNAOLT();
+  const naoltMonths = naoltForMonths?.months || [];
+
+  // 追加月（BASEにない月のみ）— 日計表 OR NAOLTのどちらかにあればOK
+  const extraMonths = ORDER.filter(m =>
+    !baseMonths.includes(m) && (importedNorm.includes(m) || naoltMonths.includes(m))
+  );
+
+  // 全月リスト（順序通り）
+  const allMonths = ORDER.filter(m => baseMonths.includes(m) || extraMonths.includes(m));
+
+  // キー正規化版のimportedMonthsを参照するヘルパー
+  function getImported(monthOnly) {
+    // "2月" → "R8-2月" のような実際のキーを探す
+    const key = imported.find(k => toMonthOnly(k) === monthOnly);
+    return key ? importedMonths[key] : null;
+  }
+
+  // 各指標の配列をallMonthsの順で構築
+  function arr(baseArr, key) {
+    const naolt = getNAOLT();
+    const nk = naolt?.kpi;
+    return allMonths.map((m, i) => {
+      const bi = baseMonths.indexOf(m);
+      if(bi >= 0) return baseArr[bi];
+      // NAOLTデータ優先、なければ日計表データ
+      const d = getImported(m);
+      if(key === 'totalSales') return nk?.totalSales?.[m] ?? d?.totalSales ?? 0;
+      if(key === 'chiryo')     return nk?.chiryo?.[m] ?? d?.chiryo ?? 0;
+      if(key === 'kyosei')     return nk?.kyoseiSales?.[m] ?? d?.kyosei ?? 0;
+      if(key === 'este')       return nk?.esteSales?.[m] ?? ((d?.totalSales||0)-(d?.chiryo||0)-(d?.kyosei||0)) ?? 0;
+      if(key === 'memberTotal') return nk?.memberCount?.[m] ?? d?.memberTotal ?? 0;
+      if(key === 'shinChiryo') return nk?.shinNum?.[m] ?? d?.shinChiryo ?? 0;
+      if(key === 'shinKyosei') return nk?.kyoseiShinNum?.[m] ?? d?.shinKyosei ?? 0;
+      if(!d) return 0;
+      return 0;
+    });
+  }
+
+  return {
+    months: allMonths,
+    totalSales: arr(BASE_DATA.totalSales, 'totalSales'),
+    prevSales:  allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); if(bi>=0) return BASE_DATA.prevSales[bi]; const naolt=getNAOLT(); return naolt?.kpi?.prevSales?.[m] ?? null; }),
+    chiryo:     arr(BASE_DATA.chiryo, 'chiryo'),
+    kyosei:     arr(BASE_DATA.kyosei, 'kyosei'),
+    este:       arr(BASE_DATA.este, 'este'),
+    members:    allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); if(bi>=0) return BASE_DATA.members[bi]; const d=getImported(m); return d&&d.memberTotal?d.memberTotal:null; }),
+    shinChiryo: arr(BASE_DATA.shinChiryo, 'shinChiryo'),
+    shinKyosei: arr(BASE_DATA.shinKyosei, 'shinKyosei'),
+    shinEste:   arr(BASE_DATA.shinEste, 'shinEste'),
+    memberIn:   allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.memberIn[bi]:null; }),
+    memberOut:  allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.memberOut[bi]:null; }),
+    churnChiryo:allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.churnChiryo[bi]:null; }),
+    churnMember:allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.churnMember[bi]:null; }),
+    contractChiryo: allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.contractChiryo[bi]:null; }),
+    contractKyosei: allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.contractKyosei[bi]:null; }),
+    contractEste:   allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.contractEste[bi]:null; }),
+    targetDiff: allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.targetDiff[bi]:null; }),
+    roas_chiryo:allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.roas_chiryo[bi]:null; }),
+    roas_kyosei:allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.roas_kyosei[bi]:null; }),
+    roas_este:  allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.roas_este[bi]:null; }),
+    inquiry_c:  allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.inquiry_c[bi]:null; }),
+    inquiry_k:  allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.inquiry_k[bi]:null; }),
+    inquiry_e:  allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.inquiry_e[bi]:null; }),
+  };
+}
+
+function initChart(id, config) {
+  if(CHARTS[id]) { CHARTS[id].destroy(); }
+  CHARTS[id] = new Chart(document.getElementById(id), config);
+}
+
+function updateCharts() {
+  const D = buildMonthlyData();
+  const M = D.months;
+
+  initChart('c_total',{type:'bar',data:{labels:M,datasets:[
+    {label:'今期',data:D.totalSales,backgroundColor:'rgba(79,142,247,.7)',borderRadius:4},
+    {label:'前年',data:D.prevSales.map(v=>v||0),backgroundColor:'rgba(122,130,153,.3)',borderRadius:4}
+  ]},options:{...CD,responsive:true}});
+
+  initChart('c_donut',{type:'doughnut',data:{
+    labels:['治療','矯正','エステ','その他'],
+    datasets:[{data:[
+      D.chiryo.reduce((a,v)=>a+(v||0),0),
+      D.kyosei.reduce((a,v)=>a+(v||0),0),
+      D.este.reduce((a,v)=>a+(v||0),0),
+      D.totalSales.reduce((a,v)=>a+(v||0),0) - D.chiryo.reduce((a,v)=>a+(v||0),0) - D.kyosei.reduce((a,v)=>a+(v||0),0) - D.este.reduce((a,v)=>a+(v||0),0)
+    ],backgroundColor:['#4f8ef7','#2dd4bf','#f97316','#a78bfa'],borderWidth:0}]
+  },options:{responsive:true,plugins:{legend:{labels:{color:'#7a8299',font:{size:11}}}},cutout:'65%'}});
+
+  initChart('c_target',{type:'bar',data:{labels:M,datasets:[
+    {label:'治療 目標差',data:D.targetDiff,backgroundColor:function(ctx){return (ctx.raw||0)>=0?'rgba(34,197,94,.6)':'rgba(239,68,68,.6)'},borderRadius:3}
+  ]},options:{...CD,responsive:true}});
+
+  initChart('c_member',{type:'line',data:{labels:M,datasets:[
+    {label:'会員数',data:D.members,borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,.1)',fill:true,tension:.4,pointBackgroundColor:'#a78bfa',spanGaps:true}
+  ]},options:{...CD,responsive:true}});
+
+  initChart('c_dept',{type:'line',data:{labels:M,datasets:[
+    {label:'治療',data:D.chiryo,borderColor:'#4f8ef7',fill:false,tension:.4,spanGaps:true},
+    {label:'矯正',data:D.kyosei,borderColor:'#2dd4bf',fill:false,tension:.4,spanGaps:true},
+    {label:'エステ',data:D.este,borderColor:'#f97316',fill:false,tension:.4,spanGaps:true}
+  ]},options:{...CD,responsive:true}});
+
+  initChart('c_yoy',{type:'bar',data:{labels:M,datasets:[
+    {label:'今期',data:D.totalSales,backgroundColor:'rgba(79,142,247,.7)',borderRadius:4},
+    {label:'前年',data:D.prevSales.map(v=>v||0),backgroundColor:'rgba(122,130,153,.3)',borderRadius:4}
+  ]},options:{...CD,responsive:true}});
+
+  initChart('c_new',{type:'bar',data:{labels:M,datasets:[
+    {label:'治療',data:D.shinChiryo,backgroundColor:'rgba(79,142,247,.7)',borderRadius:3},
+    {label:'矯正',data:D.shinKyosei,backgroundColor:'rgba(45,212,191,.7)',borderRadius:3},
+    {label:'エステ',data:D.shinEste,backgroundColor:'rgba(249,115,22,.7)',borderRadius:3}
+  ]},options:{...CD,responsive:true}});
+
+  initChart('c_flow',{type:'bar',data:{labels:M,datasets:[
+    {label:'入会',data:D.memberIn,backgroundColor:'rgba(34,197,94,.7)',borderRadius:3},
+    {label:'退会',data:D.memberOut,backgroundColor:'rgba(239,68,68,.7)',borderRadius:3}
+  ]},options:{...CD,responsive:true}});
+
+  initChart('c_churn',{type:'line',data:{labels:M,datasets:[
+    {label:'治療',data:D.churnChiryo,borderColor:'#ef4444',fill:false,tension:.4,spanGaps:true},
+    {label:'会員',data:D.churnMember,borderColor:'#a78bfa',fill:false,tension:.4,spanGaps:true}
+  ]},options:{...CD,responsive:true,scales:{...CD.scales,y:{...CD.scales.y,ticks:{callback:v=>v+'%',color:'#7a8299'}}}}});
+
+  initChart('c_contract',{type:'line',data:{labels:M,datasets:[
+    {label:'治療',data:D.contractChiryo,borderColor:'#4f8ef7',fill:false,tension:.4,pointRadius:5,spanGaps:true},
+    {label:'矯正',data:D.contractKyosei,borderColor:'#2dd4bf',fill:false,tension:.4,pointRadius:5,spanGaps:true},
+    {label:'エステ',data:D.contractEste,borderColor:'#f97316',fill:false,tension:.4,pointRadius:5,spanGaps:true}
+  ]},options:{...CD,responsive:true,scales:{...CD.scales,y:{...CD.scales.y,ticks:{callback:v=>v+'%',color:'#7a8299'}}}}});
+
+  initChart('c_roas',{type:'line',data:{labels:M,datasets:[
+    {label:'治療',data:D.roas_chiryo,borderColor:'#ef4444',fill:false,tension:.4,spanGaps:true},
+    {label:'産後矯正',data:D.roas_kyosei,borderColor:'#2dd4bf',fill:false,tension:.4,spanGaps:true},
+    {label:'ダイエット',data:D.roas_este,borderColor:'#f97316',fill:false,tension:.4,spanGaps:true}
+  ]},options:{...CD,responsive:true,scales:{...CD.scales,y:{...CD.scales.y,ticks:{callback:v=>v+'%',color:'#7a8299'}}}}});
+
+  initChart('c_inquiry',{type:'bar',data:{labels:M,datasets:[
+    {label:'治療',data:D.inquiry_c,backgroundColor:'rgba(79,142,247,.7)',borderRadius:3},
+    {label:'産後矯正',data:D.inquiry_k,backgroundColor:'rgba(45,212,191,.7)',borderRadius:3},
+    {label:'ダイエット',data:D.inquiry_e,backgroundColor:'rgba(249,115,22,.7)',borderRadius:3}
+  ]},options:{...CD,responsive:true}});
+
+  // 集客詳細テーブルを更新
+  updateCollectionDetail();
+
+  // KPI動的更新（③⑧）
+  updateOverviewKPI();
+  // 集客ファネル更新（⑤）
+  updateFunnel();
+}
+
+
+initStorage().then(() => {
+  // 全月 施術人数データを固定値として設定
+  const SEIZETSU = {
+  "R7-5月": {
+    "行時": [
+      7,
+      125,
+      132
+    ],
+    "諸永": [
+      10,
+      135,
+      145
+    ],
+    "田中": [
+      8,
+      134,
+      142
+    ],
+    "岩丸": [
+      12,
+      141,
+      153
+    ],
+    "西田": [
+      0,
+      1,
+      1
+    ]
+  },
+  "R7-6月": {
+    "行時": [
+      11,
+      117,
+      128
+    ],
+    "諸永": [
+      9,
+      152,
+      161
+    ],
+    "田中": [
+      8,
+      136,
+      144
+    ],
+    "岩丸": [
+      14,
+      143,
+      157
+    ],
+    "西田": [
+      0,
+      5,
+      5
+    ]
+  },
+  "R7-7月": {
+    "行時": [
+      10,
+      143,
+      153
+    ],
+    "諸永": [
+      11,
+      187,
+      198
+    ],
+    "田中": [
+      10,
+      155,
+      165
+    ],
+    "岩丸": [
+      11,
+      140,
+      151
+    ],
+    "西田": [
+      0,
+      0,
+      0
+    ]
+  },
+  "R7-8月": {
+    "行時": [
+      10,
+      123,
+      133
+    ],
+    "諸永": [
+      11,
+      154,
+      165
+    ],
+    "田中": [
+      10,
+      158,
+      168
+    ],
+    "岩丸": [
+      13,
+      129,
+      142
+    ],
+    "西田": [
+      0,
+      1,
+      1
+    ]
+  },
+  "R7-9月": {
+    "行時": [
+      12,
+      164,
+      176
+    ],
+    "諸永": [
+      14,
+      198,
+      212
+    ],
+    "田中": [
+      14,
+      175,
+      189
+    ],
+    "岩丸": [
+      13,
+      149,
+      162
+    ],
+    "西田": [
+      0,
+      0,
+      0
+    ]
+  },
+  "R7-10月": {
+    "行時": [
+      12,
+      174,
+      186
+    ],
+    "諸永": [
+      9,
+      207,
+      216
+    ],
+    "田中": [
+      11,
+      152,
+      163
+    ],
+    "岩丸": [
+      12,
+      155,
+      167
+    ],
+    "西田": [
+      0,
+      30,
+      30
+    ]
+  },
+  "R7-11月": {
+    "行時": [
+      7,
+      154,
+      161
+    ],
+    "諸永": [
+      4,
+      192,
+      196
+    ],
+    "田中": [
+      8,
+      143,
+      151
+    ],
+    "岩丸": [
+      8,
+      127,
+      135
+    ],
+    "西田": [
+      0,
+      0,
+      0
+    ]
+  },
+  "R7-12月": {
+    "行時": [
+      4,
+      137,
+      141
+    ],
+    "諸永": [
+      4,
+      157,
+      161
+    ],
+    "田中": [
+      5,
+      140,
+      145
+    ],
+    "岩丸": [
+      4,
+      113,
+      117
+    ],
+    "西田": [
+      0,
+      15,
+      15
+    ]
+  },
+  "R8-1月": {
+    "行時": [7, 139, 146],
+    "諸永": [11, 141, 152],
+    "田中": [10, 114, 124],
+    "岩丸": [12, 135, 147],
+    "西田": [0, 0, 0]
+  },
+  "R8-2月": {
+    "行時": [
+      5,
+      156,
+      161
+    ],
+    "諸永": [
+      10,
+      176,
+      186
+    ],
+    "田中": [
+      9,
+      165,
+      174
+    ],
+    "岩丸": [
+      9,
+      145,
+      154
+    ],
+    "西田": [
+      0,
+      1,
+      1
+    ]
+  },
+  "R8-3月": {
+    "行時": [
+      0,
+      87,
+      87
+    ],
+    "諸永": [
+      0,
+      106,
+      106
+    ],
+    "田中": [
+      0,
+      91,
+      91
+    ],
+    "岩丸": [
+      0,
+      85,
+      85
+    ],
+    "西田": [
+      0,
+      0,
+      0
+    ]
+  }
+};
+
+  Object.entries(SEIZETSU).forEach(([key, staffMap]) => {
+    if(!importedMonths[key]) importedMonths[key] = {};
+    const d = importedMonths[key];
+    // staffDataが既にある場合は施術人数だけ上書き
+    // ない場合は何もしない（売上0のダミーデータを入れない）
+    if(d.staffData && d.staffData.length) {
+      d.staffData.forEach(s => {
+        if(staffMap[s.name]) {
+          s.seizetsu_shinki = staffMap[s.name][0];
+          s.seizetsu_kizon  = staffMap[s.name][1];
+          s.seizetsu_total  = staffMap[s.name][2];
+        }
+      });
+    }
+    d.importedAt = d.importedAt || '内蔵データ';
+  });
+
+  // 2月の売上データも設定
+  const k2 = 'R8-2月';
+  if(!importedMonths[k2]) importedMonths[k2] = {};
+  const d2 = importedMonths[k2];
+  d2.totalSales=3963465; d2.chiryo=1380692; d2.kyosei=1607860;
+  d2.shinChiryo=8; d2.shinKyosei=22; d2.memberTotal=53;
+  d2.koreaCurrent=33; d2.mainteCurrent=20;
+  d2.fileName='R8_2月_日計表_大手町.xlsx';
+  if(!d2.staffData || !d2.staffData.length) {
+    d2.staffData = [
+      {name:'行時', chiryo_n:1,chiryo_v:126720, kyosei_n:4,kyosei_v:256720, este_n:0,este_v:0,
+       total:831820, kizon:448380, seizetsu_shinki:5,seizetsu_kizon:156,seizetsu_total:161,
+       w1:386940,w1r:140.7, w2:27700,w2r:10.1, w3:272920,w3r:99.2, w4:144260,w4r:52.5,
+       monthly_rate:75.6, diff:-268180},
+      {name:'諸永', chiryo_n:4,chiryo_v:114680, kyosei_n:5,kyosei_v:346640, este_n:1,este_v:1980,
+       total:720580, kizon:257280, seizetsu_shinki:10,seizetsu_kizon:176,seizetsu_total:186,
+       w1:296060,w1r:107.7, w2:248780,w2r:90.5, w3:147560,w3r:53.7, w4:28180,w4r:10.2,
+       monthly_rate:65.5, diff:-379420},
+      {name:'田中', chiryo_n:1,chiryo_v:1980, kyosei_n:7,kyosei_v:391540, este_n:1,este_v:1980,
+       total:517100, kizon:121600, seizetsu_shinki:9,seizetsu_kizon:165,seizetsu_total:174,
+       w1:46580,w1r:16.9, w2:10000,w2r:3.6, w3:441640,w3r:160.6, w4:18880,w4r:6.9,
+       monthly_rate:47.0, diff:-582900},
+      {name:'岩丸', chiryo_n:2,chiryo_v:51060, kyosei_n:6,kyosei_v:277160, este_n:1,este_v:398000,
+       total:913800, kizon:187580, seizetsu_shinki:9,seizetsu_kizon:145,seizetsu_total:154,
+       w1:17760,w1r:6.5, w2:492700,w2r:179.2, w3:214520,w3r:78.0, w4:188820,w4r:68.7,
+       monthly_rate:83.1, diff:-186200},
+      {name:'西田', chiryo_n:0,chiryo_v:0, kyosei_n:0,kyosei_v:0, este_n:0,este_v:0,
+       total:0, kizon:0, seizetsu_shinki:0,seizetsu_kizon:1,seizetsu_total:1,
+       w1:0,w1r:0, w2:0,w2r:0, w3:0,w3r:0, w4:0,w4r:0,
+       monthly_rate:0, diff:-1100000},
+    ];
+  }
+
+  updateBadges();
+  updateSalesTable();
+  updateCharts();
+  renderStaff();
+});
+</script>
+</body>
+</html>
