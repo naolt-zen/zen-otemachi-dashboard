@@ -2017,20 +2017,9 @@ initStorage().then(() => {
   Object.entries(SEIZETSU).forEach(([key, staffMap]) => {
     if(!importedMonths[key]) importedMonths[key] = {};
     const d = importedMonths[key];
-    // staffDataが既にある場合は施術人数だけ更新、なければ作成
-    const NAMES = ['行時','諸永','田中','岩丸','西田'];
-    if(!d.staffData || !d.staffData.length) {
-      d.staffData = NAMES.map(name => ({
-        name, chiryo_n:0,chiryo_v:0, kyosei_n:0,kyosei_v:0, este_n:0,este_v:0,
-        total:0, kizon:0,
-        seizetsu_shinki: staffMap[name]?.[0]||0,
-        seizetsu_kizon:  staffMap[name]?.[1]||0,
-        seizetsu_total:  staffMap[name]?.[2]||0,
-        w1:0,w1r:0, w2:0,w2r:0, w3:0,w3r:0, w4:0,w4r:0,
-        monthly_rate:0, diff:-1100000
-      }));
-    } else {
-      // 既存staffDataに施術人数だけ上書き
+    // staffDataが既にある場合は施術人数だけ上書き
+    // ない場合は何もしない（売上0のダミーデータを入れない）
+    if(d.staffData && d.staffData.length) {
       d.staffData.forEach(s => {
         if(staffMap[s.name]) {
           s.seizetsu_shinki = staffMap[s.name][0];
