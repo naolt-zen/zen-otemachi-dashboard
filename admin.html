@@ -234,6 +234,26 @@ td.red { color: var(--red); font-weight: 600; }
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+
+<script>
+const SUPABASE_URL = 'https://rwkalgxaigrbxegixaph.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3a2FsZ3hhaWdyYnhlZ2l4YXBoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDY1NTEsImV4cCI6MjA5MTM4MjU1MX0.TOJOxDQwCdoMmgN7SHcGhTjVvZD2LgQFSh-ZjfRRKf0';
+
+async function sbGetAllUsers() {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/records?select=user_name,card_number,date,data&order=user_name,date`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+  });
+  if (!res.ok) return {};
+  const rows = await res.json();
+  const result = {};
+  rows.forEach(r => {
+    if (!result[r.user_name]) result[r.user_name] = {};
+    try { result[r.user_name][r.date] = JSON.parse(r.data); } catch(e) {}
+    if (!result[r.user_name]._cardNumber) result[r.user_name]._cardNumber = r.card_number;
+  });
+  return result;
+}
+</script>
 <script>
 const DAYS=['日','月','火','水','木','金','土'];
 let allData={};
@@ -244,6 +264,18 @@ let miniCharts={};
 
 function loadAll(){
   try{ allData=JSON.parse(localStorage.getItem('zenDietAll')||'{}'); }catch(e){ allData={}; }
+}
+
+async function loadFromSupabase() {
+  try {
+    const sbData = await sbGetAllUsers();
+    // Merge: Supabase data wins over localStorage
+    Object.keys(sbData).forEach(name => {
+      if (!allData[name]) allData[name] = {};
+      Object.assign(allData[name], sbData[name]);
+    });
+    localStorage.setItem('zenDietAll', JSON.stringify(allData));
+  } catch(e) { console.log('Supabase load error:', e); }
 }
 
 function getPatients(){
@@ -618,8 +650,15 @@ injectDemoPatients();
 loadAll();
 renderOverview();
 
-// Auto-refresh every 10s
-setInterval(()=>{ loadAll(); if(document.getElementById('page-overview').classList.contains('active')) renderOverview(); },10000);
+// Load from Supabase then re-render
+loadFromSupabase().then(() => renderOverview());
+
+// Auto-refresh every 30s from Supabase
+setInterval(async ()=>{
+  await loadFromSupabase();
+  if(document.getElementById('page-overview').classList.contains('active')) renderOverview();
+  else if(document.getElementById('page-detail').classList.contains('active')) renderDetail();
+}, 30000);
 </script>
 </body>
 </html>

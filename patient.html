@@ -408,6 +408,64 @@ td.red { color: var(--red); font-weight: 600; }
 </div><!-- /mainApp -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+
+<script>
+// ===== SUPABASE CONFIG =====
+const SUPABASE_URL = 'https://rwkalgxaigrbxegixaph.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3a2FsZ3hhaWdyYnhlZ2l4YXBoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDY1NTEsImV4cCI6MjA5MTM4MjU1MX0.TOJOxDQwCdoMmgN7SHcGhTjVvZD2LgQFSh-ZjfRRKf0';
+
+async function sbGet(name) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/records?user_name=eq.${encodeURIComponent(name)}&select=date,data`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+  });
+  if (!res.ok) return {};
+  const rows = await res.json();
+  const result = {};
+  rows.forEach(r => { try { result[r.date] = JSON.parse(r.data); } catch(e) {} });
+  return result;
+}
+
+async function sbSave(name, cardNumber, date, data) {
+  // Upsert: check if record exists first
+  const checkRes = await fetch(`${SUPABASE_URL}/rest/v1/records?user_name=eq.${encodeURIComponent(name)}&date=eq.${date}&select=id`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+  });
+  const existing = await checkRes.json();
+  
+  const payload = { user_name: name, card_number: cardNumber, date: date, data: JSON.stringify(data) };
+  
+  if (existing.length > 0) {
+    // UPDATE
+    await fetch(`${SUPABASE_URL}/rest/v1/records?user_name=eq.${encodeURIComponent(name)}&date=eq.${date}`, {
+      method: 'PATCH',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } else {
+    // INSERT
+    await fetch(`${SUPABASE_URL}/rest/v1/records`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify(payload)
+    });
+  }
+}
+
+async function sbGetAllUsers() {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/records?select=user_name,card_number,date,data&order=user_name,date`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+  });
+  if (!res.ok) return {};
+  const rows = await res.json();
+  const result = {};
+  rows.forEach(r => {
+    if (!result[r.user_name]) result[r.user_name] = {};
+    try { result[r.user_name][r.date] = JSON.parse(r.data); } catch(e) {}
+    if (!result[r.user_name]._cardNumber) result[r.user_name]._cardNumber = r.card_number;
+  });
+  return result;
+}
+</script>
 <script>
 const DAYS=['日','月','火','水','木','金','土'];
 let currentDate=new Date(); currentDate.setHours(0,0,0,0);
@@ -425,6 +483,16 @@ const mo=d=>d.getMonth()+1;
 
 function loadAll(){ try{ allData=JSON.parse(localStorage.getItem('zenDietAll')||'{}'); }catch(e){ allData={}; } }
 function saveAll(){ localStorage.setItem('zenDietAll',JSON.stringify(allData)); }
+
+async function loadFromSupabase(name) {
+  try {
+    const records = await sbGet(name);
+    if (!allData[name]) allData[name] = {};
+    // Merge supabase data into local (supabase wins)
+    Object.assign(allData[name], records);
+    saveAll();
+  } catch(e) { console.log('Supabase load error:', e); }
+}
 function userData(){ return allData[userName]||(allData[userName]={}); }
 
 function doLogin(){
@@ -456,7 +524,12 @@ function doLogin(){
   document.getElementById('mainApp').style.display='block';
   document.getElementById('userBadge').textContent=n;
   updateHeader();
-  loadDayUI();
+  // Show loading state then fetch from Supabase
+  document.getElementById('wMorning').placeholder='読込中...';
+  loadFromSupabase(n).then(() => {
+    document.getElementById('wMorning').placeholder='–';
+    loadDayUI();
+  });
 }
 
 // initDemoIfEmpty removed - new users start with empty data
@@ -591,9 +664,9 @@ function renderPhotoSlots(){
   container.appendChild(addBtn);
 }
 
-function saveData(){
+async function saveData(){
   const k=dk(currentDate);
-  userData()[k]={
+  const record = {
     wMorning:parseFloat(document.getElementById('wMorning').value)||null,
     wEvening:parseFloat(document.getElementById('wEvening').value)||null,
     lunch:lunchState, dinner:dinnerState,
@@ -603,8 +676,16 @@ function saveData(){
     memo:document.getElementById('memoText').value,
     photos:JSON.parse(JSON.stringify(todayPhotos)),
   };
+  userData()[k] = record;
   saveAll();
-  showToast('✓ 保存しました');
+  showToast('💾 保存中...');
+  try {
+    const cardNo = allData[userName]?._cardNumber || '';
+    await sbSave(userName, cardNo, k, record);
+    showToast('✓ 保存しました');
+  } catch(e) {
+    showToast('✓ ローカルに保存しました');
+  }
 }
 
 function showToast(msg){
