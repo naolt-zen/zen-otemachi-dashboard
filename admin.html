@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>zen Diet - 管理画面</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f4f6f8; --white: #fff; --text: #1a1a1a; --text2: #444;
+  --text3: #999; --border: #e8e8e8; --accent: #2563eb;
+  --red: #dc2626; --red-light: #fef2f2; --green: #16a34a; --green-light: #f0fdf4;
+  --orange: #ea580c; --sidebar: #1e293b;
+}
+body { background: var(--bg); color: var(--text); font-family: 'Noto Sans JP', sans-serif; font-size: 14px; min-height: 100vh; display: flex; flex-direction: column; }
+
+/* Top bar */
+.topbar { background: var(--sidebar); color: white; padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.topbar-logo { font-size: 18px; font-weight: 700; }
+.topbar-logo em { color: #60a5fa; font-style: normal; }
+.topbar-right { display: flex; align-items: center; gap: 16px; font-size: 13px; color: #94a3b8; }
+.topbar-date { font-size: 12px; }
+
+/* Layout */
+.layout { display: flex; flex: 1; min-height: 0; }
+
+/* Sidebar */
+.sidebar { width: 220px; background: var(--sidebar); color: white; padding: 16px 0; flex-shrink: 0; overflow-y: auto; }
+.sidebar-section { font-size: 10px; letter-spacing: 1.5px; color: #64748b; padding: 12px 20px 6px; text-transform: uppercase; font-weight: 600; }
+.sidebar-item { padding: 10px 20px; font-size: 13px; color: #cbd5e1; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.15s; border-left: 3px solid transparent; }
+.sidebar-item:hover { background: rgba(255,255,255,0.06); }
+.sidebar-item.active { background: rgba(37,99,235,0.2); color: white; border-left-color: #2563eb; font-weight: 600; }
+.patient-item { padding: 8px 16px 8px 28px; font-size: 12px; color: #94a3b8; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: background 0.15s; border-left: 3px solid transparent; }
+.patient-item:hover { background: rgba(255,255,255,0.05); color: white; }
+.patient-item.active { background: rgba(37,99,235,0.2); color: white; border-left-color: #60a5fa; font-weight: 600; }
+.patient-badge { background: #dc2626; color: white; font-size: 9px; padding: 1px 5px; border-radius: 10px; }
+
+/* Main */
+.main { flex: 1; overflow-y: auto; padding: 24px; }
+
+/* Page */
+.page { display: none; }
+.page.active { display: block; }
+
+/* Page title */
+.page-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+.page-subtitle { font-size: 13px; color: var(--text3); margin-bottom: 20px; }
+
+/* Overview grid */
+.overview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
+
+.patient-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+.patient-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-color: #c7d2fe; }
+
+.pc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.pc-name { font-size: 15px; font-weight: 700; }
+.pc-days { font-size: 11px; color: var(--text3); background: var(--bg); padding: 3px 8px; border-radius: 10px; }
+
+.pc-weight-row { display: flex; gap: 12px; margin-bottom: 12px; }
+.pc-weight-item { flex: 1; }
+.pc-weight-label { font-size: 10px; color: var(--text3); margin-bottom: 2px; }
+.pc-weight-val { font-size: 20px; font-weight: 700; }
+.pc-weight-val.red { color: var(--red); }
+.pc-weight-val.green { color: var(--green); }
+.pc-weight-unit { font-size: 10px; color: var(--text3); }
+
+.pc-mini-chart { height: 48px; }
+
+.pc-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+.tag { font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+.tag-red { background: var(--red-light); color: var(--red); }
+.tag-green { background: var(--green-light); color: var(--green); }
+.tag-gray { background: var(--bg); color: var(--text3); }
+
+/* Summary stats bar */
+.stats-bar { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 24px; }
+.stat-box { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.stat-box-label { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
+.stat-box-val { font-size: 24px; font-weight: 700; }
+.stat-box-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+/* Detail page */
+.detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.back-btn { background: var(--bg); border: 1px solid var(--border); padding: 7px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; color: var(--text2); font-family: 'Noto Sans JP', sans-serif; }
+.back-btn:hover { background: var(--border); }
+.detail-name { font-size: 20px; font-weight: 700; }
+.detail-sub { font-size: 12px; color: var(--text3); }
+
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+@media(max-width:700px){ .detail-grid { grid-template-columns: 1fr; } }
+
+.card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.card-title { font-size: 11px; font-weight: 700; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; padding: 14px 16px 0; }
+.chart-wrap { padding: 12px 16px 16px; }
+
+.period-row { display: flex; gap: 6px; padding: 10px 16px 0; }
+.period-btn { padding: 5px 11px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--text3); font-size: 11px; font-family: 'Noto Sans JP', sans-serif; cursor: pointer; }
+.period-btn.active { background: var(--accent); border-color: var(--accent); color: white; font-weight: 600; }
+
+/* Table */
+.table-wrap { overflow-x: auto; padding: 14px 0 0; }
+table { border-collapse: collapse; font-size: 11px; min-width: 100%; }
+th { padding: 5px 10px; color: var(--text3); font-weight: 500; white-space: nowrap; text-align: center; border-bottom: 1px solid var(--border); }
+th.row-head { text-align: left; font-size: 10px; padding-left: 16px; }
+td { padding: 8px 10px; text-align: center; white-space: nowrap; border-bottom: 1px solid #f0f0f0; }
+td.row-head { text-align: left; color: var(--text3); font-size: 10px; padding-left: 16px; background: var(--bg); font-weight: 500; }
+td.red { color: var(--red); font-weight: 600; }
+
+/* Photo gallery */
+.photo-day-section { padding: 14px 16px; border-top: 1px solid var(--border); }
+.photo-day-label { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 8px; }
+.photo-day-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+.photo-thumb { width: 80px; height: 80px; border-radius: 8px; overflow: hidden; position: relative; flex-shrink: 0; cursor: pointer; }
+.photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.photo-thumb-label { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.5); color: white; font-size: 9px; text-align: center; padding: 2px; }
+.no-photo { color: var(--text3); font-size: 12px; padding: 8px 0; }
+
+/* Memo */
+.memo-box { background: var(--bg); border-radius: 8px; padding: 10px 12px; margin: 8px 16px 14px; font-size: 12px; color: var(--text2); line-height: 1.6; }
+
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+.modal-overlay.hidden { display: none; }
+.modal-img { max-width: 90vw; max-height: 90vh; border-radius: 8px; object-fit: contain; }
+.modal-close { position: fixed; top: 16px; right: 20px; background: none; border: none; color: white; font-size: 28px; cursor: pointer; }
+
+/* Legend */
+.legend-row { display: flex; gap: 14px; padding: 8px 16px 0; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text3); }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+/* No data */
+.no-data { text-align: center; padding: 60px 20px; color: var(--text3); }
+.no-data-icon { font-size: 48px; margin-bottom: 12px; }
+.no-data-text { font-size: 15px; }
+.no-data-sub { font-size: 13px; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">zen <em>Diet</em> <span style="font-size:12px;color:#64748b;font-weight:400;margin-left:8px">管理画面</span></div>
+  <div class="topbar-right">
+    <span class="topbar-date" id="topbarDate"></span>
+    <span>zen整骨院・整体院</span>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-section">メニュー</div>
+    <div class="sidebar-item active" id="sideAll" onclick="showPage('overview')">
+      <span>👥</span> 全患者一覧
+    </div>
+    <div class="sidebar-section" style="margin-top:8px">患者</div>
+    <div id="sidebarPatients"></div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- OVERVIEW PAGE -->
+    <div class="page active" id="page-overview">
+      <div class="page-title">全患者ダッシュボード</div>
+      <div class="page-subtitle" id="overviewSub"></div>
+
+      <div class="stats-bar" id="statsBar"></div>
+      <div class="overview-grid" id="overviewGrid"></div>
+    </div>
+
+    <!-- DETAIL PAGE -->
+    <div class="page" id="page-detail">
+      <div class="detail-header">
+        <button class="back-btn" onclick="showPage('overview')">← 一覧へ</button>
+        <div>
+          <div class="detail-name" id="detailName"></div>
+          <div class="detail-sub" id="detailSub"></div>
+        </div>
+      </div>
+
+      <div class="detail-grid">
+        <div class="card" style="grid-column:1/-1">
+          <div class="card-title" style="padding-bottom:0">体重推移</div>
+          <div class="period-row" id="detailPeriodRow">
+            <button class="period-btn active" onclick="setDetailPeriod(7,this)">1週間</button>
+            <button class="period-btn" onclick="setDetailPeriod(30,this)">1ヶ月</button>
+            <button class="period-btn" onclick="setDetailPeriod(90,this)">3ヶ月</button>
+            <button class="period-btn" onclick="setDetailPeriod(0,this)">全期間</button>
+          </div>
+          <div class="legend-row">
+            <div class="legend-item"><div class="legend-dot" style="background:#2563eb"></div>朝の体重</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#93c5fd"></div>夜の体重</div>
+          </div>
+          <div class="chart-wrap"><canvas id="detailChart" height="160"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">記録一覧</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr id="detailTableHead"><th class="row-head">項目</th></tr></thead>
+            <tbody id="detailTableBody"></tbody>
+          </table>
+        </div>
+        <div style="height:14px"></div>
+      </div>
+
+      <!-- Photos by day -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title" style="padding:14px 16px 0">食事写真・メモ</div>
+        <div id="photoGallery"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Image modal -->
+<div class="modal-overlay hidden" id="imgModal" onclick="closeModal()">
+  <img class="modal-img" id="modalImg" src="">
+  <button class="modal-close" onclick="closeModal()">✕</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const DAYS=['日','月','火','水','木','金','土'];
+let allData={};
+let detailUser='';
+let detailPeriod=7;
+let detailChart=null;
+let miniCharts={};
+
+function loadAll(){
+  try{ allData=JSON.parse(localStorage.getItem('zenDietAll')||'{}'); }catch(e){ allData={}; }
+}
+
+function getPatients(){
+  return Object.keys(allData).filter(k=>Object.keys(allData[k]).length>0);
+}
+
+function dk(d){ return d.toISOString().split('T')[0]; }
+function mo(d){ return d.getMonth()+1; }
+function today(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
+
+function getDays(n, refDate, userName){
+  const ref=refDate||today();
+  if(n===0){
+    const ud=userName?allData[userName]:allData[detailUser]||{};
+    const keys=Object.keys(ud).sort();
+    if(!keys.length) return [];
+    const earliest=new Date(keys[0]+'T00:00:00');
+    const days=[];
+    const d=new Date(earliest);
+    while(d<=ref){ days.push(new Date(d)); d.setDate(d.getDate()+1); }
+    return days;
+  }
+  return Array.from({length:n},(_,i)=>{ const d=new Date(ref); d.setDate(d.getDate()-(n-1-i)); return d; });
+}
+
+function getLatestMorning(name){
+  const ud=allData[name]||{};
+  const keys=Object.keys(ud).sort().reverse();
+  for(const k of keys){ if(ud[k].wMorning) return {date:k, val:ud[k].wMorning}; }
+  return null;
+}
+
+function getChange(name, days){
+  const ud=allData[name]||{};
+  const dayList=getDays(days);
+  const vals=dayList.map(d=>ud[dk(d)]?.wMorning).filter(v=>v!=null);
+  if(vals.length<2) return null;
+  return +(vals[vals.length-1]-vals[0]).toFixed(1);
+}
+
+function getRecordDays(name){
+  return Object.keys(allData[name]||{}).length;
+}
+
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('sideAll').classList.toggle('active', name==='overview');
+  document.querySelectorAll('.patient-item').forEach(el=>{
+    el.classList.toggle('active', el.dataset.name===detailUser && name==='detail');
+  });
+  if(name==='overview') renderOverview();
+}
+
+function showDetail(name){
+  detailUser=name;
+  showPage('detail');
+  renderDetail();
+}
+
+// ===== OVERVIEW =====
+function renderOverview(){
+  loadAll();
+  const patients=getPatients();
+
+  // Topbar date
+  const now=new Date();
+  document.getElementById('topbarDate').textContent=`${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 (${DAYS[now.getDay()]})`;
+
+  // Sidebar
+  const sb=document.getElementById('sidebarPatients');
+  sb.innerHTML='';
+  patients.forEach(name=>{
+    const div=document.createElement('div');
+    div.className='patient-item'; div.dataset.name=name;
+    const change=getChange(name,7);
+    const badge=change!==null&&change>0?`<span class="patient-badge">↑</span>`:'';
+    div.innerHTML=`<span>${name}</span>${badge}`;
+    div.onclick=()=>showDetail(name);
+    sb.appendChild(div);
+  });
+
+  // Stats bar
+  const totalPatients=patients.length;
+  const losing=patients.filter(n=>{ const c=getChange(n,7); return c!==null&&c<0; }).length;
+  const plateau=patients.filter(n=>{ const c=getChange(n,7); return c!==null&&Math.abs(c)<0.2; }).length;
+  const gaining=patients.filter(n=>{ const c=getChange(n,7); return c!==null&&c>0; }).length;
+
+  document.getElementById('overviewSub').textContent=`登録患者 ${totalPatients}名 ／ ${now.getMonth()+1}月${now.getDate()}日 更新`;
+  document.getElementById('statsBar').innerHTML=`
+    <div class="stat-box"><div class="stat-box-label">総患者数</div><div class="stat-box-val">${totalPatients}</div><div class="stat-box-sub">名</div></div>
+    <div class="stat-box"><div class="stat-box-label">減量中（7日）</div><div class="stat-box-val" style="color:var(--green)">${losing}</div><div class="stat-box-sub">名</div></div>
+    <div class="stat-box"><div class="stat-box-label">停滞気味</div><div class="stat-box-val" style="color:var(--orange)">${plateau}</div><div class="stat-box-sub">名</div></div>
+    <div class="stat-box"><div class="stat-box-label">要フォロー</div><div class="stat-box-val" style="color:var(--red)">${gaining}</div><div class="stat-box-sub">名</div></div>`;
+
+  if(patients.length===0){
+    document.getElementById('overviewGrid').innerHTML=`
+      <div class="no-data" style="grid-column:1/-1">
+        <div class="no-data-icon">👥</div>
+        <div class="no-data-text">まだ患者データがありません</div>
+        <div class="no-data-sub">patient.html を開いて名前を入力し、データを記録してください</div>
+      </div>`;
+    return;
+  }
+
+  // Patient cards
+  Object.values(miniCharts).forEach(c=>{ try{c.destroy();}catch(e){} });
+  miniCharts={};
+
+  const grid=document.getElementById('overviewGrid');
+  grid.innerHTML='';
+  patients.forEach(name=>{
+    const ud=allData[name];
+    const latest=getLatestMorning(name);
+    const change7=getChange(name,7);
+    const recDays=getRecordDays(name);
+    const changeStr=change7!==null?(change7>0?`+${change7}`:change7)+'kg':'–';
+    const changeClass=change7===null?'':change7<0?'green':change7>0?'red':'';
+
+    // Tags
+    const tags=[];
+    if(change7!==null){ if(change7<-0.5) tags.push({cls:'tag-green',txt:'順調↓'}); else if(change7>0.3) tags.push({cls:'tag-red',txt:'要フォロー↑'}); else tags.push({cls:'tag-gray',txt:'停滞期'}); }
+    const todayData=ud[dk(today())];
+    if(todayData?.haiben===false&&Object.keys(ud).length>3) tags.push({cls:'tag-gray',txt:'排便なし'});
+    const tagsHtml=tags.map(t=>`<span class="tag ${t.cls}">${t.txt}</span>`).join('');
+
+    const card=document.createElement('div');
+    card.className='patient-card';
+    card.innerHTML=`
+      <div class="pc-header">
+        <div class="pc-name">${name}</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span style="font-size:10px;color:var(--text3);background:var(--bg);border:1px solid var(--border);padding:2px 7px;border-radius:8px">No.${allData[name]?._cardNumber??'–'}</span>
+          <div class="pc-days">記録 ${recDays}日</div>
+        </div>
+      </div>
+      <div class="pc-weight-row">
+        <div class="pc-weight-item">
+          <div class="pc-weight-label">最新体重</div>
+          <div class="pc-weight-val">${latest?latest.val.toFixed(1):'–'}</div>
+          <div class="pc-weight-unit">kg</div>
+        </div>
+        <div class="pc-weight-item">
+          <div class="pc-weight-label">7日間変化</div>
+          <div class="pc-weight-val ${changeClass}">${changeStr}</div>
+          <div class="pc-weight-unit"></div>
+        </div>
+      </div>
+      <canvas id="mini-${CSS.escape(name)}" class="pc-mini-chart"></canvas>
+      <div class="pc-tags">${tagsHtml}</div>`;
+    card.onclick=()=>showDetail(name);
+    grid.appendChild(card);
+
+    // Mini chart
+    setTimeout(()=>{
+      const canvasId='mini-'+name.replace(/[^a-zA-Z0-9]/g,'_');
+      const canvas=card.querySelector('canvas');
+      if(!canvas) return;
+      canvas.id=canvasId;
+      const days7=getDays(14);
+      const mornings=days7.map(d=>ud[dk(d)]?.wMorning??null);
+      const ctx=canvas.getContext('2d');
+      const all=mornings.filter(v=>v!==null);
+      miniCharts[name]=new Chart(ctx,{
+        type:'line',
+        data:{labels:days7.map(d=>`${mo(d)}/${d.getDate()}`),datasets:[
+          {data:mornings,borderColor:'#2563eb',borderWidth:2,pointRadius:2,pointBackgroundColor:'#2563eb',tension:0.4,spanGaps:true}
+        ]},
+        options:{
+          responsive:true, animation:false,
+          plugins:{legend:{display:false},tooltip:{enabled:false}},
+          scales:{
+            x:{display:false},
+            y:{display:false,min:all.length?Math.min(...all)-0.5:50,max:all.length?Math.max(...all)+0.5:80}
+          }
+        }
+      });
+    },50);
+  });
+}
+
+// ===== DETAIL =====
+function renderDetail(){
+  const ud=allData[detailUser]||{};
+  const recDays=Object.keys(ud).length;
+  document.getElementById('detailName').textContent=detailUser;
+  const cardNo=allData[detailUser]?._cardNumber??'–';
+  document.getElementById('detailSub').textContent=`診察券 No.${cardNo}　／　記録 ${recDays}日間`;
+  renderDetailChart();
+  renderDetailTable();
+  renderPhotoGallery();
+}
+
+function setDetailPeriod(n,btn){
+  detailPeriod=n;
+  document.querySelectorAll('#detailPeriodRow .period-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderDetailChart();
+}
+
+function renderDetailChart(){
+  const ud=allData[detailUser]||{};
+  const days=getDays(detailPeriod);
+  const labels=days.map(d=>`${mo(d)}/${d.getDate()}`);
+  const mornings=days.map(d=>ud[dk(d)]?.wMorning??null);
+  const evenings=days.map(d=>ud[dk(d)]?.wEvening??null);
+  const all=[...mornings,...evenings].filter(v=>v!==null);
+  const ctx=document.getElementById('detailChart').getContext('2d');
+  if(detailChart) detailChart.destroy();
+  detailChart=new Chart(ctx,{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'朝',data:mornings,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.07)',pointBackgroundColor:'#2563eb',pointRadius:4,tension:0.35,spanGaps:true},
+      {label:'夜',data:evenings,borderColor:'#93c5fd',backgroundColor:'rgba(147,197,253,0.05)',pointBackgroundColor:'#93c5fd',pointRadius:3,tension:0.35,spanGaps:true,borderDash:[4,3]}
+    ]},
+    options:{
+      responsive:true,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y?.toFixed(1)??'–'}kg`}}},
+      scales:{
+        x:{ticks:{color:'#999',font:{size:10},maxRotation:0},grid:{color:'#f4f4f4'}},
+        y:{min:all.length?Math.floor((Math.min(...all)-0.8)*2)/2:50,max:all.length?Math.ceil((Math.max(...all)+0.8)*2)/2:80,
+           ticks:{color:'#999',font:{size:10},callback:v=>v+'kg'},grid:{color:'#f4f4f4'}}
+      }
+    }
+  });
+}
+
+function renderDetailTable(){
+  const ud=allData[detailUser]||{};
+  const days=getDays(14);
+  const head=document.getElementById('detailTableHead');
+  while(head.children.length>1) head.removeChild(head.lastChild);
+  days.forEach(d=>{ const th=document.createElement('th'); th.textContent=`${mo(d)}/${d.getDate()}`; head.appendChild(th); });
+
+  const ROWS=[
+    {label:'朝体重kg',get:d=>ud[dk(d)]?.wMorning?.toFixed(1)??'',red:()=>false},
+    {label:'夜体重kg',get:d=>ud[dk(d)]?.wEvening?.toFixed(1)??'',red:d=>{const r=ud[dk(d)];return r?.wEvening&&r?.wMorning&&r.wEvening>r.wMorning;}},
+    {label:'外食(昼)',get:d=>ud[dk(d)]?.lunch==='L'?'L':'',red:()=>false},
+    {label:'外食(夜)',get:d=>ud[dk(d)]?.dinner==='D'?'D':'',red:()=>false},
+    {label:'排便',get:d=>ud[dk(d)]?.haiben?'○':'',red:()=>false},
+    {label:'生理日',get:d=>ud[dk(d)]?.seiri?'○':'',red:()=>false},
+    {label:'水分量L',get:d=>ud[dk(d)]?.water?.toFixed(1)??'',red:d=>{const r=ud[dk(d)];return r?.water!==undefined&&r.water<1.5;}},
+    {label:'トイレ',get:d=>ud[dk(d)]?.toilet??'',red:()=>false},
+    {label:'睡眠h',get:d=>ud[dk(d)]?.sleep?.toFixed(1)??'',red:d=>{const r=ud[dk(d)];return r?.sleep!==undefined&&r.sleep<6;}},
+  ];
+
+  const tbody=document.getElementById('detailTableBody');
+  tbody.innerHTML='';
+  ROWS.forEach(row=>{
+    const tr=document.createElement('tr');
+    const th=document.createElement('td'); th.className='row-head'; th.textContent=row.label; tr.appendChild(th);
+    days.forEach(d=>{ const td=document.createElement('td'); td.textContent=row.get(d); if(row.red(d)) td.classList.add('red'); tr.appendChild(td); });
+    tbody.appendChild(tr);
+  });
+}
+
+function renderPhotoGallery(){
+  const ud=allData[detailUser]||{};
+  const gallery=document.getElementById('photoGallery');
+  gallery.innerHTML='';
+
+  // Get days with photos or memos
+  const sortedKeys=Object.keys(ud).sort().reverse().slice(0,14);
+  let hasAny=false;
+
+  sortedKeys.forEach(k=>{
+    const d=ud[k];
+    const photos=d.photos||{};
+    const hasPhoto=photos.morning||photos.lunch||photos.dinner||(photos.free&&photos.free.length>0);
+    const hasMemo=d.memo&&d.memo.trim();
+    if(!hasPhoto&&!hasMemo) return;
+    hasAny=true;
+
+    const dateObj=new Date(k+'T00:00:00');
+    const section=document.createElement('div');
+    section.className='photo-day-section';
+
+    let html=`<div class="photo-day-label">${mo(dateObj)}月${dateObj.getDate()}日 (${DAYS[dateObj.getDay()]})</div>`;
+    html+=`<div class="photo-day-grid">`;
+
+    const slots=[
+      {key:'morning',label:'朝食'},
+      {key:'lunch',label:'昼食'},
+      {key:'dinner',label:'夕食'},
+    ];
+
+    slots.forEach(s=>{
+      if(photos[s.key]){
+        html+=`<div class="photo-thumb" onclick="openModal('${photos[s.key]}')">
+          <img src="${photos[s.key]}">
+          <div class="photo-thumb-label">${s.label}</div>
+        </div>`;
+      }
+    });
+
+    (photos.free||[]).forEach((src,i)=>{
+      html+=`<div class="photo-thumb" onclick="openModal('${src}')">
+        <img src="${src}">
+        <div class="photo-thumb-label">写真${i+1}</div>
+      </div>`;
+    });
+
+    html+='</div>';
+    section.innerHTML=html;
+
+    if(hasMemo){
+      const memoDiv=document.createElement('div');
+      memoDiv.className='memo-box';
+      memoDiv.textContent='📝 '+d.memo;
+      section.appendChild(memoDiv);
+    }
+
+    gallery.appendChild(section);
+  });
+
+  if(!hasAny){
+    gallery.innerHTML='<div class="no-photo" style="padding:20px 16px">写真・メモはまだありません</div>';
+  }
+}
+
+function openModal(src){
+  document.getElementById('modalImg').src=src;
+  document.getElementById('imgModal').classList.remove('hidden');
+}
+
+function closeModal(){
+  document.getElementById('imgModal').classList.add('hidden');
+  document.getElementById('modalImg').src='';
+}
+
+// ===== DEMO DATA INJECTION =====
+function injectDemoPatients(){
+  const existing = JSON.parse(localStorage.getItem('zenDietAll')||'{}');
+
+  function genData(baseWeight, trend, seed){
+    const ud={};
+    const today=new Date(); today.setHours(0,0,0,0);
+    let w=baseWeight;
+    for(let i=20;i>=0;i--){
+      const d=new Date(today); d.setDate(d.getDate()-i);
+      const k=dk(d);
+      // pseudo-random but deterministic per seed
+      const r1=((Math.sin(seed*i*7.3+1)*0.5+0.5)*0.6-0.3);
+      const r2=((Math.sin(seed*i*3.7+2)*0.5+0.5));
+      const r3=((Math.sin(seed*i*5.1+3)*0.5+0.5));
+      w=+(w+trend+(r1*0.3)).toFixed(1);
+      ud[k]={
+        wMorning: w,
+        wEvening: +(w+0.2+(r2*0.5)).toFixed(1),
+        lunch: r2>0.75?'L':'none',
+        dinner: r3>0.85?'D':'none',
+        water: +(1.2+(r2*1.0)).toFixed(1),
+        toilet: Math.floor(7+(r3*5)),
+        sleep: +(5.5+(r2*2.5)).toFixed(1),
+        haiben: r3>0.3,
+        seiri: false,
+        photos:{morning:null,lunch:null,dinner:null,free:[]},
+        memo: i===5?'少し食べ過ぎた日。次の日からしっかり調整します。':i===10?'体調良好！水分も意識できてる。':''
+      };
+    }
+    return ud;
+  }
+
+  if(!existing['西田太郎'])  existing['西田太郎']  = genData(78.5, -0.08, 1.23);
+  if(!existing['西田花子'])  existing['西田花子']  = genData(58.2, -0.06, 4.56);
+
+  localStorage.setItem('zenDietAll', JSON.stringify(existing));
+}
+
+// Init
+injectDemoPatients();
+loadAll();
+renderOverview();
+
+// Auto-refresh every 10s
+setInterval(()=>{ loadAll(); if(document.getElementById('page-overview').classList.contains('active')) renderOverview(); },10000);
+</script>
+</body>
+</html>

@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>zen Diet - 記録</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg: #f4f6f8; --white: #fff; --text: #1a1a1a; --text3: #999;
+  --border: #e8e8e8; --accent: #2563eb; --red: #dc2626; --green: #16a34a;
+}
+body { background: var(--bg); color: var(--text); font-family: 'Noto Sans JP', sans-serif; font-size: 14px; max-width: 430px; margin: 0 auto; min-height: 100vh; }
+
+/* Login Screen */
+.login-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  background: var(--white);
+}
+.login-logo { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+.login-logo em { color: var(--accent); font-style: normal; }
+.login-sub { font-size: 13px; color: var(--text3); margin-bottom: 36px; }
+.login-label { font-size: 12px; font-weight: 600; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; display: block; }
+.login-input {
+  width: 100%; padding: 14px 16px; border: 1.5px solid var(--border);
+  border-radius: 12px; font-size: 16px; font-family: 'Noto Sans JP', sans-serif;
+  outline: none; color: var(--text); background: var(--bg);
+  transition: border-color 0.2s;
+}
+.login-input:focus { border-color: var(--accent); background: var(--white); }
+.login-btn {
+  width: 100%; margin-top: 16px; padding: 15px;
+  background: var(--accent); border: none; border-radius: 12px;
+  color: white; font-size: 15px; font-weight: 700;
+  font-family: 'Noto Sans JP', sans-serif; cursor: pointer;
+}
+.login-btn:active { background: #1d4ed8; }
+
+/* Header */
+.header { background: var(--white); border-bottom: 1px solid var(--border); padding: 12px 16px 10px; position: sticky; top: 0; z-index: 100; }
+.header-row { display: flex; align-items: center; justify-content: space-between; }
+.logo { font-size: 16px; font-weight: 700; }
+.logo em { color: var(--accent); font-style: normal; }
+.user-badge { background: var(--accent); color: white; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; }
+.date-nav { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.date-nav button { background: var(--bg); border: 1px solid var(--border); color: var(--text); width: 30px; height: 30px; border-radius: 8px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.date-main { font-size: 14px; font-weight: 600; flex: 1; text-align: center; }
+.date-sub { font-size: 10px; color: var(--text3); text-align: center; }
+
+/* Tab bar */
+.tab-bar { display: flex; background: var(--white); border-bottom: 1px solid var(--border); }
+.tab-btn { flex: 1; padding: 10px 4px; border: none; background: none; font-family: 'Noto Sans JP', sans-serif; font-size: 12px; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; font-weight: 400; }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+/* Content */
+.content { padding: 12px 12px 90px; }
+.tab-page { display: none; }
+.tab-page.active { display: block; }
+
+/* Card */
+.card { background: var(--white); border-radius: 12px; margin-bottom: 10px; overflow: hidden; border: 1px solid var(--border); }
+.card-title { font-size: 11px; font-weight: 700; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; padding: 12px 14px 0; }
+
+/* Weight */
+.weight-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: var(--border); margin-top: 10px; border-top: 1px solid var(--border); }
+.weight-cell { background: var(--white); padding: 14px 8px 12px; text-align: center; }
+.weight-cell-label { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
+.weight-cell input { background: none; border: none; font-size: 26px; font-weight: 700; color: var(--text); width: 100%; text-align: center; outline: none; padding: 0; font-family: 'Noto Sans JP', sans-serif; }
+.weight-cell input::placeholder { color: #ddd; font-weight: 300; }
+.weight-cell-unit { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.diff-val { font-size: 24px; font-weight: 700; line-height: 1; }
+.diff-minus { color: var(--green); }
+.diff-plus { color: var(--red); }
+.diff-zero { color: var(--text3); }
+
+/* Row item */
+.row-item { display: flex; align-items: center; justify-content: space-between; padding: 13px 14px; border-top: 1px solid var(--border); }
+.row-label { font-size: 14px; color: var(--text); display: flex; align-items: center; gap: 6px; }
+.row-label .icon { font-size: 17px; }
+
+/* Chip */
+.chip-group { display: flex; gap: 6px; }
+.chip { padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--text3); font-size: 12px; font-family: 'Noto Sans JP', sans-serif; cursor: pointer; transition: all 0.15s; }
+.chip.on { background: var(--accent); border-color: var(--accent); color: white; font-weight: 600; }
+
+/* Stepper */
+.stepper { display: flex; align-items: center; gap: 10px; }
+.stepper button { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
+.stepper-val { font-size: 17px; font-weight: 600; min-width: 38px; text-align: center; }
+.stepper-unit { font-size: 12px; color: var(--text3); }
+
+/* Check btn */
+.check-btn { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--border); background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; color: transparent; transition: all 0.15s; }
+.check-btn.on { background: var(--accent); border-color: var(--accent); color: white; }
+
+/* ===== PHOTO SECTION ===== */
+.photo-section { padding: 14px; }
+.photo-section-title { font-size: 12px; font-weight: 600; color: var(--text3); margin-bottom: 10px; letter-spacing: 0.5px; }
+
+.meal-photo-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.meal-photo-slot {
+  flex: 1;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  border: 1.5px dashed var(--border);
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  transition: border-color 0.2s;
+}
+.meal-photo-slot:active { border-color: var(--accent); }
+.meal-photo-slot img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+.meal-photo-slot .slot-label { font-size: 10px; color: var(--text3); margin-top: 4px; z-index: 1; }
+.meal-photo-slot .slot-icon { font-size: 22px; z-index: 1; }
+.meal-photo-slot.has-photo .slot-label { display: none; }
+.meal-photo-slot.has-photo .slot-icon { display: none; }
+.photo-delete { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; background: rgba(0,0,0,0.5); border-radius: 50%; border: none; color: white; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2; }
+input[type="file"] { display: none; }
+
+/* Free photo upload */
+.free-photos { display: flex; flex-wrap: wrap; gap: 8px; }
+.free-photo-thumb { width: calc(33.33% - 6px); aspect-ratio: 1; border-radius: 8px; overflow: hidden; position: relative; }
+.free-photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.free-photo-thumb .photo-delete { top: 3px; right: 3px; }
+.add-photo-btn {
+  width: calc(33.33% - 6px);
+  aspect-ratio: 1;
+  border-radius: 8px;
+  border: 1.5px dashed var(--border);
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--text3);
+}
+.add-photo-btn .add-icon { font-size: 22px; }
+
+/* Memo */
+.memo-wrap { padding: 0 14px 14px; }
+.memo-input { width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 13px; font-family: 'Noto Sans JP', sans-serif; resize: none; outline: none; background: var(--bg); color: var(--text); min-height: 64px; }
+.memo-input:focus { border-color: var(--accent); background: var(--white); }
+
+/* Save button */
+.save-btn { width: 100%; padding: 15px; background: var(--accent); border: none; border-radius: 12px; color: white; font-size: 15px; font-weight: 700; font-family: 'Noto Sans JP', sans-serif; cursor: pointer; margin-top: 4px; }
+.save-btn:active { background: #1d4ed8; }
+
+/* Graph */
+.period-row { display: flex; gap: 6px; padding: 12px 14px 0; flex-wrap: wrap; }
+.period-btn { padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--text3); font-size: 12px; font-family: 'Noto Sans JP', sans-serif; cursor: pointer; }
+.period-btn.active { background: var(--accent); border-color: var(--accent); color: white; font-weight: 600; }
+.legend-row { display: flex; gap: 14px; padding: 10px 14px 0; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text3); }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+.chart-wrap { padding: 12px 14px 14px; }
+
+.stat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 10px; }
+.stat-cell { background: var(--white); padding: 12px 8px; text-align: center; }
+.stat-label { font-size: 10px; color: var(--text3); margin-bottom: 4px; }
+.stat-value { font-size: 20px; font-weight: 700; color: var(--text); }
+.stat-unit { font-size: 10px; color: var(--text3); margin-top: 1px; }
+.stat-value.pos { color: var(--red); }
+.stat-value.neg { color: var(--green); }
+
+/* Table */
+.table-wrap { overflow-x: auto; padding: 14px 0 0; }
+table { border-collapse: collapse; font-size: 11px; min-width: 100%; }
+th { padding: 5px 10px; color: var(--text3); font-weight: 500; white-space: nowrap; text-align: center; border-bottom: 1px solid var(--border); }
+th.row-head { text-align: left; font-size: 10px; padding-left: 14px; }
+td { padding: 8px 10px; text-align: center; white-space: nowrap; border-bottom: 1px solid #f0f0f0; color: var(--text); }
+td.row-head { text-align: left; color: var(--text3); font-size: 10px; padding-left: 14px; background: var(--bg); font-weight: 500; }
+td.red { color: var(--red); font-weight: 600; }
+
+/* Toast */
+.toast { position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%) translateY(10px); background: #1a1a1a; color: white; padding: 10px 22px; border-radius: 30px; font-size: 13px; font-weight: 500; opacity: 0; transition: all 0.25s; pointer-events: none; z-index: 999; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* Bottom nav */
+.bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; background: var(--white); border-top: 1px solid var(--border); display: flex; padding: 8px 0 20px; }
+.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 4px; }
+.nav-icon { font-size: 21px; }
+.nav-label { font-size: 10px; color: var(--text3); }
+.nav-item.active .nav-label { color: var(--accent); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-logo">zen <em>Diet</em></div>
+  <div class="login-sub">体重・食事記録アプリ</div>
+  <label class="login-label">お名前</label>
+  <input class="login-input" id="loginName" type="text" placeholder="例）山田 花子" maxlength="20" style="margin-bottom:12px">
+  <label class="login-label" style="margin-top:4px">診察券番号</label>
+  <input class="login-input" id="loginCard" type="number" placeholder="例）5236" maxlength="10" onkeydown="if(event.key==='Enter') doLogin()">
+  <div id="loginError" style="color:#dc2626;font-size:13px;margin-top:10px;display:none;text-align:center">名前または診察券番号が正しくありません</div>
+  <button class="login-btn" onclick="doLogin()">はじめる →</button>
+</div>
+
+<!-- MAIN APP (hidden until login) -->
+<div id="mainApp" style="display:none">
+
+<div class="header">
+  <div class="header-row">
+    <div class="logo">zen <em>Diet</em></div>
+    <div class="user-badge" id="userBadge"></div>
+  </div>
+  <div class="date-nav">
+    <button onclick="changeDate(-1)">‹</button>
+    <div style="flex:1;text-align:center">
+      <div class="date-main" id="dateMain"></div>
+      <div class="date-sub" id="dateSub"></div>
+    </div>
+    <button onclick="changeDate(1)">›</button>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" id="tabBtn-record" onclick="switchTab('record')">📝 記録</button>
+  <button class="tab-btn" id="tabBtn-graph" onclick="switchTab('graph')">📈 グラフ</button>
+  <button class="tab-btn" id="tabBtn-table" onclick="switchTab('table')">📋 一覧</button>
+</div>
+
+<div class="content">
+
+<!-- RECORD TAB -->
+<div class="tab-page active" id="tab-record">
+
+  <div class="card">
+    <div class="card-title">体重</div>
+    <div class="weight-grid">
+      <div class="weight-cell">
+        <div class="weight-cell-label">🌅 朝</div>
+        <input type="number" id="wMorning" step="0.1" min="30" max="200" placeholder="–" oninput="calcDiff()">
+        <div class="weight-cell-unit">kg</div>
+      </div>
+      <div class="weight-cell">
+        <div class="weight-cell-label">🌙 夜</div>
+        <input type="number" id="wEvening" step="0.1" min="30" max="200" placeholder="–" oninput="calcDiff()">
+        <div class="weight-cell-unit">kg</div>
+      </div>
+      <div class="weight-cell">
+        <div class="weight-cell-label">前日比</div>
+        <div class="diff-val diff-zero" id="diffVal">–</div>
+        <div class="weight-cell-unit">kg</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="padding-bottom:2px">外食</div>
+    <div class="row-item">
+      <div class="row-label"><span class="icon">☀️</span>昼（Lunch）</div>
+      <div class="chip-group">
+        <button class="chip on" id="lunchNone" onclick="setMeal('lunch','none')">なし</button>
+        <button class="chip" id="lunchL" onclick="setMeal('lunch','L')">外食 L</button>
+      </div>
+    </div>
+    <div class="row-item">
+      <div class="row-label"><span class="icon">🌙</span>夜（Dinner）</div>
+      <div class="chip-group">
+        <button class="chip on" id="dinnerNone" onclick="setMeal('dinner','none')">なし</button>
+        <button class="chip" id="dinnerD" onclick="setMeal('dinner','D')">外食 D</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="padding-bottom:2px">水分・身体</div>
+    <div class="row-item">
+      <div class="row-label"><span class="icon">💧</span>水分量</div>
+      <div class="stepper">
+        <button onclick="adj('water',-0.1)">－</button>
+        <span class="stepper-val" id="waterVal">1.5</span>
+        <button onclick="adj('water',0.1)">＋</button>
+        <span class="stepper-unit">L</span>
+      </div>
+    </div>
+    <div class="row-item">
+      <div class="row-label"><span class="icon">🚽</span>トイレ回数</div>
+      <div class="stepper">
+        <button onclick="adj('toilet',-1)">－</button>
+        <span class="stepper-val" id="toiletVal">8</span>
+        <button onclick="adj('toilet',1)">＋</button>
+        <span class="stepper-unit">回</span>
+      </div>
+    </div>
+    <div class="row-item">
+      <div class="row-label"><span class="icon">😴</span>睡眠時間</div>
+      <div class="stepper">
+        <button onclick="adj('sleep',-0.5)">－</button>
+        <span class="stepper-val" id="sleepVal">7.0</span>
+        <button onclick="adj('sleep',0.5)">＋</button>
+        <span class="stepper-unit">h</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="padding-bottom:2px">体調チェック</div>
+    <div class="row-item">
+      <div class="row-label"><span class="icon">🟤</span>排便</div>
+      <button class="check-btn" id="checkHaiben" onclick="toggleCheck('checkHaiben')">✓</button>
+    </div>
+    <div class="row-item">
+      <div class="row-label"><span class="icon">🌸</span>生理日</div>
+      <button class="check-btn" id="checkSeiri" onclick="toggleCheck('checkSeiri')">✓</button>
+    </div>
+  </div>
+
+  <!-- PHOTO CARD -->
+  <div class="card">
+    <div class="card-title">食事写真</div>
+    <div class="photo-section">
+      <div class="photo-section-title">朝・昼・夜</div>
+      <div class="meal-photo-row">
+        <div class="meal-photo-slot" id="slot-morning" onclick="triggerPhoto('morning')">
+          <span class="slot-icon">🌅</span>
+          <span class="slot-label">朝食</span>
+        </div>
+        <div class="meal-photo-slot" id="slot-lunch" onclick="triggerPhoto('lunch')">
+          <span class="slot-icon">☀️</span>
+          <span class="slot-label">昼食</span>
+        </div>
+        <div class="meal-photo-slot" id="slot-dinner" onclick="triggerPhoto('dinner')">
+          <span class="slot-icon">🌙</span>
+          <span class="slot-label">夕食</span>
+        </div>
+      </div>
+      <input type="file" id="file-morning" accept="image/*" capture="environment" onchange="handlePhoto(event,'morning')">
+      <input type="file" id="file-lunch"   accept="image/*" capture="environment" onchange="handlePhoto(event,'lunch')">
+      <input type="file" id="file-dinner"  accept="image/*" capture="environment" onchange="handlePhoto(event,'dinner')">
+
+      <div class="photo-section-title" style="margin-top:4px">その他・メモ写真</div>
+      <div class="free-photos" id="freePhotos">
+        <div class="add-photo-btn" onclick="triggerFreePhoto()">
+          <span class="add-icon">＋</span>
+          <span>追加</span>
+        </div>
+      </div>
+      <input type="file" id="file-free" accept="image/*" capture="environment" onchange="handleFreePhoto(event)" multiple>
+    </div>
+
+    <div class="memo-wrap">
+      <textarea class="memo-input" id="memoText" placeholder="メモ（体調・食事内容など）"></textarea>
+    </div>
+  </div>
+
+  <button class="save-btn" onclick="saveData()">保存する</button>
+</div>
+
+<!-- GRAPH TAB -->
+<div class="tab-page" id="tab-graph">
+  <div class="stat-row" id="summaryStats"></div>
+  <div class="card">
+    <div class="card-title" style="padding-bottom:0">体重推移</div>
+    <div class="period-row">
+      <button class="period-btn active" onclick="setPeriod(7,this)">1週間</button>
+      <button class="period-btn" onclick="setPeriod(30,this)">1ヶ月</button>
+      <button class="period-btn" onclick="setPeriod(90,this)">3ヶ月</button>
+      <button class="period-btn" onclick="setPeriod(0,this)">全期間</button>
+    </div>
+    <div class="legend-row">
+      <div class="legend-item"><div class="legend-dot" style="background:#2563eb"></div>朝の体重</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#93c5fd"></div>夜の体重</div>
+    </div>
+    <div class="chart-wrap"><canvas id="weightChart" height="200"></canvas></div>
+  </div>
+</div>
+
+<!-- TABLE TAB -->
+<div class="tab-page" id="tab-table">
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead><tr id="tableHead"><th class="row-head">項目</th></tr></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div style="height:14px"></div>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<div class="toast" id="toast"></div>
+
+<div class="bottom-nav">
+  <div class="nav-item active" id="nav-record" onclick="switchNav('record')"><div class="nav-icon">📝</div><div class="nav-label">記録</div></div>
+  <div class="nav-item" id="nav-graph" onclick="switchNav('graph')"><div class="nav-icon">📈</div><div class="nav-label">グラフ</div></div>
+  <div class="nav-item" id="nav-table" onclick="switchNav('table')"><div class="nav-icon">📋</div><div class="nav-label">一覧</div></div>
+</div>
+
+</div><!-- /mainApp -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const DAYS=['日','月','火','水','木','金','土'];
+let currentDate=new Date(); currentDate.setHours(0,0,0,0);
+let allData={};  // { userName: { dateKey: {...} } }
+let userName='';
+let currentPeriod=7;
+let weightChart=null;
+let lunchState='none', dinnerState='none';
+let sv={water:1.5,toilet:8,sleep:7.0};
+// photos stored as base64: { morning, lunch, dinner, free:[] }
+let todayPhotos={morning:null,lunch:null,dinner:null,free:[]};
+
+const dk=d=>d.toISOString().split('T')[0];
+const mo=d=>d.getMonth()+1;
+
+function loadAll(){ try{ allData=JSON.parse(localStorage.getItem('zenDietAll')||'{}'); }catch(e){ allData={}; } }
+function saveAll(){ localStorage.setItem('zenDietAll',JSON.stringify(allData)); }
+function userData(){ return allData[userName]||(allData[userName]={}); }
+
+function doLogin(){
+  const n=document.getElementById('loginName').value.trim();
+  const c=document.getElementById('loginCard').value.trim();
+  const errEl=document.getElementById('loginError');
+  errEl.style.display='none';
+  if(!n||!c){ errEl.textContent='名前と診察券番号を両方入力してください'; errEl.style.display='block'; return; }
+
+  // Load existing data first to check
+  loadAll();
+  injectDemoPatients();
+
+  // Check: if this name exists, card number must match stored one
+  const existing=allData[n];
+  if(existing && existing._cardNumber && existing._cardNumber !== c){
+    errEl.textContent='名前または診察券番号が正しくありません';
+    errEl.style.display='block';
+    return;
+  }
+
+  // New user: save card number
+  if(!allData[n]) allData[n]={};
+  allData[n]._cardNumber=c;
+  saveAll();
+
+  userName=n;
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('mainApp').style.display='block';
+  document.getElementById('userBadge').textContent=n;
+  updateHeader();
+  loadDayUI();
+}
+
+// initDemoIfEmpty removed - new users start with empty data
+
+function updateHeader(){
+  document.getElementById('dateMain').textContent=`${mo(currentDate)}月${currentDate.getDate()}日`;
+  document.getElementById('dateSub').textContent=DAYS[currentDate.getDay()]+'曜日';
+}
+
+function changeDate(delta){
+  currentDate.setDate(currentDate.getDate()+delta);
+  updateHeader(); loadDayUI();
+}
+
+function loadDayUI(){
+  const d=userData()[dk(currentDate)]||{};
+  document.getElementById('wMorning').value=d.wMorning??'';
+  document.getElementById('wEvening').value=d.wEvening??'';
+  lunchState=d.lunch||'none'; dinnerState=d.dinner||'none';
+  updateMealUI();
+  sv.water=d.water??1.5; sv.toilet=d.toilet??8; sv.sleep=d.sleep??7.0;
+  document.getElementById('waterVal').textContent=sv.water.toFixed(1);
+  document.getElementById('toiletVal').textContent=sv.toilet;
+  document.getElementById('sleepVal').textContent=sv.sleep.toFixed(1);
+  document.getElementById('checkHaiben').classList.toggle('on',!!d.haiben);
+  document.getElementById('checkSeiri').classList.toggle('on',!!d.seiri);
+  document.getElementById('memoText').value=d.memo||'';
+  todayPhotos=d.photos?JSON.parse(JSON.stringify(d.photos)):{morning:null,lunch:null,dinner:null,free:[]};
+  renderPhotoSlots();
+  calcDiff();
+}
+
+function calcDiff(){
+  const prev=new Date(currentDate); prev.setDate(prev.getDate()-1);
+  const prevD=userData()[dk(prev)];
+  const tm=parseFloat(document.getElementById('wMorning').value);
+  const pm=prevD?parseFloat(prevD.wMorning):NaN;
+  const el=document.getElementById('diffVal');
+  if(!isNaN(tm)&&!isNaN(pm)){
+    const diff=+(tm-pm).toFixed(1);
+    el.textContent=(diff>0?'+':'')+diff;
+    el.className='diff-val '+(diff>0?'diff-plus':diff<0?'diff-minus':'diff-zero');
+  } else { el.textContent='–'; el.className='diff-val diff-zero'; }
+}
+
+function setMeal(type,val){
+  if(type==='lunch') lunchState=val; else dinnerState=val;
+  updateMealUI();
+}
+
+function updateMealUI(){
+  document.getElementById('lunchNone').classList.toggle('on',lunchState==='none');
+  document.getElementById('lunchL').classList.toggle('on',lunchState==='L');
+  document.getElementById('dinnerNone').classList.toggle('on',dinnerState==='none');
+  document.getElementById('dinnerD').classList.toggle('on',dinnerState==='D');
+}
+
+function adj(key,delta){
+  sv[key]=Math.max(0,+(sv[key]+delta).toFixed(1));
+  const ids={water:'waterVal',toilet:'toiletVal',sleep:'sleepVal'};
+  const dp={water:1,toilet:0,sleep:1};
+  document.getElementById(ids[key]).textContent=sv[key].toFixed(dp[key]);
+}
+
+function toggleCheck(id){ document.getElementById(id).classList.toggle('on'); }
+
+// ===== PHOTOS =====
+function triggerPhoto(slot){ document.getElementById('file-'+slot).click(); }
+function triggerFreePhoto(){ document.getElementById('file-free').click(); }
+
+function handlePhoto(e,slot){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    todayPhotos[slot]=ev.target.result;
+    renderPhotoSlots();
+  };
+  reader.readAsDataURL(file);
+  e.target.value='';
+}
+
+function handleFreePhoto(e){
+  const files=Array.from(e.target.files); if(!files.length) return;
+  let loaded=0;
+  files.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      if(!todayPhotos.free) todayPhotos.free=[];
+      todayPhotos.free.push(ev.target.result);
+      loaded++;
+      if(loaded===files.length) renderPhotoSlots();
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value='';
+}
+
+function renderPhotoSlots(){
+  ['morning','lunch','dinner'].forEach(slot=>{
+    const el=document.getElementById('slot-'+slot);
+    const img=el.querySelector('img');
+    if(todayPhotos[slot]){
+      if(!img){
+        const i=document.createElement('img'); el.appendChild(i);
+        const btn=document.createElement('button');
+        btn.className='photo-delete'; btn.textContent='✕';
+        btn.onclick=ev=>{ ev.stopPropagation(); todayPhotos[slot]=null; renderPhotoSlots(); };
+        el.appendChild(btn);
+      }
+      el.querySelector('img').src=todayPhotos[slot];
+      el.classList.add('has-photo');
+    } else {
+      if(img) img.remove();
+      const btn=el.querySelector('.photo-delete'); if(btn) btn.remove();
+      el.classList.remove('has-photo');
+    }
+  });
+
+  // Free photos
+  const container=document.getElementById('freePhotos');
+  container.innerHTML='';
+  (todayPhotos.free||[]).forEach((src,i)=>{
+    const div=document.createElement('div'); div.className='free-photo-thumb';
+    const img=document.createElement('img'); img.src=src; div.appendChild(img);
+    const btn=document.createElement('button'); btn.className='photo-delete'; btn.textContent='✕';
+    btn.onclick=()=>{ todayPhotos.free.splice(i,1); renderPhotoSlots(); };
+    div.appendChild(btn); container.appendChild(div);
+  });
+  const addBtn=document.createElement('div'); addBtn.className='add-photo-btn';
+  addBtn.onclick=triggerFreePhoto;
+  addBtn.innerHTML='<span class="add-icon">＋</span><span>追加</span>';
+  container.appendChild(addBtn);
+}
+
+function saveData(){
+  const k=dk(currentDate);
+  userData()[k]={
+    wMorning:parseFloat(document.getElementById('wMorning').value)||null,
+    wEvening:parseFloat(document.getElementById('wEvening').value)||null,
+    lunch:lunchState, dinner:dinnerState,
+    water:sv.water, toilet:sv.toilet, sleep:sv.sleep,
+    haiben:document.getElementById('checkHaiben').classList.contains('on'),
+    seiri:document.getElementById('checkSeiri').classList.contains('on'),
+    memo:document.getElementById('memoText').value,
+    photos:JSON.parse(JSON.stringify(todayPhotos)),
+  };
+  saveAll();
+  showToast('✓ 保存しました');
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+// ===== GRAPH =====
+function getDays(n){
+  if(n===0){
+    // 全期間: find earliest record date
+    const keys=Object.keys(userData()).sort();
+    if(!keys.length) return [];
+    const earliest=new Date(keys[0]+'T00:00:00');
+    const days=[];
+    const d=new Date(earliest);
+    while(d<=currentDate){ days.push(new Date(d)); d.setDate(d.getDate()+1); }
+    return days;
+  }
+  return Array.from({length:n},(_,i)=>{ const d=new Date(currentDate); d.setDate(d.getDate()-(n-1-i)); return d; });
+}
+
+function setPeriod(n,btn){
+  currentPeriod=n;
+  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGraph();
+}
+
+function renderGraph(){
+  const days=getDays(currentPeriod);
+  const labels=days.map(d=>`${mo(d)}/${d.getDate()}`);
+  const mornings=days.map(d=>{ const r=userData()[dk(d)]; return r?.wMorning??null; });
+  const evenings=days.map(d=>{ const r=userData()[dk(d)]; return r?.wEvening??null; });
+  const all=[...mornings,...evenings].filter(v=>v!==null);
+  const minV=all.length?Math.min(...all)-0.8:50;
+  const maxV=all.length?Math.max(...all)+0.8:80;
+  const ctx=document.getElementById('weightChart').getContext('2d');
+  if(weightChart) weightChart.destroy();
+  weightChart=new Chart(ctx,{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'朝',data:mornings,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.07)',pointBackgroundColor:'#2563eb',pointRadius:4,tension:0.35,spanGaps:true},
+      {label:'夜',data:evenings,borderColor:'#93c5fd',backgroundColor:'rgba(147,197,253,0.04)',pointBackgroundColor:'#93c5fd',pointRadius:3,tension:0.35,spanGaps:true,borderDash:[4,3]}
+    ]},
+    options:{
+      responsive:true,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y?.toFixed(1)??'–'}kg`}}},
+      scales:{
+        x:{ticks:{color:'#999',font:{size:10},maxRotation:0},grid:{color:'#f4f4f4'}},
+        y:{min:Math.floor(minV*2)/2,max:Math.ceil(maxV*2)/2,ticks:{color:'#999',font:{size:10},callback:v=>v+'kg'},grid:{color:'#f4f4f4'}}
+      }
+    }
+  });
+  const vm=mornings.filter(v=>v!==null);
+  if(vm.length>=2){
+    const change=+(vm[vm.length-1]-vm[0]).toFixed(1);
+    const sign=change>0?'+':'';
+    document.getElementById('summaryStats').innerHTML=`
+      <div class="stat-cell"><div class="stat-label">開始時</div><div class="stat-value">${vm[0].toFixed(1)}</div><div class="stat-unit">kg</div></div>
+      <div class="stat-cell"><div class="stat-label">最新</div><div class="stat-value">${vm[vm.length-1].toFixed(1)}</div><div class="stat-unit">kg</div></div>
+      <div class="stat-cell"><div class="stat-label">変化</div><div class="stat-value ${change<=0?'neg':'pos'}">${sign}${change}</div><div class="stat-unit">kg</div></div>`;
+  } else { document.getElementById('summaryStats').innerHTML=''; }
+}
+
+// ===== TABLE =====
+function renderTable(){
+  const days=getDays(14);
+  const head=document.getElementById('tableHead');
+  while(head.children.length>1) head.removeChild(head.lastChild);
+  days.forEach(d=>{ const th=document.createElement('th'); th.textContent=`${mo(d)}/${d.getDate()}`; head.appendChild(th); });
+  const ROWS=[
+    {label:'朝体重kg',get:d=>{const r=userData()[dk(d)];return r?.wMorning?.toFixed(1)??'';},red:()=>false},
+    {label:'夜体重kg',get:d=>{const r=userData()[dk(d)];return r?.wEvening?.toFixed(1)??'';},red:d=>{const r=userData()[dk(d)];return r?.wEvening&&r?.wMorning&&r.wEvening>r.wMorning;}},
+    {label:'外食(昼)',get:d=>{const r=userData()[dk(d)];return r?.lunch==='L'?'L':'';},red:()=>false},
+    {label:'外食(夜)',get:d=>{const r=userData()[dk(d)];return r?.dinner==='D'?'D':'';},red:()=>false},
+    {label:'排便',get:d=>{const r=userData()[dk(d)];return r?.haiben?'○':'';},red:()=>false},
+    {label:'生理日',get:d=>{const r=userData()[dk(d)];return r?.seiri?'○':'';},red:()=>false},
+    {label:'水分量L',get:d=>{const r=userData()[dk(d)];return r?.water?.toFixed(1)??'';},red:d=>{const r=userData()[dk(d)];return r?.water!==undefined&&r.water<1.5;}},
+    {label:'トイレ',get:d=>{const r=userData()[dk(d)];return r?.toilet??'';},red:()=>false},
+    {label:'睡眠h',get:d=>{const r=userData()[dk(d)];return r?.sleep?.toFixed(1)??'';},red:d=>{const r=userData()[dk(d)];return r?.sleep!==undefined&&r.sleep<6;}},
+  ];
+  const tbody=document.getElementById('tableBody');
+  tbody.innerHTML='';
+  ROWS.forEach(row=>{
+    const tr=document.createElement('tr');
+    const th=document.createElement('td'); th.className='row-head'; th.textContent=row.label; tr.appendChild(th);
+    days.forEach(d=>{ const td=document.createElement('td'); td.textContent=row.get(d); if(row.red(d)) td.classList.add('red'); tr.appendChild(td); });
+    tbody.appendChild(tr);
+  });
+}
+
+function switchTab(name){
+  ['record','graph','table'].forEach(n=>{
+    document.getElementById('tab-'+n).classList.toggle('active',n===name);
+    document.getElementById('tabBtn-'+n).classList.toggle('active',n===name);
+    document.getElementById('nav-'+n).classList.toggle('active',n===name);
+  });
+  if(name==='graph') renderGraph();
+  if(name==='table') renderTable();
+}
+function switchNav(name){ switchTab(name); }
+
+// ===== DEMO DATA INJECTION =====
+function injectDemoPatients(){
+  const existing = JSON.parse(localStorage.getItem('zenDietAll')||'{}');
+  function genData(baseWeight, trend, seed){
+    const ud={};
+    const today=new Date(); today.setHours(0,0,0,0);
+    let w=baseWeight;
+    for(let i=20;i>=0;i--){
+      const d=new Date(today); d.setDate(d.getDate()-i);
+      const k=dk(d);
+      const r1=((Math.sin(seed*i*7.3+1)*0.5+0.5)*0.6-0.3);
+      const r2=((Math.sin(seed*i*3.7+2)*0.5+0.5));
+      const r3=((Math.sin(seed*i*5.1+3)*0.5+0.5));
+      w=+(w+trend+(r1*0.3)).toFixed(1);
+      ud[k]={
+        wMorning:w, wEvening:+(w+0.2+(r2*0.5)).toFixed(1),
+        lunch:r2>0.75?'L':'none', dinner:r3>0.85?'D':'none',
+        water:+(1.2+(r2*1.0)).toFixed(1), toilet:Math.floor(7+(r3*5)),
+        sleep:+(5.5+(r2*2.5)).toFixed(1), haiben:r3>0.3, seiri:false,
+        photos:{morning:null,lunch:null,dinner:null,free:[]},
+        memo:i===5?'少し食べ過ぎた日。次の日からしっかり調整します。':i===10?'体調良好！水分も意識できてる。':''
+      };
+    }
+    return ud;
+  }
+  // Only inject demo data for the two preset demo patients
+  let changed = false;
+  if(!existing['西田太郎']){ existing['西田太郎']=genData(78.5,-0.08,1.23); changed=true; }
+  if(!existing['西田花子']){ existing['西田花子']=genData(58.2,-0.06,4.56); changed=true; }
+  if(changed) localStorage.setItem('zenDietAll',JSON.stringify(existing));
+}
+// injectDemoPatients() is now called inside doLogin() only for demo accounts
+
+</script>
+</body>
+</html>
