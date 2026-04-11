@@ -95,6 +95,47 @@ body { background: var(--bg); color: var(--text); font-family: 'Noto Sans JP', s
 .stepper-val { font-size: 17px; font-weight: 600; min-width: 38px; text-align: center; }
 .stepper-unit { font-size: 12px; color: var(--text3); }
 
+/* Drum Roll Picker */
+.picker-wrap { display: flex; align-items: center; gap: 8px; }
+.drum-picker {
+  position: relative;
+  height: 36px;
+  overflow: hidden;
+  cursor: ns-resize;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.drum-inner {
+  position: absolute;
+  width: 100%;
+  transition: transform 0.15s ease-out;
+}
+.drum-item {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+.drum-item.dim { color: #ccc; font-size: 14px; font-weight: 400; }
+.drum-highlight {
+  position: absolute;
+  top: 50%;
+  left: 0; right: 0;
+  transform: translateY(-50%);
+  height: 36px;
+  border-top: 1.5px solid var(--accent);
+  border-bottom: 1.5px solid var(--accent);
+  pointer-events: none;
+  border-radius: 4px;
+  background: rgba(37,99,235,0.04);
+}
+.drum-unit { font-size: 12px; color: var(--text3); }
+
+
 /* Check btn */
 .check-btn { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--border); background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; color: transparent; transition: all 0.15s; }
 .check-btn.on { background: var(--accent); border-color: var(--accent); color: white; }
@@ -195,6 +236,28 @@ td.red { color: var(--red); font-weight: 600; }
 .nav-icon { font-size: 21px; }
 .nav-label { font-size: 10px; color: var(--text3); }
 .nav-item.active .nav-label { color: var(--accent); font-weight: 600; }
+
+/* Food Log */
+.log-day { background: var(--white); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+.log-day-header { padding: 12px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+.log-day-date { font-size: 14px; font-weight: 700; color: var(--text); }
+.log-day-weight { font-size: 12px; color: var(--text3); }
+.log-day-change { font-size: 12px; font-weight: 600; }
+.log-meal { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-bottom: 1px solid #f5f5f5; }
+.log-meal:last-child { border-bottom: none; }
+.log-meal-time { font-size: 11px; color: var(--text3); width: 28px; flex-shrink: 0; padding-top: 2px; text-align: center; }
+.log-meal-time .time-icon { font-size: 18px; display: block; }
+.log-meal-photo { width: 72px; height: 72px; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: var(--bg); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.log-meal-photo img { width: 100%; height: 100%; object-fit: cover; }
+.log-meal-photo .no-photo-icon { font-size: 24px; color: #ddd; }
+.log-meal-info { flex: 1; min-width: 0; }
+.log-meal-label { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+.log-meal-tag { display: inline-block; font-size: 10px; background: #fff3cd; color: #856404; padding: 1px 6px; border-radius: 8px; margin-bottom: 4px; }
+.log-meal-note { font-size: 11px; color: var(--text3); line-height: 1.5; }
+.log-day-memo { padding: 10px 14px; background: var(--bg); font-size: 12px; color: var(--text2); line-height: 1.6; border-top: 1px solid var(--border); }
+.log-empty { text-align: center; padding: 40px 20px; color: var(--text3); font-size: 13px; }
+.log-day-stats { display: flex; gap: 8px; padding: 8px 14px; background: var(--bg); border-top: 1px solid var(--border); flex-wrap: wrap; }
+.log-stat-chip { font-size: 10px; color: var(--text3); background: var(--white); border: 1px solid var(--border); padding: 2px 8px; border-radius: 10px; }
 </style>
 </head>
 <body>
@@ -231,6 +294,7 @@ td.red { color: var(--red); font-weight: 600; }
 
 <div class="tab-bar">
   <button class="tab-btn active" id="tabBtn-record" onclick="switchTab('record')">📝 記録</button>
+  <button class="tab-btn" id="tabBtn-log" onclick="switchTab('log')">🍽️ 食事</button>
   <button class="tab-btn" id="tabBtn-graph" onclick="switchTab('graph')">📈 グラフ</button>
   <button class="tab-btn" id="tabBtn-table" onclick="switchTab('table')">📋 一覧</button>
 </div>
@@ -283,29 +347,32 @@ td.red { color: var(--red); font-weight: 600; }
     <div class="card-title" style="padding-bottom:2px">水分・身体</div>
     <div class="row-item">
       <div class="row-label"><span class="icon">💧</span>水分量</div>
-      <div class="stepper">
-        <button onclick="adj('water',-0.1)">－</button>
-        <span class="stepper-val" id="waterVal">1.5</span>
-        <button onclick="adj('water',0.1)">＋</button>
-        <span class="stepper-unit">L</span>
+      <div class="picker-wrap">
+        <div class="drum-picker" id="picker-water" style="width:64px" data-key="water">
+          <div class="drum-inner" id="drum-water"></div>
+          <div class="drum-highlight"></div>
+        </div>
+        <span class="drum-unit">L</span>
       </div>
     </div>
     <div class="row-item">
       <div class="row-label"><span class="icon">🚽</span>トイレ回数</div>
-      <div class="stepper">
-        <button onclick="adj('toilet',-1)">－</button>
-        <span class="stepper-val" id="toiletVal">8</span>
-        <button onclick="adj('toilet',1)">＋</button>
-        <span class="stepper-unit">回</span>
+      <div class="picker-wrap">
+        <div class="drum-picker" id="picker-toilet" style="width:54px" data-key="toilet">
+          <div class="drum-inner" id="drum-toilet"></div>
+          <div class="drum-highlight"></div>
+        </div>
+        <span class="drum-unit">回</span>
       </div>
     </div>
     <div class="row-item">
       <div class="row-label"><span class="icon">😴</span>睡眠時間</div>
-      <div class="stepper">
-        <button onclick="adj('sleep',-0.5)">－</button>
-        <span class="stepper-val" id="sleepVal">7.0</span>
-        <button onclick="adj('sleep',0.5)">＋</button>
-        <span class="stepper-unit">h</span>
+      <div class="picker-wrap">
+        <div class="drum-picker" id="picker-sleep" style="width:64px" data-key="sleep">
+          <div class="drum-inner" id="drum-sleep"></div>
+          <div class="drum-highlight"></div>
+        </div>
+        <span class="drum-unit">h</span>
       </div>
     </div>
   </div>
@@ -341,9 +408,9 @@ td.red { color: var(--red); font-weight: 600; }
           <span class="slot-label">夕食</span>
         </div>
       </div>
-      <input type="file" id="file-morning" accept="image/*" capture="environment" onchange="handlePhoto(event,'morning')">
-      <input type="file" id="file-lunch"   accept="image/*" capture="environment" onchange="handlePhoto(event,'lunch')">
-      <input type="file" id="file-dinner"  accept="image/*" capture="environment" onchange="handlePhoto(event,'dinner')">
+      <input type="file" id="file-morning" accept="image/*" onchange="handlePhoto(event,'morning')">
+      <input type="file" id="file-lunch"   accept="image/*" onchange="handlePhoto(event,'lunch')">
+      <input type="file" id="file-dinner"  accept="image/*" onchange="handlePhoto(event,'dinner')">
 
       <div class="photo-section-title" style="margin-top:4px">その他・メモ写真</div>
       <div class="free-photos" id="freePhotos">
@@ -352,7 +419,7 @@ td.red { color: var(--red); font-weight: 600; }
           <span>追加</span>
         </div>
       </div>
-      <input type="file" id="file-free" accept="image/*" capture="environment" onchange="handleFreePhoto(event)" multiple>
+      <input type="file" id="file-free" accept="image/*" onchange="handleFreePhoto(event)" multiple>
     </div>
 
     <div class="memo-wrap">
@@ -395,12 +462,19 @@ td.red { color: var(--red); font-weight: 600; }
   </div>
 </div>
 
+
+<!-- FOOD LOG TAB -->
+<div class="tab-page" id="tab-log">
+  <div id="foodLogList"></div>
+</div>
+
 </div><!-- /content -->
 
 <div class="toast" id="toast"></div>
 
 <div class="bottom-nav">
   <div class="nav-item active" id="nav-record" onclick="switchNav('record')"><div class="nav-icon">📝</div><div class="nav-label">記録</div></div>
+  <div class="nav-item" id="nav-log" onclick="switchNav('log')"><div class="nav-icon">🍽️</div><div class="nav-label">食事</div></div>
   <div class="nav-item" id="nav-graph" onclick="switchNav('graph')"><div class="nav-icon">📈</div><div class="nav-label">グラフ</div></div>
   <div class="nav-item" id="nav-table" onclick="switchNav('table')"><div class="nav-icon">📋</div><div class="nav-label">一覧</div></div>
 </div>
@@ -526,6 +600,7 @@ function doLogin(){
   updateHeader();
   // Show loading state then fetch from Supabase
   document.getElementById('wMorning').placeholder='読込中...';
+  initPickers();
   loadFromSupabase(n).then(() => {
     document.getElementById('wMorning').placeholder='–';
     loadDayUI();
@@ -551,9 +626,8 @@ function loadDayUI(){
   lunchState=d.lunch||'none'; dinnerState=d.dinner||'none';
   updateMealUI();
   sv.water=d.water??1.5; sv.toilet=d.toilet??8; sv.sleep=d.sleep??7.0;
-  document.getElementById('waterVal').textContent=sv.water.toFixed(1);
-  document.getElementById('toiletVal').textContent=sv.toilet;
-  document.getElementById('sleepVal').textContent=sv.sleep.toFixed(1);
+  // Sync drum pickers
+  if(document.getElementById('drum-water')) syncPickersToSv();
   document.getElementById('checkHaiben').classList.toggle('on',!!d.haiben);
   document.getElementById('checkSeiri').classList.toggle('on',!!d.seiri);
   document.getElementById('memoText').value=d.memo||'';
@@ -587,11 +661,96 @@ function updateMealUI(){
   document.getElementById('dinnerD').classList.toggle('on',dinnerState==='D');
 }
 
+// ===== DRUM PICKERS =====
+const PICKER_CONFIG = {
+  water:  { values: Array.from({length:31},(_,i)=>(i*0.1).toFixed(1)), unit:'L', default:'1.5' },
+  toilet: { values: Array.from({length:21},(_,i)=>String(i)), unit:'回', default:'8' },
+  sleep:  { values: Array.from({length:19},(_,i)=>(i*0.5).toFixed(1)), unit:'h', default:'7.0' },
+};
+
+const pickerState = { water: 0, toilet: 0, sleep: 0 };
+
+function initPickers() {
+  Object.keys(PICKER_CONFIG).forEach(key => {
+    const cfg = PICKER_CONFIG[key];
+    const inner = document.getElementById('drum-' + key);
+    const picker = document.getElementById('picker-' + key);
+    if (!inner || !picker) return;
+
+    // Build items (3 before + all + 3 after for loop feel)
+    inner.innerHTML = '';
+    const pad = 1;
+    for (let i = -pad; i < cfg.values.length + pad; i++) {
+      const div = document.createElement('div');
+      const idx = ((i % cfg.values.length) + cfg.values.length) % cfg.values.length;
+      div.className = 'drum-item' + (i < 0 || i >= cfg.values.length ? ' dim' : '');
+      div.textContent = cfg.values[idx];
+      inner.appendChild(div);
+    }
+
+    // Set initial index
+    const defIdx = cfg.values.indexOf(cfg.default);
+    pickerState[key] = defIdx >= 0 ? defIdx : 0;
+    updateDrum(key);
+
+    // Touch/mouse drag
+    let startY = 0, startIdx = 0, isDragging = false;
+
+    const onStart = (y) => { startY = y; startIdx = pickerState[key]; isDragging = true; };
+    const onMove = (y) => {
+      if (!isDragging) return;
+      const delta = Math.round((startY - y) / 36);
+      const newIdx = Math.max(0, Math.min(cfg.values.length - 1, startIdx + delta));
+      if (newIdx !== pickerState[key]) {
+        pickerState[key] = newIdx;
+        sv[key] = parseFloat(cfg.values[newIdx]);
+        updateDrum(key);
+      }
+    };
+    const onEnd = () => { isDragging = false; };
+
+    picker.addEventListener('touchstart', e => onStart(e.touches[0].clientY), {passive:true});
+    picker.addEventListener('touchmove', e => { e.preventDefault(); onMove(e.touches[0].clientY); }, {passive:false});
+    picker.addEventListener('touchend', onEnd);
+    picker.addEventListener('mousedown', e => onStart(e.clientY));
+    window.addEventListener('mousemove', e => { if(isDragging) onMove(e.clientY); });
+    window.addEventListener('mouseup', onEnd);
+
+    // Wheel scroll
+    picker.addEventListener('wheel', e => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? 1 : -1;
+      const newIdx = Math.max(0, Math.min(cfg.values.length - 1, pickerState[key] + delta));
+      pickerState[key] = newIdx;
+      sv[key] = parseFloat(cfg.values[newIdx]);
+      updateDrum(key);
+    }, {passive:false});
+  });
+}
+
+function updateDrum(key) {
+  const cfg = PICKER_CONFIG[key];
+  const inner = document.getElementById('drum-' + key);
+  if (!inner) return;
+  const pad = 1;
+  const offset = -(pickerState[key] + pad) * 36;
+  inner.style.transform = `translateY(${offset}px)`;
+}
+
+function syncPickersToSv() {
+  Object.keys(PICKER_CONFIG).forEach(key => {
+    const cfg = PICKER_CONFIG[key];
+    const strVal = key === 'toilet' ? String(sv[key]) : sv[key].toFixed(key === 'water' ? 1 : 1);
+    const idx = cfg.values.indexOf(strVal);
+    pickerState[key] = idx >= 0 ? idx : 0;
+    updateDrum(key);
+  });
+}
+
 function adj(key,delta){
+  // Keep for compatibility - now use picker
   sv[key]=Math.max(0,+(sv[key]+delta).toFixed(1));
-  const ids={water:'waterVal',toilet:'toiletVal',sleep:'sleepVal'};
-  const dp={water:1,toilet:0,sleep:1};
-  document.getElementById(ids[key]).textContent=sv[key].toFixed(dp[key]);
+  syncPickersToSv();
 }
 
 function toggleCheck(id){ document.getElementById(id).classList.toggle('on'); }
@@ -780,15 +939,121 @@ function renderTable(){
 }
 
 function switchTab(name){
-  ['record','graph','table'].forEach(n=>{
+  ['record','log','graph','table'].forEach(n=>{
     document.getElementById('tab-'+n).classList.toggle('active',n===name);
     document.getElementById('tabBtn-'+n).classList.toggle('active',n===name);
     document.getElementById('nav-'+n).classList.toggle('active',n===name);
   });
   if(name==='graph') renderGraph();
   if(name==='table') renderTable();
+  if(name==='log') renderFoodLog();
 }
 function switchNav(name){ switchTab(name); }
+
+function renderFoodLog(){
+  const ud = userData();
+  const container = document.getElementById('foodLogList');
+  const DAYS = ['日','月','火','水','木','金','土'];
+
+  // Get all dates with data, sorted newest first
+  const dates = Object.keys(ud)
+    .filter(k => k !== '_cardNumber' && k.match(/^\d{4}-\d{2}-\d{2}$/))
+    .sort().reverse().slice(0, 30);
+
+  if(!dates.length){
+    container.innerHTML = '<div class="log-empty">まだ記録がありません<br>記録タブから入力してみよう！</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+
+  dates.forEach((dateStr, idx) => {
+    const d = ud[dateStr];
+    if(!d) return;
+    const dateObj = new Date(dateStr + 'T00:00:00');
+    const dayLabel = `${dateObj.getMonth()+1}月${dateObj.getDate()}日 (${DAYS[dateObj.getDay()]})`;
+
+    // Calc diff from previous day
+    const prevDate = new Date(dateObj); prevDate.setDate(prevDate.getDate()-1);
+    const prevKey = prevDate.toISOString().split('T')[0];
+    const prevD = ud[prevKey];
+    let diffHtml = '';
+    if(d.wMorning && prevD?.wMorning){
+      const diff = +(d.wMorning - prevD.wMorning).toFixed(1);
+      const cls = diff < 0 ? 'color:var(--green)' : diff > 0 ? 'color:var(--red)' : 'color:var(--text3)';
+      diffHtml = `<span class="log-day-change" style="${cls}">${diff>0?'+':''}${diff}kg</span>`;
+    }
+
+    const meals = [
+      { key: 'morning', icon: '🌅', label: '朝食', isEat: d.lunch !== undefined },
+      { key: 'lunch',   icon: '☀️', label: '昼食', tag: d.lunch==='L' ? '外食' : null },
+      { key: 'dinner',  icon: '🌙', label: '夕食', tag: d.dinner==='D' ? '外食' : null },
+    ];
+
+    const photos = d.photos || {};
+
+    let mealsHtml = meals.map(m => {
+      const src = photos[m.key];
+      const photoHtml = src
+        ? `<div class="log-meal-photo" onclick="openPhotoModal('${src}')"><img src="${src}"></div>`
+        : `<div class="log-meal-photo"><span class="no-photo-icon">📷</span></div>`;
+      const tagHtml = m.tag ? `<span class="log-meal-tag">${m.tag}</span>` : '';
+      return `<div class="log-meal">
+        <div class="log-meal-time"><span class="time-icon">${m.icon}</span></div>
+        ${photoHtml}
+        <div class="log-meal-info">
+          <div class="log-meal-label">${m.label}</div>
+          ${tagHtml}
+          ${!src ? '<div class="log-meal-note" style="color:#ddd">写真なし</div>' : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    // Free photos
+    const freePhotos = photos.free || [];
+    if(freePhotos.length > 0){
+      const freeHtml = freePhotos.map(src =>
+        `<div class="log-meal-photo" onclick="openPhotoModal('${src}')" style="width:56px;height:56px;margin-right:6px"><img src="${src}"></div>`
+      ).join('');
+      mealsHtml += `<div class="log-meal">
+        <div class="log-meal-time"><span class="time-icon">📌</span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;padding-top:4px">${freeHtml}</div>
+      </div>`;
+    }
+
+    // Stats chips
+    const chips = [];
+    if(d.wMorning) chips.push(`朝 ${d.wMorning}kg`);
+    if(d.wEvening) chips.push(`夜 ${d.wEvening}kg`);
+    if(d.water) chips.push(`水分 ${d.water}L`);
+    if(d.sleep) chips.push(`睡眠 ${d.sleep}h`);
+    if(d.haiben) chips.push(`排便 ○`);
+    const statsHtml = chips.map(c => `<span class="log-stat-chip">${c}</span>`).join('');
+
+    const memoHtml = d.memo ? `<div class="log-day-memo">📝 ${d.memo}</div>` : '';
+
+    const dayEl = document.createElement('div');
+    dayEl.className = 'log-day';
+    dayEl.innerHTML = `
+      <div class="log-day-header">
+        <div class="log-day-date">${dayLabel}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${d.wMorning ? `<span class="log-day-weight">${d.wMorning}kg</span>` : ''}
+          ${diffHtml}
+        </div>
+      </div>
+      ${mealsHtml}
+      ${statsHtml ? `<div class="log-day-stats">${statsHtml}</div>` : ''}
+      ${memoHtml}`;
+
+    container.appendChild(dayEl);
+  });
+}
+
+function openPhotoModal(src){
+  document.getElementById('imgModal').style.display='flex';
+  document.getElementById('modalImg').src=src;
+}
 
 // ===== DEMO DATA INJECTION =====
 function injectDemoPatients(){
@@ -824,5 +1089,10 @@ function injectDemoPatients(){
 // injectDemoPatients() is now called inside doLogin() only for demo accounts
 
 </script>
+
+<!-- Photo Modal -->
+<div id="imgModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;align-items:center;justify-content:center;" onclick="this.style.display='none'">
+  <img id="modalImg" src="" style="max-width:90vw;max-height:90vh;border-radius:8px;object-fit:contain;">
+</div>
 </body>
 </html>
