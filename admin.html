@@ -783,12 +783,10 @@ async function generateAdvice(){
   `.trim();
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('/api/advice', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
         system: `あなたは整骨院のダイエット指導担当です。患者データと食事写真を分析し、来院時にスタッフが使うトークメモを作成してください。
 
 【指導マニュアルの基準】
