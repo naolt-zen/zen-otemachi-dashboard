@@ -695,7 +695,7 @@ function buildAdviceContent(summary, days){
   photoDays.forEach(day => {
     const p = day.photos || {};
     const dateObj = new Date(day.date + 'T00:00:00');
-    const dateLabel = \`\${dateObj.getMonth()+1}/\${dateObj.getDate()}\`;
+    const dateLabel = `${dateObj.getMonth()+1}/${dateObj.getDate()}`;
 
     ['morning','lunch','dinner'].forEach(slot => {
       if(p[slot]){
@@ -703,7 +703,7 @@ function buildAdviceContent(summary, days){
         const src = p[slot];
         const match = src.match(/^data:(image\/\w+);base64,(.+)$/);
         if(match){
-          contentParts.push({ type:'text', text: \`\${dateLabel} \${slotLabels[slot]}：\` });
+          contentParts.push({ type:'text', text: `${dateLabel} ${slotLabels[slot]}：` });
           contentParts.push({
             type: 'image',
             source: {
