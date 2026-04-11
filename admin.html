@@ -569,9 +569,12 @@ function renderDetail(){
   renderAdminFoodLog();
   renderDetailTable();
   renderPhotoGallery();
-  // Reset to food log tab
-  switchDetailTab('log');
-  document.getElementById('adviceResult').innerHTML='';
+  // タブは患者切り替え時だけリセット
+  if(document.getElementById('page-detail').dataset.patient !== detailUser){
+    switchDetailTab('log');
+    document.getElementById('adviceResult').innerHTML='';
+    document.getElementById('page-detail').dataset.patient = detailUser;
+  }
 }
 
 function switchDetailTab(name){
