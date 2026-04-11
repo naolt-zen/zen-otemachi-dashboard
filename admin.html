@@ -218,6 +218,42 @@ td.red { color: var(--red); font-weight: 600; }
 .advice-loading { padding: 20px; text-align: center; color: var(--text3); font-size: 13px; }
 .advice-spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid #e0e7ff; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: middle; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* Search & Filter */
+.filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.search-input {
+  flex: 1; min-width: 160px; padding: 9px 14px;
+  border: 1px solid var(--border); border-radius: 10px;
+  font-size: 13px; font-family: 'Noto Sans JP', sans-serif;
+  outline: none; color: var(--text); background: var(--white);
+}
+.search-input:focus { border-color: var(--accent); }
+.staff-filter { display: flex; gap: 5px; flex-wrap: wrap; }
+.staff-chip {
+  padding: 5px 12px; border-radius: 20px;
+  border: 1px solid var(--border); background: var(--bg);
+  color: var(--text3); font-size: 11px; font-family: 'Noto Sans JP', sans-serif;
+  cursor: pointer; transition: all 0.15s; font-weight: 500;
+}
+.staff-chip.on { background: var(--accent); border-color: var(--accent); color: white; }
+.staff-chip.all { background: var(--sidebar); border-color: var(--sidebar); color: white; }
+
+/* Staff badge on patient card */
+.staff-badge {
+  display: inline-block; font-size: 10px; padding: 2px 8px;
+  border-radius: 10px; background: #eff6ff; color: var(--accent);
+  border: 1px solid #bfdbfe; font-weight: 600; cursor: pointer;
+}
+.staff-badge.unset { background: var(--bg); color: var(--text3); border-color: var(--border); }
+
+/* Staff select in detail */
+.staff-select-row { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); }
+.staff-select-label { font-size: 12px; color: var(--text3); flex-shrink: 0; }
+.staff-select {
+  padding: 5px 10px; border: 1px solid var(--border); border-radius: 8px;
+  font-size: 12px; font-family: 'Noto Sans JP', sans-serif;
+  background: var(--bg); color: var(--text); outline: none; cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -255,6 +291,20 @@ td.red { color: var(--red); font-weight: 600; }
       <div class="page-subtitle" id="overviewSub"></div>
 
       <div class="stats-bar" id="statsBar"></div>
+
+      <div class="filter-bar">
+        <input class="search-input" id="searchInput" type="text" placeholder="🔍 名前・診察券番号で検索..." oninput="filterPatients()">
+        <div class="staff-filter" id="staffFilter">
+          <span class="staff-chip all on" data-staff="all" onclick="setStaffFilter('all',this)">全員</span>
+          <span class="staff-chip" data-staff="岩丸" onclick="setStaffFilter('岩丸',this)">岩丸</span>
+          <span class="staff-chip" data-staff="行時" onclick="setStaffFilter('行時',this)">行時</span>
+          <span class="staff-chip" data-staff="諸永" onclick="setStaffFilter('諸永',this)">諸永</span>
+          <span class="staff-chip" data-staff="井上" onclick="setStaffFilter('井上',this)">井上</span>
+          <span class="staff-chip" data-staff="岩崎" onclick="setStaffFilter('岩崎',this)">岩崎</span>
+          <span class="staff-chip" data-staff="未設定" onclick="setStaffFilter('未設定',this)">未設定</span>
+        </div>
+      </div>
+
       <div class="overview-grid" id="overviewGrid"></div>
     </div>
 
@@ -262,10 +312,21 @@ td.red { color: var(--red); font-weight: 600; }
     <div class="page" id="page-detail">
       <div class="detail-header">
         <button class="back-btn" onclick="showPage('overview')">← 一覧へ</button>
-        <div>
+        <div style="flex:1">
           <div class="detail-name" id="detailName"></div>
           <div class="detail-sub" id="detailSub"></div>
         </div>
+      </div>
+      <div class="staff-select-row" style="background:var(--white);border:1px solid var(--border);border-radius:10px;margin-bottom:14px">
+        <span class="staff-select-label">👤 担当者：</span>
+        <select class="staff-select" id="staffSelectDetail" onchange="setPatientStaff(this.value)">
+          <option value="">未設定</option>
+          <option value="岩丸">岩丸</option>
+          <option value="行時">行時</option>
+          <option value="諸永">諸永</option>
+          <option value="井上">井上</option>
+          <option value="岩崎">岩崎</option>
+        </select>
       </div>
 
       <div class="detail-grid">
@@ -349,7 +410,11 @@ async function sbGetAllUsers() {
   const result = {};
   rows.forEach(r => {
     if (!result[r.user_name]) result[r.user_name] = {};
-    try { result[r.user_name][r.date] = JSON.parse(r.data); } catch(e) {}
+    if(r.date === '_staff'){
+      try { const s = JSON.parse(r.data); result[r.user_name]._staff = s.staff; } catch(e) {}
+    } else {
+      try { result[r.user_name][r.date] = JSON.parse(r.data); } catch(e) {}
+    }
     if (!result[r.user_name]._cardNumber) result[r.user_name]._cardNumber = r.card_number;
   });
   return result;
@@ -472,12 +537,16 @@ function renderOverview(){
     <div class="stat-box"><div class="stat-box-label">停滞気味</div><div class="stat-box-val" style="color:var(--orange)">${plateau}</div><div class="stat-box-sub">名</div></div>
     <div class="stat-box"><div class="stat-box-label">要フォロー</div><div class="stat-box-val" style="color:var(--red)">${gaining}</div><div class="stat-box-sub">名</div></div>`;
 
+  renderOverviewGrid(patients);
+}
+
+function renderOverviewGrid(patients){
   if(patients.length===0){
     document.getElementById('overviewGrid').innerHTML=`
       <div class="no-data" style="grid-column:1/-1">
         <div class="no-data-icon">👥</div>
-        <div class="no-data-text">まだ患者データがありません</div>
-        <div class="no-data-sub">patient.html を開いて名前を入力し、データを記録してください</div>
+        <div class="no-data-text">該当する患者がいません</div>
+        <div class="no-data-sub">検索条件を変えてみてください</div>
       </div>`;
     return;
   }
@@ -565,6 +634,9 @@ function renderDetail(){
   document.getElementById('detailName').textContent=detailUser;
   const cardNo=allData[detailUser]?._cardNumber??'–';
   document.getElementById('detailSub').textContent=`診察券 No.${cardNo}　／　記録 ${recDays}日間`;
+  // Sync staff select
+  const staffSel = document.getElementById('staffSelectDetail');
+  if(staffSel) staffSel.value = allData[detailUser]?._staff || '';
   renderDetailChart();
   renderAdminFoodLog();
   renderDetailTable();
@@ -1026,6 +1098,74 @@ function injectDemoPatients(){
   if(!existing['西田花子'])  existing['西田花子']  = genData(58.2, -0.06, 4.56);
 
   localStorage.setItem('zenDietAll', JSON.stringify(existing));
+}
+
+// ===== SEARCH & FILTER =====
+let activeStaffFilter = 'all';
+
+function setStaffFilter(staff, el){
+  activeStaffFilter = staff;
+  document.querySelectorAll('.staff-chip').forEach(c=>{
+    c.classList.remove('on','all');
+  });
+  el.classList.add('on');
+  if(staff === 'all') el.classList.add('all');
+  filterPatients();
+}
+
+function filterPatients(){
+  const q = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+  const patients = getPatients();
+
+  const filtered = patients.filter(name => {
+    const card = (allData[name]?._cardNumber || '').toLowerCase();
+    const staff = allData[name]?._staff || '';
+
+    const matchSearch = !q || name.toLowerCase().includes(q) || card.includes(q);
+    const matchStaff = activeStaffFilter === 'all' ||
+      (activeStaffFilter === '未設定' ? !staff : staff === activeStaffFilter);
+
+    return matchSearch && matchStaff;
+  });
+
+  renderOverviewGrid(filtered);
+}
+
+function setPatientStaff(staff){
+  if(!detailUser) return;
+  if(!allData[detailUser]) allData[detailUser] = {};
+  allData[detailUser]._staff = staff;
+  localStorage.setItem('zenDietAll', JSON.stringify(allData));
+  // Also save to Supabase staff info
+  saveStaffToSupabase(detailUser, staff);
+}
+
+async function saveStaffToSupabase(name, staff){
+  try {
+    // Update all records for this user to include staff info
+    await fetch(`${SUPABASE_URL}/rest/v1/records?user_name=eq.${encodeURIComponent(name)}&limit=1&select=id`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    });
+    // Store staff as a special record
+    const payload = { user_name: name, card_number: allData[name]?._cardNumber||'', date: '_staff', data: JSON.stringify({staff}) };
+    const check = await fetch(`${SUPABASE_URL}/rest/v1/records?user_name=eq.${encodeURIComponent(name)}&date=eq._staff&select=id`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    });
+    const existing = await check.json();
+    if(existing.length > 0){
+      await fetch(`${SUPABASE_URL}/rest/v1/records?user_name=eq.${encodeURIComponent(name)}&date=eq._staff`, {
+        method: 'PATCH',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      await fetch(`${SUPABASE_URL}/rest/v1/records`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify(payload)
+      });
+    }
+  } catch(e) { console.log('staff save error:', e); }
 }
 
 function toggleSidebar(){
