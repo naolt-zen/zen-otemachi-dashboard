@@ -258,6 +258,49 @@ td.red { color: var(--red); font-weight: 600; }
 .log-empty { text-align: center; padding: 40px 20px; color: var(--text3); font-size: 13px; }
 .log-day-stats { display: flex; gap: 8px; padding: 8px 14px; background: var(--bg); border-top: 1px solid var(--border); flex-wrap: wrap; }
 .log-stat-chip { font-size: 10px; color: var(--text3); background: var(--white); border: 1px solid var(--border); padding: 2px 8px; border-radius: 10px; }
+
+/* Goal bar */
+.goal-bar {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.goal-bar-left { flex: 1; }
+.goal-label { font-size: 11px; color: var(--text3); font-weight: 600; letter-spacing: 0.5px; margin-bottom: 4px; }
+.goal-progress-wrap { background: #f0f0f0; border-radius: 10px; height: 8px; overflow: hidden; margin: 6px 0; }
+.goal-progress-bar { height: 100%; border-radius: 10px; background: linear-gradient(90deg, #2563eb, #7c3aed); transition: width 0.5s ease; }
+.goal-stats { display: flex; gap: 12px; }
+.goal-stat { text-align: center; }
+.goal-stat-val { font-size: 16px; font-weight: 700; color: var(--text); }
+.goal-stat-val.accent { color: var(--accent); }
+.goal-stat-val.green { color: var(--green); }
+.goal-stat-label { font-size: 10px; color: var(--text3); }
+.goal-edit-btn {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 10px;
+  font-size: 11px; color: var(--text3);
+  cursor: pointer; white-space: nowrap;
+  font-family: 'Noto Sans JP', sans-serif;
+}
+.goal-input-wrap { display: flex; align-items: center; gap: 8px; }
+.goal-input {
+  width: 80px; padding: 6px 10px;
+  border: 1.5px solid var(--accent); border-radius: 8px;
+  font-size: 16px; font-weight: 700;
+  font-family: 'Noto Sans JP', sans-serif;
+  text-align: center; outline: none; color: var(--text);
+}
+.goal-save-btn {
+  padding: 6px 12px; background: var(--accent);
+  border: none; border-radius: 8px; color: white;
+  font-size: 12px; font-weight: 600;
+  font-family: 'Noto Sans JP', sans-serif; cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -303,6 +346,45 @@ td.red { color: var(--red); font-weight: 600; }
 
 <!-- RECORD TAB -->
 <div class="tab-page active" id="tab-record">
+
+  <!-- Goal Bar -->
+  <div class="goal-bar" id="goalBar">
+    <div class="goal-bar-left">
+      <div class="goal-label">🎯 目標体重</div>
+      <div id="goalDisplay">
+        <div class="goal-stats">
+          <div class="goal-stat">
+            <div class="goal-stat-val" id="goalCurrent">–</div>
+            <div class="goal-stat-label">現在</div>
+          </div>
+          <div class="goal-stat">
+            <div class="goal-stat-val accent" id="goalTarget">–</div>
+            <div class="goal-stat-label">目標</div>
+          </div>
+          <div class="goal-stat">
+            <div class="goal-stat-val green" id="goalRemain">–</div>
+            <div class="goal-stat-label">あと</div>
+          </div>
+          <div class="goal-stat">
+            <div class="goal-stat-val" id="goalPct">–</div>
+            <div class="goal-stat-label">達成率</div>
+          </div>
+        </div>
+        <div class="goal-progress-wrap" style="margin-top:8px">
+          <div class="goal-progress-bar" id="goalProgressBar" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+    <button class="goal-edit-btn" onclick="toggleGoalEdit()" id="goalEditBtn">✏️ 設定</button>
+  </div>
+  <div id="goalEditWrap" style="display:none;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px">
+    <div style="font-size:12px;color:var(--text3);margin-bottom:8px;font-weight:600">🎯 目標体重を設定</div>
+    <div class="goal-input-wrap">
+      <input class="goal-input" type="number" id="goalInput" step="0.1" min="30" max="200" placeholder="50.0">
+      <span style="font-size:13px;color:var(--text3)">kg</span>
+      <button class="goal-save-btn" onclick="saveGoal()">保存</button>
+    </div>
+  </div>
 
   <div class="card">
     <div class="card-title">体重</div>
@@ -604,6 +686,7 @@ function doLogin(){
   loadFromSupabase(n).then(() => {
     document.getElementById('wMorning').placeholder='–';
     loadDayUI();
+    loadGoal();
   });
 }
 
@@ -647,6 +730,7 @@ function calcDiff(){
     el.textContent=(diff>0?'+':'')+diff;
     el.className='diff-val '+(diff>0?'diff-plus':diff<0?'diff-minus':'diff-zero');
   } else { el.textContent='–'; el.className='diff-val diff-zero'; }
+  updateGoalBar();
 }
 
 function setMeal(type,val){
@@ -889,7 +973,8 @@ function renderGraph(){
     type:'line',
     data:{labels,datasets:[
       {label:'朝',data:mornings,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.07)',pointBackgroundColor:'#2563eb',pointRadius:4,tension:0.35,spanGaps:true},
-      {label:'夜',data:evenings,borderColor:'#93c5fd',backgroundColor:'rgba(147,197,253,0.04)',pointBackgroundColor:'#93c5fd',pointRadius:3,tension:0.35,spanGaps:true,borderDash:[4,3]}
+      {label:'夜',data:evenings,borderColor:'#93c5fd',backgroundColor:'rgba(147,197,253,0.04)',pointBackgroundColor:'#93c5fd',pointRadius:3,tension:0.35,spanGaps:true,borderDash:[4,3]},
+      ...(()=>{const g=parseFloat(localStorage.getItem('zenGoal_'+userName));return !isNaN(g)?[{label:'目標',data:days.map(()=>g),borderColor:'#16a34a',borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false}]:[];})()
     ]},
     options:{
       responsive:true,
@@ -936,6 +1021,80 @@ function renderTable(){
     days.forEach(d=>{ const td=document.createElement('td'); td.textContent=row.get(d); if(row.red(d)) td.classList.add('red'); tr.appendChild(td); });
     tbody.appendChild(tr);
   });
+}
+
+// ===== GOAL =====
+function loadGoal(){
+  const goal = parseFloat(localStorage.getItem('zenGoal_' + userName));
+  if(!isNaN(goal)){
+    document.getElementById('goalInput').value = goal;
+  }
+  updateGoalBar();
+}
+
+function saveGoal(){
+  const val = parseFloat(document.getElementById('goalInput').value);
+  if(isNaN(val) || val < 30 || val > 200){
+    alert('正しい体重を入力してください'); return;
+  }
+  localStorage.setItem('zenGoal_' + userName, val);
+  toggleGoalEdit();
+  updateGoalBar();
+}
+
+function toggleGoalEdit(){
+  const wrap = document.getElementById('goalEditWrap');
+  wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+}
+
+function updateGoalBar(){
+  const goal = parseFloat(localStorage.getItem('zenGoal_' + userName));
+  
+  // Get latest morning weight
+  const ud = userData();
+  const keys = Object.keys(ud).filter(k=>k!=='_cardNumber'&&k.match(/^\d{4}-\d{2}-\d{2}$/)).sort().reverse();
+  let currentW = null;
+  let startW = null;
+  for(const k of keys){
+    if(ud[k].wMorning && currentW === null) currentW = ud[k].wMorning;
+  }
+  // Get start weight (oldest record)
+  if(keys.length > 0){
+    const oldest = keys[keys.length-1];
+    startW = ud[oldest]?.wMorning || currentW;
+  }
+
+  const goalEl = document.getElementById('goalTarget');
+  const currentEl = document.getElementById('goalCurrent');
+  const remainEl = document.getElementById('goalRemain');
+  const pctEl = document.getElementById('goalPct');
+  const bar = document.getElementById('goalProgressBar');
+
+  currentEl.textContent = currentW ? currentW.toFixed(1) + 'kg' : '–';
+
+  if(isNaN(goal)){
+    goalEl.textContent = '未設定';
+    remainEl.textContent = '–';
+    pctEl.textContent = '–';
+    bar.style.width = '0%';
+    return;
+  }
+
+  goalEl.textContent = goal.toFixed(1) + 'kg';
+
+  if(currentW !== null){
+    const remain = +(currentW - goal).toFixed(1);
+    remainEl.textContent = remain > 0 ? '-' + remain + 'kg' : '達成！🎉';
+    remainEl.style.color = remain <= 0 ? 'var(--green)' : 'var(--accent)';
+
+    if(startW && startW !== goal){
+      const totalToLose = startW - goal;
+      const lost = startW - currentW;
+      const pct = Math.min(100, Math.max(0, Math.round(lost / totalToLose * 100)));
+      pctEl.textContent = pct + '%';
+      bar.style.width = pct + '%';
+    }
+  }
 }
 
 function switchTab(name){
