@@ -254,6 +254,50 @@ td.red { color: var(--red); font-weight: 600; }
   font-size: 12px; font-family: 'Noto Sans JP', sans-serif;
   background: var(--bg); color: var(--text); outline: none; cursor: pointer;
 }
+
+/* Pin & Delete */
+.card-actions { display: flex; gap: 6px; margin-top: 8px; }
+.card-action-btn {
+  flex: 1; padding: 6px 8px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--bg);
+  font-size: 11px; color: var(--text3); cursor: pointer;
+  font-family: 'Noto Sans JP', sans-serif; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+}
+.card-action-btn:hover { background: var(--border); }
+.card-action-btn.pin-on { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+.card-action-btn.danger { border-color: #fca5a5; color: var(--red); }
+.card-action-btn.danger:hover { background: var(--red-light); }
+
+/* Detail action buttons */
+.detail-actions { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.detail-action-btn {
+  padding: 8px 14px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--bg);
+  font-size: 12px; color: var(--text2); cursor: pointer;
+  font-family: 'Noto Sans JP', sans-serif; font-weight: 500;
+}
+.detail-action-btn.danger { border-color: #fca5a5; color: var(--red); background: var(--red-light); }
+.detail-action-btn.pin-on { border-color: #f59e0b; color: #92400e; background: #fef3c7; }
+
+/* Auto-delete notice */
+.autodel-notice { font-size: 11px; color: var(--text3); padding: 6px 10px; background: var(--bg); border-radius: 8px; margin-top: 8px; }
+
+/* Storage meter */
+.storage-meter {
+  margin: 16px 12px 8px;
+  padding: 12px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.storage-label { font-size: 10px; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; font-weight: 600; }
+.storage-bar-wrap { background: rgba(255,255,255,0.1); border-radius: 6px; height: 6px; margin-bottom: 6px; overflow: hidden; }
+.storage-bar-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, #2563eb, #7c3aed); transition: width 0.5s ease; }
+.storage-bar-fill.warn { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+.storage-nums { font-size: 10px; color: #94a3b8; display: flex; justify-content: space-between; }
+.storage-detail { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.storage-chip { font-size: 9px; color: #64748b; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 6px; }
 </style>
 </head>
 <body>
@@ -279,6 +323,17 @@ td.red { color: var(--red); font-weight: 600; }
     </div>
     <div class="sidebar-section" style="margin-top:8px">患者</div>
     <div id="sidebarPatients"></div>
+    <div class="storage-meter" id="storageMeter">
+      <div class="storage-label">💾 ストレージ</div>
+      <div class="storage-bar-wrap">
+        <div class="storage-bar-fill" id="storageBar" style="width:0%"></div>
+      </div>
+      <div class="storage-nums">
+        <span id="storageUsed">計算中...</span>
+        <span>500MB上限</span>
+      </div>
+      <div class="storage-detail" id="storageDetail"></div>
+    </div>
   </div>
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
@@ -317,6 +372,12 @@ td.red { color: var(--red); font-weight: 600; }
           <div class="detail-sub" id="detailSub"></div>
         </div>
       </div>
+      <div class="detail-actions">
+        <button class="detail-action-btn" id="detailPinBtn" onclick="togglePin()">📌 ピン留め</button>
+        <button class="detail-action-btn" onclick="deletePatientPhotos()">🗑️ 写真だけ削除</button>
+        <button class="detail-action-btn danger" onclick="deletePatient()">⚠️ 患者を削除</button>
+      </div>
+
       <div class="staff-select-row" style="background:var(--white);border:1px solid var(--border);border-radius:10px;margin-bottom:14px">
         <span class="staff-select-label">👤 担当者：</span>
         <select class="staff-select" id="staffSelectDetail" onchange="setPatientStaff(this.value)">
@@ -412,6 +473,8 @@ async function sbGetAllUsers() {
     if (!result[r.user_name]) result[r.user_name] = {};
     if(r.date === '_staff'){
       try { const s = JSON.parse(r.data); result[r.user_name]._staff = s.staff; } catch(e) {}
+    } else if(r.date === '_pin'){
+      try { const p = JSON.parse(r.data); result[r.user_name]._pinned = p.pinned; } catch(e) {}
     } else {
       try { result[r.user_name][r.date] = JSON.parse(r.data); } catch(e) {}
     }
@@ -637,6 +700,8 @@ function renderDetail(){
   // Sync staff select
   const staffSel = document.getElementById('staffSelectDetail');
   if(staffSel) staffSel.value = allData[detailUser]?._staff || '';
+  // Sync pin button
+  updateDetailPinBtn();
   renderDetailChart();
   renderAdminFoodLog();
   renderDetailTable();
@@ -1168,6 +1233,184 @@ async function saveStaffToSupabase(name, staff){
   } catch(e) { console.log('staff save error:', e); }
 }
 
+// ===== PIN & DELETE =====
+
+function togglePin(){
+  if(!detailUser) return;
+  if(!allData[detailUser]) allData[detailUser]={};
+  const isPinned = !!allData[detailUser]._pinned;
+  allData[detailUser]._pinned = !isPinned;
+  localStorage.setItem('zenDietAll', JSON.stringify(allData));
+  savePinToSupabase(detailUser, !isPinned);
+  updateDetailPinBtn();
+}
+
+function updateDetailPinBtn(){
+  const btn = document.getElementById('detailPinBtn');
+  if(!btn) return;
+  const isPinned = !!allData[detailUser]?._pinned;
+  btn.textContent = isPinned ? '📌 ピン留め中' : '📌 ピン留め';
+  btn.classList.toggle('pin-on', isPinned);
+}
+
+async function savePinToSupabase(name, pinned){
+  try {
+    const payload = { user_name: name, card_number: allData[name]?._cardNumber||'', date: '_pin', data: JSON.stringify({pinned}) };
+    const check = await fetch(`${SUPABASE_URL}/rest/v1/records?user_name=eq.${encodeURIComponent(name)}&date=eq._pin&select=id`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    });
+    const existing = await check.json();
+    if(existing.length > 0){
+      await fetch(`${SUPABASE_URL}/rest/v1/records?user_name=eq.${encodeURIComponent(name)}&date=eq._pin`, {
+        method: 'PATCH',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      await fetch(`${SUPABASE_URL}/rest/v1/records`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify(payload)
+      });
+    }
+  } catch(e) { console.log('pin save error:', e); }
+}
+
+function deletePatient(){
+  if(!detailUser) return;
+  const isPinned = !!allData[detailUser]?._pinned;
+  if(isPinned){
+    alert('ピン留め中の患者は削除できません。先にピン留めを解除してください。');
+    return;
+  }
+  if(!confirm(`「${detailUser}」さんのデータを完全に削除しますか？\nこの操作は取り消せません。`)) return;
+
+  // Delete from Supabase
+  fetch(`${SUPABASE_URL}/rest/v1/records?user_name=eq.${encodeURIComponent(detailUser)}`, {
+    method: 'DELETE',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+  }).catch(e => console.log('supabase delete error:', e));
+
+  // Delete from localStorage
+  delete allData[detailUser];
+  localStorage.setItem('zenDietAll', JSON.stringify(allData));
+
+  alert(`「${detailUser}」さんのデータを削除しました。`);
+  showPage('overview');
+}
+
+function deletePatientPhotos(){
+  if(!detailUser) return;
+  const isPinned = !!allData[detailUser]?._pinned;
+  if(isPinned){
+    alert('ピン留め中の患者の写真は削除できません。');
+    return;
+  }
+  if(!confirm(`「${detailUser}」さんの写真データを削除しますか？\n体重・記録データは残ります。`)) return;
+
+  const ud = allData[detailUser] || {};
+  let count = 0;
+  Object.keys(ud).forEach(k => {
+    if(k.startsWith('_')) return;
+    if(ud[k].photos){
+      ud[k].photos = { morning: null, lunch: null, dinner: null, free: [] };
+      count++;
+    }
+  });
+  allData[detailUser] = ud;
+  localStorage.setItem('zenDietAll', JSON.stringify(allData));
+
+  // Update Supabase records
+  Object.keys(ud).forEach(async k => {
+    if(k.startsWith('_')) return;
+    const payload = { data: JSON.stringify(ud[k]) };
+    await fetch(`${SUPABASE_URL}/rest/v1/records?user_name=eq.${encodeURIComponent(detailUser)}&date=eq.${k}`, {
+      method: 'PATCH',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).catch(e => console.log('photo delete error:', e));
+  });
+
+  alert(`写真データを削除しました（${count}日分）。`);
+  renderDetail();
+}
+
+// Auto-delete photos older than 180 days (skip pinned patients)
+function autoDeleteOldPhotos(){
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 180);
+  const cutoffStr = cutoff.toISOString().split('T')[0];
+  let changed = false;
+
+  Object.keys(allData).forEach(name => {
+    if(allData[name]?._pinned) return; // skip pinned
+    const ud = allData[name];
+    Object.keys(ud).forEach(k => {
+      if(k.startsWith('_') || k >= cutoffStr) return;
+      if(ud[k].photos && (ud[k].photos.morning || ud[k].photos.lunch || ud[k].photos.dinner || ud[k].photos.free?.length)){
+        ud[k].photos = { morning: null, lunch: null, dinner: null, free: [] };
+        changed = true;
+      }
+    });
+  });
+
+  if(changed){
+    localStorage.setItem('zenDietAll', JSON.stringify(allData));
+    console.log('Auto-deleted photos older than 180 days');
+  }
+}
+
+// ===== STORAGE METER =====
+function updateStorageMeter(){
+  try {
+    // Calculate data sizes from allData
+    let photoBytes = 0;
+    let textBytes = 0;
+
+    Object.keys(allData).forEach(name => {
+      const ud = allData[name];
+      Object.keys(ud).forEach(k => {
+        if(k.startsWith('_')) return;
+        const d = ud[k];
+        if(!d) return;
+
+        // Photo data
+        const photos = d.photos || {};
+        ['morning','lunch','dinner'].forEach(slot => {
+          if(photos[slot]) photoBytes += photos[slot].length * 0.75; // base64 to bytes
+        });
+        (photos.free || []).forEach(p => { photoBytes += p.length * 0.75; });
+
+        // Text data (estimate)
+        const textData = JSON.stringify({...d, photos: undefined});
+        textBytes += new Blob([textData]).size;
+      });
+    });
+
+    const totalBytes = photoBytes + textBytes;
+    const totalMB = totalBytes / (1024 * 1024);
+    const photoMB = photoBytes / (1024 * 1024);
+    const textMB = textBytes / (1024 * 1024);
+    const limitMB = 500;
+    const pct = Math.min(100, (totalMB / limitMB * 100));
+
+    const bar = document.getElementById('storageBar');
+    const used = document.getElementById('storageUsed');
+    const detail = document.getElementById('storageDetail');
+
+    if(bar) {
+      bar.style.width = pct + '%';
+      bar.className = 'storage-bar-fill' + (pct > 70 ? ' warn' : '');
+    }
+    if(used) used.textContent = `${totalMB.toFixed(1)}MB / 500MB (${pct.toFixed(1)}%)`;
+    if(detail) detail.innerHTML = `
+      <span class="storage-chip">📸 写真 ${photoMB.toFixed(1)}MB</span>
+      <span class="storage-chip">📝 記録 ${textMB.toFixed(1)}MB</span>
+      <span class="storage-chip">👥 ${Object.keys(allData).length}名</span>
+    `;
+  } catch(e) { console.log('storage calc error:', e); }
+}
+
 function toggleSidebar(){
   const sb = document.querySelector('.sidebar');
   const ov = document.getElementById('sidebarOverlay');
@@ -1188,10 +1431,12 @@ showDetail = function(name){
 // Init
 injectDemoPatients();
 loadAll();
+autoDeleteOldPhotos();
 renderOverview();
+updateStorageMeter();
 
 // Load from Supabase then re-render
-loadFromSupabase().then(() => renderOverview());
+loadFromSupabase().then(() => { renderOverview(); updateStorageMeter(); });
 
 // Auto-refresh every 30s from Supabase
 setInterval(async ()=>{
