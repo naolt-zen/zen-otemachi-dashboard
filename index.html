@@ -1079,7 +1079,7 @@ function updateFunnel(){
   const wrap=document.getElementById('funnel_wrap'); if(!wrap) return;
   const naolt=getNAOLT(); const c=naolt?.collection;
   if(!c){wrap.innerHTML='<div style="color:var(--muted);padding:16px;">NAOLT集計.xlsxを取込んでください</div>';return;}
-  const MONTHS=['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月'];
+  const _ALL=['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月','3月','4月'];const MONTHS=_ALL.filter(m=>c?.chIryo_inquiry?.[m]!=null||c?.sangoIinquiry?.[m]!=null||c?.este_inquiry?.[m]!=null);
   const depts=[{label:'🔵 治療',color:'#4f8ef7',inquiry:'chIryo_inquiry',shin:'chiryo_shin'},{label:'🟢 産後矯正',color:'#2dd4bf',inquiry:'sangoIinquiry',shin:'sango_shin'},{label:'🟠 ダイエット',color:'#f97316',inquiry:'este_inquiry',shin:'este_shin'}];
   const funnelHTML=depts.map(dept=>{
     const validMs=MONTHS.filter(m=>c?.[dept.inquiry]?.[m]!=null); if(!validMs.length) return '';
