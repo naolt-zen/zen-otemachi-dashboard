@@ -1322,12 +1322,12 @@ function buildMonthlyData(){
     contractKyosei:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.contractKyosei[bi]:null;}),
     contractEste:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.contractEste[bi]:null;}),
     targetDiff:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.targetDiff[bi]:null;}),
-    roas_chiryo:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.roas_chiryo[bi]:null;}),
-    roas_kyosei:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.roas_kyosei[bi]:null;}),
-    roas_este:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.roas_este[bi]:null;}),
-    inquiry_c:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.inquiry_c[bi]:null;}),
-    inquiry_k:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.inquiry_k[bi]:null;}),
-    inquiry_e:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.inquiry_e[bi]:null;}),
+    roas_chiryo:allMonths.map((m,i)=>{const naolt=getNAOLT();const nv=naolt?.collection?.chiryo_roas?.[m];if(nv!=null)return Math.round(nv*100);const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.roas_chiryo[bi]:null;}),
+    roas_kyosei:allMonths.map((m,i)=>{const naolt=getNAOLT();const nv=naolt?.collection?.sango_roas?.[m];if(nv!=null)return Math.round(nv*100);const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.roas_kyosei[bi]:null;}),
+    roas_este:allMonths.map((m,i)=>{const naolt=getNAOLT();const nv=naolt?.collection?.este_roas?.[m];if(nv!=null)return Math.round(nv*100);const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.roas_este[bi]:null;}),
+    inquiry_c:allMonths.map((m,i)=>{const naolt=getNAOLT();const nv=naolt?.collection?.chIryo_inquiry?.[m];if(nv!=null)return nv;const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.inquiry_c[bi]:null;}),
+    inquiry_k:allMonths.map((m,i)=>{const naolt=getNAOLT();const nv=naolt?.collection?.sangoIinquiry?.[m];if(nv!=null)return nv;const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.inquiry_k[bi]:null;}),
+    inquiry_e:allMonths.map((m,i)=>{const naolt=getNAOLT();const nv=naolt?.collection?.este_inquiry?.[m];if(nv!=null)return nv;const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.inquiry_e[bi]:null;}),
   };
 }
 
