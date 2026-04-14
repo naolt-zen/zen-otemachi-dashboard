@@ -308,11 +308,11 @@ tr:hover td{background:var(--surface2);}
 <!-- 会員・新規 -->
 <div id="members" class="section">
   <div class="sec-title">新規・会員状況</div>
-  <div class="kpi-grid">
-    <div class="kpi-card" style="--ac:#4f8ef7"><div class="kpi-label">治療 累計新規</div><div class="kpi-value" id="kpi_shin_chiryo">105</div><div class="kpi-sub">5月〜1月</div></div>
-    <div class="kpi-card" style="--ac:#2dd4bf"><div class="kpi-label">矯正 累計新規</div><div class="kpi-value" id="kpi_shin_kyosei">151</div><div class="kpi-sub">5月〜1月</div></div>
-    <div class="kpi-card" style="--ac:#f97316"><div class="kpi-label">エステ 累計新規</div><div class="kpi-value" id="kpi_shin_este">61</div><div class="kpi-sub">5月〜1月</div></div>
-    <div class="kpi-card" style="--ac:#ef4444"><div class="kpi-label">会員 純減</div><div class="kpi-value down">-28</div><div class="kpi-sub">81件→53件</div></div>
+  <div class="kpi-grid" id="members_kpi_grid">
+    <div class="kpi-card" style="--ac:#4f8ef7"><div class="kpi-label">治療 累計新規</div><div class="kpi-value" id="kpi_shin_chiryo">105</div><div class="kpi-sub" id="kpi_shin_chiryo_sub">5月〜2月</div></div>
+    <div class="kpi-card" style="--ac:#2dd4bf"><div class="kpi-label">矯正 累計新規</div><div class="kpi-value" id="kpi_shin_kyosei">151</div><div class="kpi-sub" id="kpi_shin_kyosei_sub">5月〜2月</div></div>
+    <div class="kpi-card" style="--ac:#f97316"><div class="kpi-label">エステ 累計新規</div><div class="kpi-value" id="kpi_shin_este">61</div><div class="kpi-sub" id="kpi_shin_este_sub">5月〜2月</div></div>
+    <div class="kpi-card" style="--ac:#ef4444"><div class="kpi-label">会員 純減</div><div class="kpi-value down" id="kpi_member_net">-28</div><div class="kpi-sub" id="kpi_member_net_sub">81件→53件</div></div>
   </div>
   <div class="chart-grid">
     <div class="chart-card"><div class="chart-title"><span class="dot"></span>部門別 月次新規数</div><canvas id="c_new"></canvas></div>
@@ -331,7 +331,7 @@ tr:hover td{background:var(--surface2);}
     <div class="table-hdr">契約率・施術回数詳細</div>
     <table>
       <thead><tr><th>項目</th><th>5月</th><th>6月</th><th>7月</th><th>8月</th><th>9月</th><th>10月</th><th>11月</th><th>12月</th><th>1月</th></tr></thead>
-      <tbody>
+      <tbody id="contracts_table_body">
         <tr><td>治療 新規数</td><td>16</td><td>17</td><td>17</td><td>15</td><td>11</td><td>12</td><td>9</td><td>5</td><td>12</td></tr>
         <tr><td>治療 契約率</td><td>50.0%</td><td>52.9%</td><td>58.8%</td><td>60.0%</td><td>45.5%</td><td>41.7%</td><td class="neg">20.0%</td><td>50.0%</td><td class="pos">62.5%</td></tr>
         <tr><td>矯正 新規数</td><td>9</td><td>20</td><td>20</td><td>20</td><td>31</td><td>23</td><td>13</td><td>12</td><td>22</td></tr>
@@ -350,13 +350,13 @@ tr:hover td{background:var(--surface2);}
   <div class="sec-title">📊 集客ファネル（問い合わせ→来院→契約）</div>
   <div id="funnel_wrap" class="chart-card" style="margin-bottom:15px;"></div>
   <div class="sec-title">集客 KPI サマリー</div>
-  <div class="kpi-grid">
-    <div class="kpi-card" style="--ac:#4f8ef7"><div class="kpi-label">合計問い合わせ（月平均）</div><div class="kpi-value">52件</div><div class="kpi-sub">5〜1月合計: 466件</div></div>
-    <div class="kpi-card" style="--ac:#ef4444"><div class="kpi-label">治療 ROAS（平均）</div><div class="kpi-value warn">263%</div><div class="kpi-sub">目標: 700%以上 ⚠️</div></div>
-    <div class="kpi-card" style="--ac:#2dd4bf"><div class="kpi-label">産後矯正 ROAS（平均）</div><div class="kpi-value up">1,525%</div><div class="kpi-sub">✅ 目標達成</div></div>
-    <div class="kpi-card" style="--ac:#f97316"><div class="kpi-label">ダイエット ROAS（平均）</div><div class="kpi-value up">843%</div><div class="kpi-sub">目標: 900〜1200%</div></div>
-    <div class="kpi-card" style="--ac:#22c55e"><div class="kpi-label">月間総広告費（平均）</div><div class="kpi-value" style="font-size:18px">43万</div><div class="kpi-sub">コンサル費込</div></div>
-    <div class="kpi-card" style="--ac:#a78bfa"><div class="kpi-label">治療 来店率（平均）</div><div class="kpi-value warn">67%</div><div class="kpi-sub">最低: 12月 50%</div></div>
+  <div class="kpi-grid" id="collection_kpi_grid">
+    <div class="kpi-card" style="--ac:#4f8ef7"><div class="kpi-label">合計問い合わせ（月平均）</div><div class="kpi-value" id="kpi_col_inquiry_avg">52件</div><div class="kpi-sub" id="kpi_col_inquiry_sub">5〜1月合計: 466件</div></div>
+    <div class="kpi-card" style="--ac:#ef4444"><div class="kpi-label">治療 ROAS（平均）</div><div class="kpi-value warn" id="kpi_col_roas_chiryo">263%</div><div class="kpi-sub" id="kpi_col_roas_chiryo_sub">目標: 700%以上 ⚠️</div></div>
+    <div class="kpi-card" style="--ac:#2dd4bf"><div class="kpi-label">産後矯正 ROAS（平均）</div><div class="kpi-value up" id="kpi_col_roas_kyosei">1,525%</div><div class="kpi-sub" id="kpi_col_roas_kyosei_sub">✅ 目標達成</div></div>
+    <div class="kpi-card" style="--ac:#f97316"><div class="kpi-label">ダイエット ROAS（平均）</div><div class="kpi-value up" id="kpi_col_roas_este">843%</div><div class="kpi-sub" id="kpi_col_roas_este_sub">目標: 900〜1200%</div></div>
+    <div class="kpi-card" style="--ac:#22c55e"><div class="kpi-label">月間総広告費（平均）</div><div class="kpi-value" style="font-size:18px" id="kpi_col_cost_avg">43万</div><div class="kpi-sub">コンサル費込</div></div>
+    <div class="kpi-card" style="--ac:#a78bfa"><div class="kpi-label">治療 来店率（平均）</div><div class="kpi-value warn" id="kpi_col_rate_chiryo">67%</div><div class="kpi-sub" id="kpi_col_rate_chiryo_sub">最低: 12月 50%</div></div>
   </div>
   <div class="sec-title">ROAS評価基準</div>
   <div class="chart-card" style="margin-bottom:15px;"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center;padding:4px 0;">
@@ -1118,6 +1118,168 @@ function updateCollectionDetail(){
 }
 
 function getNAOLT(){ return JSON.parse(localStorage.getItem('zen_naolt')||'null'); }
+// ============================================================
+// 会員・新規タブ KPI動的更新
+// ============================================================
+function updateMembersKPI() {
+  const naolt = getNAOLT();
+  const kpi = naolt?.kpi;
+  if (!kpi) return;
+
+  const ORDER = ['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月','3月','4月'];
+  // 有効な月（データあり）
+  const validMonths = ORDER.filter(m => kpi.totalSales?.[m] != null && kpi.totalSales[m] > 0);
+  if (!validMonths.length) return;
+
+  const firstM = validMonths[0];
+  const lastM  = validMonths[validMonths.length - 1];
+  const range  = `${firstM}〜${lastM}`;
+
+  // 治療累計新規
+  const totalChiryo = validMonths.reduce((a, m) => a + (kpi.shinNum?.[m] || 0), 0);
+  // 矯正累計新規
+  const totalKyosei = validMonths.reduce((a, m) => a + (kpi.kyoseiShinNum?.[m] || 0), 0);
+  // エステ累計新規
+  const totalEste   = validMonths.reduce((a, m) => a + (kpi.esteShinNum?.[m] || 0), 0);
+
+  // 会員純減（最初月 - 最後月）
+  const firstMember = kpi.memberCount?.[firstM] ?? 81;
+  const lastMember  = kpi.memberCount?.[lastM]  ?? 53;
+  const netChange   = lastMember - firstMember;
+  const sign        = netChange >= 0 ? '+' : '';
+
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('kpi_shin_chiryo',     totalChiryo);
+  set('kpi_shin_chiryo_sub', range);
+  set('kpi_shin_kyosei',     totalKyosei);
+  set('kpi_shin_kyosei_sub', range);
+  set('kpi_shin_este',       totalEste);
+  set('kpi_shin_este_sub',   range);
+  set('kpi_member_net',      sign + netChange);
+  set('kpi_member_net_sub',  `${Math.round(firstMember)}件→${Math.round(lastMember)}件`);
+
+  // クラス更新
+  const netEl = document.getElementById('kpi_member_net');
+  if (netEl) netEl.className = `kpi-value ${netChange >= 0 ? 'up' : 'down'}`;
+}
+
+// ============================================================
+// 集客部門タブ KPIサマリー動的更新
+// ============================================================
+function updateCollectionKPI() {
+  const naolt = getNAOLT();
+  const c = naolt?.collection;
+  if (!c) return;
+
+  const ORDER = ['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月','3月','4月'];
+  const validMs = ORDER.filter(m => c.totalCost?.[m] != null || c.chIryo_inquiry?.[m] != null);
+  if (!validMs.length) return;
+
+  const firstM = validMs[0]; const lastM = validMs[validMs.length - 1];
+
+  // 合計問い合わせ
+  const totalInquiry = validMs.reduce((a, m) => a + (c.chIryo_inquiry?.[m]||0) + (c.sangoIinquiry?.[m]||0) + (c.este_inquiry?.[m]||0), 0);
+  const avgInquiry   = Math.round(totalInquiry / validMs.length);
+
+  // ROAS平均（%表記、×100済み）
+  function avgRoas(key) {
+    const vals = validMs.map(m => c[key]?.[m]).filter(v => v != null && v > 0);
+    if (!vals.length) return null;
+    return Math.round(vals.reduce((a,v)=>a+v,0) / vals.length * 100);
+  }
+  const roasChiryo = avgRoas('chiryo_roas');
+  const roasKyosei = avgRoas('sango_roas');
+  const roasEste   = avgRoas('este_roas');
+
+  // 広告費平均
+  const costVals = validMs.map(m => c.totalCost?.[m]).filter(v => v != null && v > 0);
+  const avgCost  = costVals.length ? Math.round(costVals.reduce((a,v)=>a+v,0) / costVals.length / 10000 * 10) / 10 : null;
+
+  // 治療来店率平均
+  const rateVals = validMs.map(m => c.chiryo_来店率?.[m]).filter(v => v != null);
+  const avgRate  = rateVals.length ? Math.round(rateVals.reduce((a,v)=>a+v,0) / rateVals.length * 100) : null;
+  const minRateM = validMs.reduce((best, m) => {
+    const v = c.chiryo_来店率?.[m]; if (v == null) return best;
+    return (!best || v < c.chiryo_来店率?.[best]) ? m : best;
+  }, null);
+
+  const set = (id, val) => { const el = document.getElementById(id); if (el && val != null) el.textContent = val; };
+  set('kpi_col_inquiry_avg', avgInquiry + '件');
+  set('kpi_col_inquiry_sub', `${firstM}〜${lastM}合計: ${totalInquiry}件`);
+
+  if (roasChiryo != null) {
+    set('kpi_col_roas_chiryo', roasChiryo.toLocaleString('ja') + '%');
+    const roasChiryoEl = document.getElementById('kpi_col_roas_chiryo');
+    if (roasChiryoEl) roasChiryoEl.className = `kpi-value ${roasChiryo >= 700 ? 'up' : 'warn'}`;
+    set('kpi_col_roas_chiryo_sub', roasChiryo >= 700 ? '✅ 目標達成' : '目標: 700%以上 ⚠️');
+  }
+  if (roasKyosei != null) {
+    set('kpi_col_roas_kyosei', roasKyosei.toLocaleString('ja') + '%');
+    set('kpi_col_roas_kyosei_sub', roasKyosei >= 700 ? '✅ 目標達成' : '目標未達 ⚠️');
+  }
+  if (roasEste != null) {
+    set('kpi_col_roas_este', roasEste.toLocaleString('ja') + '%');
+    set('kpi_col_roas_este_sub', roasEste >= 900 ? '✅ 目標達成' : '目標: 900〜1200%');
+  }
+  if (avgCost != null) set('kpi_col_cost_avg', avgCost + '万');
+  if (avgRate != null) {
+    set('kpi_col_rate_chiryo', avgRate + '%');
+    if (minRateM) set('kpi_col_rate_chiryo_sub', `最低: ${minRateM} ${Math.round((c.chiryo_来店率?.[minRateM]||0)*100)}%`);
+  }
+}
+
+// ============================================================
+// 契約率タブ テーブル動的更新
+// ============================================================
+function updateContractsTable() {
+  const naolt = getNAOLT();
+  const kpi = naolt?.kpi;
+  if (!kpi) return;
+
+  const ORDER = ['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月','3月','4月'];
+  const validMonths = ORDER.filter(m => kpi.totalSales?.[m] != null && kpi.totalSales[m] > 0);
+  if (!validMonths.length) return;
+
+  // theadを更新
+  const thead = document.querySelector('#contracts .table-card thead tr');
+  if (thead) {
+    thead.innerHTML = '<th>項目</th>' + validMonths.map(m => `<th>${m}</th>`).join('');
+  }
+
+  // tbody更新
+  const tbody = document.getElementById('contracts_table_body');
+  if (!tbody) return;
+
+  function cell(val, cls='') {
+    if (val == null || val === 0) return `<td>—</td>`;
+    return `<td class="${cls}">${val}</td>`;
+  }
+  function rateCell(val) {
+    if (val == null) return '<td>—</td>';
+    const pct = Math.round(val * 1000) / 10;
+    const cls = pct >= 70 ? 'pos' : pct < 40 ? 'neg' : '';
+    return `<td class="${cls}">${pct}%</td>`;
+  }
+
+  const rows = [
+    { label: '治療 新規数',   key: 'shinNum',         fmt: v => v },
+    { label: '治療 契約率',   key: 'keiyakuRate',     fmt: null, rateKey: true },
+    { label: '矯正 新規数',   key: 'kyoseiShinNum',   fmt: v => v },
+    { label: '矯正 契約率',   key: 'kyoseiKeiyakuRate', fmt: null, rateKey: true },
+    { label: 'レセ枚数（自賠除く）', key: 'receNum',  fmt: v => v },
+  ];
+
+  tbody.innerHTML = rows.map(row => {
+    const cells = validMonths.map(m => {
+      const v = kpi[row.key]?.[m];
+      if (row.rateKey) return rateCell(v);
+      return cell(v != null ? Math.round(v) : null);
+    }).join('');
+    return `<tr><td>${row.label}</td>${cells}</tr>`;
+  }).join('');
+}
+
+
 
 const CHARTS={};
 
@@ -1188,6 +1350,9 @@ function updateCharts(){
   updateCollectionDetail();
   updateOverviewKPI();
   updateFunnel();
+  updateMembersKPI();
+  updateCollectionKPI();
+  updateContractsTable();
 }
 
 initStorage().then(() => {
