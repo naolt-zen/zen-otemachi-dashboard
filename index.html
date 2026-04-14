@@ -347,10 +347,8 @@ tr:hover td{background:var(--surface2);}
 
 <!-- 集客部門 -->
 <div id="collection" class="section">
-  <!-- ⑤ 集客ファネル -->
   <div class="sec-title">📊 集客ファネル（問い合わせ→来院→契約）</div>
   <div id="funnel_wrap" class="chart-card" style="margin-bottom:15px;"></div>
-
   <div class="sec-title">集客 KPI サマリー</div>
   <div class="kpi-grid">
     <div class="kpi-card" style="--ac:#4f8ef7"><div class="kpi-label">合計問い合わせ（月平均）</div><div class="kpi-value">52件</div><div class="kpi-sub">5〜1月合計: 466件</div></div>
@@ -375,11 +373,8 @@ tr:hover td{background:var(--surface2);}
   <div id="collection_detail_wrap"></div>
 </div>
 
-
 <!-- 個人売上 -->
 <div id="staff" class="section">
-
-  <!-- コントロールバー -->
   <div class="staff-ctrl">
     <div class="staff-ctrl-left">
       <select id="staffViewSel" onchange="renderStaff()">
@@ -410,27 +405,19 @@ tr:hover td{background:var(--surface2);}
         class="btn btn-ghost" style="font-size:11px;padding:4px 10px;">個別設定</button>
     </div>
   </div>
-
-  <!-- KPIサマリー -->
   <div class="kpi-grid" id="staff_kpi"></div>
-
-  <!-- メイングラフ（ビューによって切り替わる） -->
   <div class="chart-grid full" id="staff_main_chart_wrap">
     <div class="chart-card">
       <div class="chart-title"><span class="dot"></span><span id="staff_chart_title">担当者別 月次売上推移</span></div>
       <canvas id="c_staff_main" style="max-height:320px;"></canvas>
     </div>
   </div>
-
-  <!-- 達成率ヒートマップ -->
   <div id="staff_heatmap_wrap" style="display:none;">
     <div class="sec-title">月別 目標達成率 ヒートマップ</div>
     <div class="chart-card" style="overflow-x:auto;">
       <div id="staff_heatmap"></div>
     </div>
   </div>
-
-  <!-- 月別詳細（月選択時） -->
   <div id="staff_month_detail" style="display:none;">
     <div class="chart-grid">
       <div class="chart-card"><div class="chart-title"><span class="dot" style="background:var(--accent2)"></span>部門別売上（積み上げ）</div><canvas id="c_staff_dept"></canvas></div>
@@ -439,7 +426,6 @@ tr:hover td{background:var(--surface2);}
     <div class="sec-title">個人カード</div>
     <div id="staff_cards" style="display:grid;gap:12px;"></div>
   </div>
-
 </div>
 
 <!-- データ取込 -->
@@ -450,21 +436,16 @@ tr:hover td{background:var(--surface2);}
       毎月作成している「R○_○月_日計表_大手町.xlsx」をアップロードすると、月計表・報告書シートから自動的にデータを読み取り、ダッシュボードに反映します。<br>
       複数ファイルを同時にドロップすることも可能です。
     </div>
-    <!-- ファイル種別タブ -->
     <div style="display:flex;gap:8px;margin-bottom:14px;">
       <button id="importTab1" onclick="switchImportTab(1)" class="btn" style="font-size:12px;padding:7px 16px;">📋 日計表XLSX</button>
       <button id="importTab2" onclick="switchImportTab(2)" class="btn btn-ghost" style="font-size:12px;padding:7px 16px;">📊 NAOLT集計XLSX</button>
     </div>
-
-    <!-- 日計表ドロップゾーン -->
     <div id="importZone1" class="import-drop">
       <input type="file" id="fileInput" accept=".xlsx" multiple onchange="handleFiles(this.files)">
       <div class="drop-icon">📋</div>
       <p>XLSXファイルをドロップ、またはクリックして選択</p>
       <small>R○_○月_日計表_大手町.xlsx 形式に対応</small>
     </div>
-
-    <!-- NAOLT集計ドロップゾーン -->
     <div id="importZone2" class="import-drop" style="display:none;">
       <input type="file" id="fileInputNAOLT" accept=".xlsx" onchange="handleNAOLTFile(this.files[0])">
       <div class="drop-icon">📊</div>
@@ -473,7 +454,6 @@ tr:hover td{background:var(--surface2);}
     </div>
     <div class="import-log" id="importLog"></div>
   </div>
-
   <div class="import-section">
     <div class="import-title">📊 取込済みデータ一覧</div>
     <div id="importedList" style="color:var(--muted);font-size:13px;padding:12px 0;">まだデータが取り込まれていません</div>
@@ -483,13 +463,9 @@ tr:hover td{background:var(--surface2);}
 </main>
 
 <script>
-// ============================================================
-// GLOBAL STATE
-// ============================================================
 const M=['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月','3月','4月'];
 const CD={plugins:{legend:{labels:{color:'#7a8299',font:{size:11}}}},scales:{x:{ticks:{color:'#7a8299',font:{size:11}},grid:{color:'#1e2436'}},y:{ticks:{color:'#7a8299',font:{size:11}},grid:{color:'#1e2436'}}}};
 
-// 既存KPIデータ（5期 5〜1月）
 const BASE_DATA = {
   months: ['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月'],
   totalSales: [5160281,5359367,4924431,5397203,7279075,4585058,4352741,3162450,4787260,3963465],
@@ -517,26 +493,17 @@ const BASE_DATA = {
   inquiry_e:  [15,7,4,14,12,14,6,1,12,null],
 };
 
-// 取込データの保存場所
 let importedMonths = {};
 let _staffTargetCache = '1100000';
 let dailyData = {};
 
-// ===== Persistent Storage ヘルパー =====
 async function storageGet(key) {
-  try {
-    const v = localStorage.getItem(key);
-    return v ? JSON.parse(v) : null;
-  } catch(e) { return null; }
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch(e) { return null; }
 }
 async function storageSet(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch(e) {}
 }
-async function storageDelete(key) {
-  try { localStorage.removeItem(key); } catch(e) {}
-}
 
-// 起動時にストレージからデータを読み込む
 async function initStorage() {
   const tgt = await storageGet('zen_staff_target');
   if (tgt) { _staffTargetCache = tgt; const el=document.getElementById('staffTarget'); if(el) el.value=tgt; }
@@ -551,9 +518,6 @@ async function initStorage() {
   renderStaff();
 }
 
-// ============================================================
-// NAV
-// ============================================================
 function show(id,btn){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
@@ -562,14 +526,10 @@ function show(id,btn){
   if(id==='staff') renderStaff();
 }
 
-// ============================================================
-// XLSX PARSING
-// ============================================================
 async function handleFiles(files){
   for(const f of files){ await parseXLSX(f); }
 }
 
-// Drag & Drop
 const dz = document.getElementById('importZone1');
 dz.addEventListener('dragover', e=>{e.preventDefault();dz.classList.add('dragover');});
 dz.addEventListener('dragleave', ()=>dz.classList.remove('dragover'));
@@ -580,30 +540,19 @@ async function parseXLSX(file){
   reader.onload = async e => {
     try {
       const wb = XLSX.read(e.target.result, {type:'array', cellDates:false});
-      console.log('[DEBUG] シート一覧:', wb.SheetNames);
-
-      // 月を特定
       const month = detectMonth(file.name, wb);
       if(!month){ logImport(file.name, 'error', 'ファイル名または日付から月を特定できませんでした'); return; }
-
-      // 月計表パース
       const daily = parseMonthlySummary(wb);
-      // 報告書パース
       const report = parseReport(wb);
-
-      // 保存
       importedMonths[month] = { ...report, fileName: file.name, importedAt: new Date().toLocaleString('ja') };
       dailyData[month] = daily;
       await storageSet('zen_imported', importedMonths);
       await storageSet('zen_daily', dailyData);
-
       logImport(file.name, 'success', `${month}分 取込完了 — 総売上: ${fmt(report.totalSales || 0)}円 / 来院日数: ${daily.length}日 / スタッフ: ${(report.staffData||[]).filter(s=>s.total>0).length}名`);
       updateBadges();
       updateSalesTable();
       updateCharts();
       renderStaff();
-  renderStaff();
-
     } catch(err){
       logImport(file.name, 'error', 'パースエラー: ' + err.message);
     }
@@ -612,15 +561,10 @@ async function parseXLSX(file){
 }
 
 function detectMonth(filename, wb){
-  // ファイル名からRX（年度）と月を取得
-  // 例: R4_5月_, R8_2月_, R8_3月_日計表_大手町
   const rYear  = filename.match(/R(\d+)/i);
   const mMonth = filename.match(/(\d+)月/);
-
   let year = rYear  ? parseInt(rYear[1])  : null;
   let mon  = mMonth ? parseInt(mMonth[1]) : null;
-
-  // 月計表のセルから年・月を取得（ファイル名不明時のフォールバック）
   const sheet = wb.Sheets['月計表'];
   if(sheet){
     const raw = XLSX.utils.sheet_to_json(sheet, {header:1, defval:null, raw:true});
@@ -629,33 +573,25 @@ function detectMonth(filename, wb){
         if(typeof c === 'number' && c > 40000){
           const d = XLSX.SSF.parse_date_code(c);
           if(!mon)  mon  = d.m;
-          if(!year) year = d.y - 1988; // 西暦→令和換算（2019=R1）
+          if(!year) year = d.y - 1988;
           break outer;
         }
         if(typeof c === 'string'){
           const dm = c.match(/(\d{4})\/(\d+)/);
-          if(dm){
-            if(!mon)  mon  = parseInt(dm[2]);
-            if(!year) year = parseInt(dm[1]) - 1988;
-            break outer;
-          }
+          if(dm){ if(!mon) mon=parseInt(dm[2]); if(!year) year=parseInt(dm[1])-1988; break outer; }
         }
       }
     }
   }
-
   if(!mon) return null;
-  // R年度が分かれば "R8-2月" 形式、不明なら "2月" のみ
   return year ? `R${year}-${mon}月` : `${mon}月`;
 }
 
-// キーから表示用ラベルを返す（"R8-2月" → "R8 2月", "2月" → "2月"）
 function monthLabel(key){
   const m = key.match(/^R(\d+)-(\d+)月$/);
   return m ? `R${m[1]} ${m[2]}月` : key;
 }
 
-// キーのソート用数値（"R8-2月"→802, "R4-5月"→405）
 function monthSortKey(key){
   const m = key.match(/^R(\d+)-(\d+)月$/);
   return m ? parseInt(m[1])*100+parseInt(m[2]) : parseInt(key)*1 || 0;
@@ -664,38 +600,26 @@ function monthSortKey(key){
 function parseMonthlySummary(wb){
   const sheet = wb.Sheets['月計表'];
   if(!sheet) return [];
-  // raw:true で読むとdatetimeはシリアル値(数値)になる
   const rawNum = XLSX.utils.sheet_to_json(sheet, {header:1, defval:null, raw:true});
-  const rawStr = XLSX.utils.sheet_to_json(sheet, {header:1, defval:null, raw:false});
   const records = [];
   let i = 0;
   while(i < rawNum.length){
     const v0 = rawNum[i][0];
-    // 日付セル: Excelシリアル値（数値）かDateオブジェクト
     let dateLabel = null;
     if(typeof v0 === 'number' && v0 > 40000){
-      // Excelシリアル値→日付変換
       const d = XLSX.SSF.parse_date_code(v0);
       dateLabel = `${d.m}/${d.d}`;
     } else if(v0 instanceof Date){
       dateLabel = `${v0.getMonth()+1}/${v0.getDate()}`;
     } else if(typeof v0 === 'string' && v0.match(/\d/)){
-      // 文字列日付（例: "2026/2/1"）
       const m = v0.match(/(\d+)\/(\d+)(?:\/(\d+))?/);
       if(m) dateLabel = m[3] ? `${m[2]}/${m[3]}` : `${m[1]}/${m[2]}`;
     }
     if(dateLabel && i+8 < rawNum.length){
       const block = rawNum.slice(i, i+9);
       const subtotal = block[8];
-      records.push({
-        date: dateLabel,
-        raiin: toNum(block[1][12]),
-        madoguchi: toNum(subtotal[12]),
-        jibai: toNum(block[3][15]),
-        total: toNum(subtotal[15])
-      });
-      i += 9;
-      continue;
+      records.push({ date: dateLabel, raiin: toNum(block[1][12]), madoguchi: toNum(subtotal[12]), jibai: toNum(block[3][15]), total: toNum(subtotal[15]) });
+      i += 9; continue;
     }
     i++;
   }
@@ -703,29 +627,13 @@ function parseMonthlySummary(wb){
 }
 
 function parseStaffData(wb) {
-  // 集計シートを探す（○月集計 形式）
   const sheetName = wb.SheetNames.find(n => /集計/.test(n) && !/施術/.test(n));
-  console.log('[DEBUG] 集計シート:', sheetName);
   if (!sheetName) return [];
   const raw = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {header:1, defval:null, raw:true});
-
-  function toN(v){
-    if(v === null || v === undefined || v === '') return 0;
-    if(typeof v === 'number') return v;
-    const s = String(v).replace(/[¥,\s人]/g,'');
-    const n = parseFloat(s);
-    return isNaN(n) ? 0 : n;
-  }
-  function parseNU(v){ // '1人 / 126720' -> {n, v}
-    if(!v) return {n:0, v:0};
-    const m = String(v).match(/(\d+)人\s*\/\s*([\d,]+)/);
-    return m ? {n:parseInt(m[1]), v:parseInt(m[2].replace(/,/g,''))} : {n:0, v:0};
-  }
-
+  function toN(v){ if(v===null||v===undefined||v==='') return 0; if(typeof v==='number') return v; const s=String(v).replace(/[¥,\s人]/g,''); const n=parseFloat(s); return isNaN(n)?0:n; }
+  function parseNU(v){ if(!v) return {n:0,v:0}; const m=String(v).match(/(\d+)人\s*\/\s*([\d,]+)/); return m?{n:parseInt(m[1]),v:parseInt(m[2].replace(/,/g,''))}:{n:0,v:0}; }
   const nameMap = {'行':'行時','諸':'諸永','田':'田中','岩':'岩丸','西':'西田'};
   const names = ['行時','諸永','田中','岩丸','西田'];
-
-  // 施術人数_新規既存シートをパース
   const seizetsuData = {};
   try {
     const sSheet = wb.SheetNames.find(n => n.includes('施術人数'));
@@ -736,50 +644,34 @@ function parseStaffData(wb) {
         const rawN = String(r[0]||'').trim();
         const fullN = nameMap[rawN] || rawN;
         if (names.includes(fullN)) {
-          seizetsuData[fullN] = {
-            shinki: toN(r[1]),
-            kizon:  toN(r[2]),
-            total:  toN(r[3])
-          };
+          seizetsuData[fullN] = { shinki: toN(r[1]), kizon: toN(r[2]), total: toN(r[3]) };
         }
       }
     }
   } catch(e) {}
   const staffs = [];
-
-  // row0がヘッダー、row1〜5が担当者データ
-  // 週別進捗はrow15がヘッダー、row16〜20が各担当者
   for(let i = 1; i <= 5; i++){
     const row = raw[i];
     if(!row) continue;
     const rawName = String(row[0]||'').trim();
     const name = nameMap[rawName] || rawName;
     if(!names.includes(name)) continue;
-
     const c = parseNU(row[7]);
     const k = parseNU(row[8]);
     const e = parseNU(row[9]);
-
-    // 週別進捗: row15がヘッダー → 担当者は row16〜20
-    // i=1→行=row16, i=2→諸=row17 ... → pr_row = 15 + i
     const pr = raw[15 + i] || [];
-
-    console.log('[DEBUG] staff:', name, 'total:', toN(row[15]), 'w1:', pr[7]);
-  staffs.push({
+    staffs.push({
       name,
       seizetsu_shinki: seizetsuData[name]?.shinki || 0,
       seizetsu_kizon:  seizetsuData[name]?.kizon  || 0,
       seizetsu_total:  seizetsuData[name]?.total  || 0,
-      chiryo_n: c.n, chiryo_v: c.v,
-      kyosei_n: k.n, kyosei_v: k.v,
-      este_n: e.n, este_v: e.v,
-      total: toN(row[15]),
-      kizon: toN(row[11]),
-      w1: toN(pr[7]),  w1r: Math.round(toN(pr[8])  * 1000) / 10,
-      w2: toN(pr[9]),  w2r: Math.round(toN(pr[10]) * 1000) / 10,
-      w3: toN(pr[11]), w3r: Math.round(toN(pr[12]) * 1000) / 10,
-      w4: toN(pr[13]), w4r: Math.round(toN(pr[14]) * 1000) / 10,
-      monthly_rate: Math.round(toN(pr[16]) * 1000) / 10,
+      chiryo_n: c.n, chiryo_v: c.v, kyosei_n: k.n, kyosei_v: k.v, este_n: e.n, este_v: e.v,
+      total: toN(row[15]), kizon: toN(row[11]),
+      w1: toN(pr[7]),  w1r: Math.round(toN(pr[8])*1000)/10,
+      w2: toN(pr[9]),  w2r: Math.round(toN(pr[10])*1000)/10,
+      w3: toN(pr[11]), w3r: Math.round(toN(pr[12])*1000)/10,
+      w4: toN(pr[13]), w4r: Math.round(toN(pr[14])*1000)/10,
+      monthly_rate: Math.round(toN(pr[16])*1000)/10,
       diff: toN(pr[17])
     });
   }
@@ -787,7 +679,6 @@ function parseStaffData(wb) {
 }
 
 function parseReport(wb){
-  // 報告書シートからサマリーを取得
   const sheetName = wb.SheetNames.find(n=>n==='報告書');
   if(!sheetName) return {};
   const raw = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {header:1,defval:null});
@@ -809,19 +700,9 @@ function parseReport(wb){
   return res;
 }
 
-function toNum(v){
-  if(v===null||v===undefined) return 0;
-  if(typeof v==='number') return v;
-  const s = String(v).replace(/[¥,\s]/g,'');
-  const n = parseFloat(s);
-  return isNaN(n)?0:n;
-}
-
+function toNum(v){ if(v===null||v===undefined) return 0; if(typeof v==='number') return v; const s=String(v).replace(/[¥,\s]/g,''); const n=parseFloat(s); return isNaN(n)?0:n; }
 function fmt(n){ return Math.round(n).toLocaleString('ja'); }
 
-// ============================================================
-// LOG
-// ============================================================
 function logImport(filename, type, msg){
   const log = document.getElementById('importLog');
   const el = document.createElement('div');
@@ -834,7 +715,6 @@ function logImport(filename, type, msg){
 function updateImportedList(){
   const el = document.getElementById('importedList');
   const keys = Object.keys(importedMonths);
-  // NAOLT集計データも表示
   const naoltData = JSON.parse(localStorage.getItem('zen_naolt') || 'null');
   let naoltHtml = '';
   if(naoltData) {
@@ -848,7 +728,7 @@ function updateImportedList(){
     </div>`;
   }
   if(!keys.length && !naoltData){ el.innerHTML='<span style="color:var(--muted);font-size:13px;">まだデータが取り込まれていません</span>'; return; }
-  el.innerHTML = naoltHtml + keys.sort((a,b)=>parseInt(a)-parseInt(b)).map(m=>{
+  el.innerHTML = naoltHtml + keys.sort((a,b)=>monthSortKey(a)-monthSortKey(b)).map(m=>{
     const d = importedMonths[m] || {};
     return `<div class="log-item success" style="margin-bottom:6px;">
       <span class="log-icon">📅</span>
@@ -867,35 +747,26 @@ async function deleteImport(month){
   delete dailyData[month];
   await storageSet('zen_imported', importedMonths);
   await storageSet('zen_daily', dailyData);
-  updateImportedList();
-  updateBadges();
-  updateSalesTable();
-  updateCharts();
-  renderStaff();
+  updateImportedList(); updateBadges(); updateSalesTable(); updateCharts(); renderStaff();
 }
 
 function updateBadges(){
   const el = document.getElementById('uploadedBadges');
-  const keys = Object.keys(importedMonths).sort((a,b)=>parseInt(a)-parseInt(b));
+  const keys = Object.keys(importedMonths).sort((a,b)=>monthSortKey(a)-monthSortKey(b));
   el.innerHTML = keys.map(m=>`<span class="upload-badge new">${m} ✓</span>`).join('');
 }
 
-// ============================================================
-// SALES TABLE UPDATE
-// ============================================================
 function updateSalesTable(){
   ['2','3'].forEach(mNum => {
     const month = mNum+'月';
-    // "2月" にマッチするキー（"R8-2月"等）を探す
     const key = Object.keys(importedMonths).find(k => k.endsWith('-'+month) || k === month);
     const d = key ? importedMonths[key] : null;
     if(!d) return;
     const setCell = (id,val)=>{ const el=document.getElementById(id); if(el) el.textContent=val?fmt(val):'—'; };
     setCell(`sales_치료_${mNum}`, d.chiryo);
     setCell(`sales_矯正_${mNum}`, d.kyosei);
-    setCell(`sales_エステ_${mNum}`, d.totalSales ? d.totalSales - (d.chiryo||0) - (d.kyosei||0) : null);
+    setCell(`sales_エステ_${mNum}`, d.totalSales ? d.totalSales-(d.chiryo||0)-(d.kyosei||0) : null);
     setCell(`sales_total_${mNum}`, d.totalSales);
-    // 会員数更新
     if(d.memberTotal){
       document.getElementById('kpi_member_count').textContent = d.memberTotal+'件';
       document.getElementById('kpi_member_sub').textContent = `コアレ${d.koreaCurrent}件 + メンテ${d.mainteCurrent}件`;
@@ -903,304 +774,121 @@ function updateSalesTable(){
   });
 }
 
-// ============================================================
-// DAILY TAB
-// ============================================================
-
-
-
-// ============================================================
-// STAFF DATA
-// ============================================================
-// ============================================================
-// 個人売上 JS
-// ============================================================
 const STAFF_COLORS = {'行時':'#4f8ef7','諸永':'#2dd4bf','田中':'#f97316','岩丸':'#a78bfa','西田':'#22c55e'};
 const STAFF_NAMES  = ['行時','諸永','田中','岩丸','西田'];
 const STAFF_CHARTS = {};
 const _staffDataCache = {};
 
-function getSortedMonthKeys(){
-  return [...new Set(Object.keys(importedMonths))].sort((a,b) => monthSortKey(a) - monthSortKey(b));
-}
-function getStaffTarget(name){
-  if(_useIndividual && name && _individualTargets && _individualTargets[name])
-    return _individualTargets[name];
-  return parseInt(_staffTargetCache || '1100000');
-}
-function initStaffChart(id, config){
-  if(STAFF_CHARTS[id]) STAFF_CHARTS[id].destroy();
-  const el = document.getElementById(id);
-  if(el) STAFF_CHARTS[id] = new Chart(el, config);
-}
+function getSortedMonthKeys(){ return [...new Set(Object.keys(importedMonths))].sort((a,b)=>monthSortKey(a)-monthSortKey(b)); }
+function initStaffChart(id, config){ if(STAFF_CHARTS[id]) STAFF_CHARTS[id].destroy(); const el=document.getElementById(id); if(el) STAFF_CHARTS[id]=new Chart(el,config); }
 
-// ---- メインのrenderStaff ----
 function renderStaff(){
   const keys   = getSortedMonthKeys();
   const target = getStaffTarget();
   const view   = document.getElementById('staffViewSel')?.value || 'trend';
   const person = document.getElementById('staffPersonSel')?.value || 'all';
-
-  // 月選択の表示制御
   const mSel = document.getElementById('staffMonthSel');
   if(mSel){
-    mSel.style.display = view === 'month' ? 'block' : 'none';
-    // セレクト更新（重複排除）
+    mSel.style.display = view==='month' ? 'block' : 'none';
     const cur = mSel.value;
     mSel.innerHTML = '<option value="">月を選択</option>';
     const seen = new Set();
-    keys.forEach(k => {
-      if(seen.has(k)) return; seen.add(k);
-      const o = document.createElement('option');
-      o.value = k; o.textContent = monthLabel(k);
-      mSel.appendChild(o);
-    });
-    if(keys.includes(cur)) mSel.value = cur;
-    else if(keys.length) mSel.value = keys[keys.length - 1];
+    keys.forEach(k=>{ if(seen.has(k)) return; seen.add(k); const o=document.createElement('option'); o.value=k; o.textContent=monthLabel(k); mSel.appendChild(o); });
+    if(keys.includes(cur)) mSel.value=cur;
+    else if(keys.length) mSel.value=keys[keys.length-1];
   }
-
   if(!keys.length){
-    document.getElementById('staff_kpi').innerHTML =
-      '<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted);font-size:13px;">📂 日計表XLSXを取込むと個人売上データが表示されます</div>';
+    document.getElementById('staff_kpi').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted);font-size:13px;">📂 日計表XLSXを取込むと個人売上データが表示されます</div>';
     return;
   }
-
-  // KPI: 取込済み全月の担当者別累計
-  const names = person === 'all' ? STAFF_NAMES : [person];
-  const totals = {}, achieves = {};
-  STAFF_NAMES.forEach(n => { totals[n] = 0; achieves[n] = 0; });
-  keys.forEach(k => {
-    (importedMonths[k]?.staffData || []).forEach(s => {
-      if(totals[s.name] !== undefined){ totals[s.name] += s.total || 0; achieves[s.name]++; }
-    });
-  });
-
-  document.getElementById('staff_kpi').innerHTML = names
-    .filter(n => totals[n] > 0)
-    .map(n => {
-      const avg = achieves[n] ? Math.round(totals[n] / achieves[n]) : 0;
-      const avgRate = target ? Math.round(avg / target * 100) : 0;
-      const c = avgRate >= 100 ? 'var(--green)' : avgRate >= 70 ? 'var(--yellow)' : 'var(--red)';
-      return `<div class="kpi-card" style="--ac:${STAFF_COLORS[n]}">
-        <div class="kpi-label">${n}さん 累計</div>
-        <div class="kpi-value" style="font-size:17px;">${Math.round(totals[n]/10000)}万円</div>
-        <div class="kpi-sub" style="color:${c}">月平均 ${Math.round(avg/10000*10)/10}万（達成率 ${avgRate}%）</div>
-      </div>`;
-    }).join('');
-
-  // ビューごとに分岐
-  document.getElementById('staff_heatmap_wrap').style.display  = 'none';
-  document.getElementById('staff_month_detail').style.display  = 'none';
-  document.getElementById('staff_main_chart_wrap').style.display = 'block';
-
-  if(view === 'trend')       renderStaffTrend(keys, names, target);
-  else if(view === 'achievement') renderStaffAchievement(keys, names, target);
-  else if(view === 'month')  renderStaffMonthDetail(mSel?.value || keys[keys.length-1], names, target, keys);
+  const names = person==='all' ? STAFF_NAMES : [person];
+  const totals={}, achieves={};
+  STAFF_NAMES.forEach(n=>{ totals[n]=0; achieves[n]=0; });
+  keys.forEach(k=>{ (importedMonths[k]?.staffData||[]).forEach(s=>{ if(totals[s.name]!==undefined){ totals[s.name]+=s.total||0; achieves[s.name]++; } }); });
+  document.getElementById('staff_kpi').innerHTML = names.filter(n=>totals[n]>0).map(n=>{
+    const avg=achieves[n]?Math.round(totals[n]/achieves[n]):0;
+    const avgRate=target?Math.round(avg/target*100):0;
+    const c=avgRate>=100?'var(--green)':avgRate>=70?'var(--yellow)':'var(--red)';
+    return `<div class="kpi-card" style="--ac:${STAFF_COLORS[n]}"><div class="kpi-label">${n}さん 累計</div><div class="kpi-value" style="font-size:17px;">${Math.round(totals[n]/10000)}万円</div><div class="kpi-sub" style="color:${c}">月平均 ${Math.round(avg/10000*10)/10}万（達成率 ${avgRate}%）</div></div>`;
+  }).join('');
+  document.getElementById('staff_heatmap_wrap').style.display='none';
+  document.getElementById('staff_month_detail').style.display='none';
+  document.getElementById('staff_main_chart_wrap').style.display='block';
+  if(view==='trend') renderStaffTrend(keys,names,target);
+  else if(view==='achievement') renderStaffAchievement(keys,names,target);
+  else if(view==='month') renderStaffMonthDetail(mSel?.value||keys[keys.length-1],names,target,keys);
 }
 
-// ---- 全期間 月次推移 ----
-function renderStaffTrend(keys, names, target){
-  document.getElementById('staff_chart_title').textContent = '担当者別 月次売上推移（全期間）';
-  const datasets = names
-    .filter(n => keys.some(k => (importedMonths[k]?.staffData||[]).find(s=>s.name===n && s.total>0)))
-    .map(n => ({
-      label: n + 'さん',
-      data: keys.map(k => {
-        const s = (importedMonths[k]?.staffData||[]).find(x => x.name === n);
-        return s?.total || null;
-      }),
-      borderColor: STAFF_COLORS[n], backgroundColor: STAFF_COLORS[n] + '20',
-      fill: false, tension: .4, pointRadius: 4, spanGaps: true
-    }));
-
-  // 目標ライン
-  datasets.push({
-    label: `目標 ${Math.round(target/10000)}万`,
-    data: keys.map(() => target),
-    borderColor: 'rgba(255,255,255,.25)', borderDash: [6,4],
-    pointRadius: 0, fill: false, tension: 0
-  });
-
-  initStaffChart('c_staff_main', {
-    type: 'line',
-    data: { labels: keys.map(monthLabel), datasets },
-    options: {
-      ...CD, responsive: true,
-      scales: { ...CD.scales, y: { ...CD.scales.y, ticks: { callback: v => Math.round(v/10000)+'万', color:'#7a8299' } } }
-    }
-  });
+function renderStaffTrend(keys,names,target){
+  document.getElementById('staff_chart_title').textContent='担当者別 月次売上推移（全期間）';
+  const datasets=names.filter(n=>keys.some(k=>(importedMonths[k]?.staffData||[]).find(s=>s.name===n&&s.total>0))).map(n=>({label:n+'さん',data:keys.map(k=>{const s=(importedMonths[k]?.staffData||[]).find(x=>x.name===n);return s?.total||null;}),borderColor:STAFF_COLORS[n],backgroundColor:STAFF_COLORS[n]+'20',fill:false,tension:.4,pointRadius:4,spanGaps:true}));
+  datasets.push({label:`目標 ${Math.round(target/10000)}万`,data:keys.map(()=>target),borderColor:'rgba(255,255,255,.25)',borderDash:[6,4],pointRadius:0,fill:false,tension:0});
+  initStaffChart('c_staff_main',{type:'line',data:{labels:keys.map(monthLabel),datasets},options:{...CD,responsive:true,scales:{...CD.scales,y:{...CD.scales.y,ticks:{callback:v=>Math.round(v/10000)+'万',color:'#7a8299'}}}}});
 }
 
-// ---- 目標達成率の推移 ----
-function renderStaffAchievement(keys, names, target){
-  document.getElementById('staff_chart_title').textContent = '担当者別 月間達成率の推移（全期間）';
-  const datasets = names
-    .filter(n => keys.some(k => (importedMonths[k]?.staffData||[]).find(s=>s.name===n && s.total>0)))
-    .map(n => ({
-      label: n + 'さん',
-      data: keys.map(k => {
-        const s = (importedMonths[k]?.staffData||[]).find(x => x.name === n);
-        return s?.monthly_rate ?? null;
-      }),
-      borderColor: STAFF_COLORS[n], backgroundColor: STAFF_COLORS[n] + '15',
-      fill: true, tension: .4, pointRadius: 5, spanGaps: true,
-      pointBackgroundColor: keys.map(k => {
-        const s = (importedMonths[k]?.staffData||[]).find(x => x.name === n);
-        const r = s?.monthly_rate ?? 0;
-        return r >= 100 ? STAFF_COLORS[n] : 'var(--surface)';
-      }),
-      pointBorderColor: STAFF_COLORS[n], pointBorderWidth: 2
-    }));
-
-  // 100%ライン
-  datasets.push({
-    label: '目標 100%',
-    data: keys.map(() => 100),
-    borderColor: 'rgba(255,255,255,.3)', borderDash: [6,4],
-    pointRadius: 0, fill: false, tension: 0
-  });
-
-  initStaffChart('c_staff_main', {
-    type: 'line',
-    data: { labels: keys.map(monthLabel), datasets },
-    options: {
-      ...CD, responsive: true,
-      scales: { ...CD.scales, y: { ...CD.scales.y, ticks: { callback: v => v+'%', color:'#7a8299' } } }
-    }
-  });
-
-  // ヒートマップ
-  document.getElementById('staff_heatmap_wrap').style.display = 'block';
-  renderHeatmap(keys, names, target);
+function renderStaffAchievement(keys,names,target){
+  document.getElementById('staff_chart_title').textContent='担当者別 月間達成率の推移（全期間）';
+  const datasets=names.filter(n=>keys.some(k=>(importedMonths[k]?.staffData||[]).find(s=>s.name===n&&s.total>0))).map(n=>({label:n+'さん',data:keys.map(k=>{const s=(importedMonths[k]?.staffData||[]).find(x=>x.name===n);return s?.monthly_rate??null;}),borderColor:STAFF_COLORS[n],backgroundColor:STAFF_COLORS[n]+'15',fill:true,tension:.4,pointRadius:5,spanGaps:true,pointBackgroundColor:keys.map(k=>{const s=(importedMonths[k]?.staffData||[]).find(x=>x.name===n);const r=s?.monthly_rate??0;return r>=100?STAFF_COLORS[n]:'var(--surface)';}),pointBorderColor:STAFF_COLORS[n],pointBorderWidth:2}));
+  datasets.push({label:'目標 100%',data:keys.map(()=>100),borderColor:'rgba(255,255,255,.3)',borderDash:[6,4],pointRadius:0,fill:false,tension:0});
+  initStaffChart('c_staff_main',{type:'line',data:{labels:keys.map(monthLabel),datasets},options:{...CD,responsive:true,scales:{...CD.scales,y:{...CD.scales.y,ticks:{callback:v=>v+'%',color:'#7a8299'}}}}});
+  document.getElementById('staff_heatmap_wrap').style.display='block';
+  renderHeatmap(keys,names,target);
 }
 
-// ---- ヒートマップ描画 ----
-function renderHeatmap(keys, names, target){
-  const active = names.filter(n =>
-    keys.some(k => (importedMonths[k]?.staffData||[]).find(s => s.name === n && s.total > 0))
-  );
-  let html = `<table class="heatmap-table"><thead><tr><th>担当者</th>`;
-  keys.forEach(k => { html += `<th>${monthLabel(k)}</th>`; });
-  html += `<th>達成月数</th><th>平均達成率</th></tr></thead><tbody>`;
-
-  active.forEach(n => {
-    const rates = keys.map(k => {
-      const s = (importedMonths[k]?.staffData||[]).find(x => x.name === n);
-      return s?.total > 0 ? s.monthly_rate : null;
-    });
-    const valid = rates.filter(r => r !== null);
-    const avg   = valid.length ? Math.round(valid.reduce((a,v)=>a+v,0) / valid.length * 10) / 10 : 0;
-    const hits  = valid.filter(r => r >= 100).length;
-
-    html += `<tr><td style="text-align:left;font-family:'Noto Sans JP',sans-serif;font-weight:500;color:${STAFF_COLORS[n]}">${n}</td>`;
-    rates.forEach(r => {
-      if(r === null){ html += `<td class="hm-none">—</td>`; return; }
-      const cls = r >= 100 ? 'hm-good' : r >= 70 ? 'hm-ok' : r >= 50 ? 'hm-mid' : 'hm-low';
-      html += `<td class="${cls}">${r}%</td>`;
-    });
-    const avgCls = avg >= 100 ? 'hm-good' : avg >= 70 ? 'hm-ok' : avg >= 50 ? 'hm-mid' : 'hm-low';
-    html += `<td style="font-weight:600;">${hits}/${valid.length}月</td><td class="${avgCls}" style="font-weight:600;">${avg}%</td></tr>`;
+function renderHeatmap(keys,names,target){
+  const active=names.filter(n=>keys.some(k=>(importedMonths[k]?.staffData||[]).find(s=>s.name===n&&s.total>0)));
+  let html=`<table class="heatmap-table"><thead><tr><th>担当者</th>`;
+  keys.forEach(k=>{html+=`<th>${monthLabel(k)}</th>`;});
+  html+=`<th>達成月数</th><th>平均達成率</th></tr></thead><tbody>`;
+  active.forEach(n=>{
+    const rates=keys.map(k=>{const s=(importedMonths[k]?.staffData||[]).find(x=>x.name===n);return s?.total>0?s.monthly_rate:null;});
+    const valid=rates.filter(r=>r!==null);
+    const avg=valid.length?Math.round(valid.reduce((a,v)=>a+v,0)/valid.length*10)/10:0;
+    const hits=valid.filter(r=>r>=100).length;
+    html+=`<tr><td style="text-align:left;font-family:'Noto Sans JP',sans-serif;font-weight:500;color:${STAFF_COLORS[n]}">${n}</td>`;
+    rates.forEach(r=>{if(r===null){html+=`<td class="hm-none">—</td>`;return;}const cls=r>=100?'hm-good':r>=70?'hm-ok':r>=50?'hm-mid':'hm-low';html+=`<td class="${cls}">${r}%</td>`;});
+    const avgCls=avg>=100?'hm-good':avg>=70?'hm-ok':avg>=50?'hm-mid':'hm-low';
+    html+=`<td style="font-weight:600;">${hits}/${valid.length}月</td><td class="${avgCls}" style="font-weight:600;">${avg}%</td></tr>`;
   });
-
-  html += '</tbody></table>';
-  document.getElementById('staff_heatmap').innerHTML = html;
+  html+='</tbody></table>';
+  document.getElementById('staff_heatmap').innerHTML=html;
 }
 
-// ---- 月別詳細 ----
-function renderStaffMonthDetail(key, names, target, allKeys){
-  if(!key || !importedMonths[key]) return;
-  document.getElementById('staff_main_chart_wrap').style.display = 'none';
-  document.getElementById('staff_month_detail').style.display = 'block';
-
-  const rawStaffs = importedMonths[key]?.staffData || [];
-  const staffs = enrichStaffDataWithSeizetsu(rawStaffs, key);
-  const active = staffs.filter(s => s.total > 0 && names.includes(s.name));
-
-  // 部門別積み上げ
-  const depts = [
-    {key:'chiryo_v', label:'治療',  color:'rgba(79,142,247,.75)'},
-    {key:'kyosei_v', label:'矯正',  color:'rgba(45,212,191,.75)'},
-    {key:'este_v',   label:'エステ',color:'rgba(249,115,22,.75)'},
-    {key:'kizon',    label:'既存',  color:'rgba(167,139,250,.75)'},
-  ];
-  initStaffChart('c_staff_dept', {
-    type: 'bar',
-    data: {
-      labels: active.map(s => s.name + 'さん'),
-      datasets: depts.map(d => ({
-        label: d.label,
-        data: active.map(s => s[d.key] || 0),
-        backgroundColor: d.color, borderRadius: 3
-      }))
-    },
-    options: { ...CD, responsive: true,
-      scales: {
-        x: { stacked:true, ticks:{color:'#7a8299'}, grid:{color:'#1e2436'} },
-        y: { stacked:true, ticks:{callback:v=>Math.round(v/10000)+'万', color:'#7a8299'}, grid:{color:'#1e2436'} }
-      }
-    }
-  });
-
-  // 週別進捗
-  const weekTarget = Math.round(target / 4);
-  const wDS = active.map(s => {
-    const col = STAFF_COLORS[s.name] || '#7a8299';
-    return { label: s.name+'さん', data: [s.w1,s.w2,s.w3,s.w4],
-      backgroundColor: col+'bb', borderRadius: 3 };
-  });
-  wDS.push({ label:`週目標 ${Math.round(weekTarget/10000)}万`, data:[weekTarget,weekTarget,weekTarget,weekTarget],
-    type:'line', borderColor:'rgba(255,255,255,.3)', borderDash:[5,4], pointRadius:0, fill:false });
-  initStaffChart('c_staff_weekly', {
-    type: 'bar',
-    data: { labels:['1週目','2週目','3週目','4週目'], datasets: wDS },
-    options: { ...CD, responsive: true }
-  });
-
-  // 個人カード
-  document.getElementById('staff_cards').innerHTML = active.map(s => {
-    const col    = STAFF_COLORS[s.name] || '#7a8299';
-    const indTgt = getStaffTarget(s.name);
-    const indRate = indTgt > 0 ? Math.round(s.total / indTgt * 100) : s.monthly_rate;
-    const indDiff = s.total - indTgt;
-    const pct    = Math.min(indRate, 120);
-    const barCol = indRate >= 100 ? 'var(--green)' : indRate >= 70 ? 'var(--yellow)' : 'var(--red)';
-    const sign   = indDiff >= 0 ? '+' : '';
-
-    // ミニ推移バー（全期間）
-    const vals = allKeys.map(k => {
-      const f = (importedMonths[k]?.staffData||[]).find(x => x.name === s.name);
-      return f?.total || 0;
-    });
-    const maxV = Math.max(...vals, 1);
-    const miniBar = `<div class="staff-section" style="grid-column:1/-1;">
-      <div class="staff-section-title">全期間 月別推移（🟩 目標達成月）</div>
-      <div style="display:flex;gap:3px;align-items:flex-end;height:44px;margin-bottom:4px;">
-        ${allKeys.map((k,i) => {
-          const h = Math.round(vals[i] / maxV * 40);
-          const hit = vals[i] >= target;
-          return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
-            <div title="${monthLabel(k)}: ${vals[i].toLocaleString('ja')}円"
-              style="width:100%;height:${h||2}px;background:${hit?'var(--green)':col};opacity:.8;border-radius:2px 2px 0 0;
-              ${k===key?'outline:2px solid white;':''}"></div>
-            <div style="font-size:8px;color:var(--muted);">${monthLabel(k).replace(/R\d+ /,'')}</div>
-          </div>`;
-        }).join('')}
-      </div>
-    </div>`;
-
+function renderStaffMonthDetail(key,names,target,allKeys){
+  if(!key||!importedMonths[key]) return;
+  document.getElementById('staff_main_chart_wrap').style.display='none';
+  document.getElementById('staff_month_detail').style.display='block';
+  const rawStaffs=importedMonths[key]?.staffData||[];
+  const staffs=enrichStaffDataWithSeizetsu(rawStaffs,key);
+  const active=staffs.filter(s=>s.total>0&&names.includes(s.name));
+  const depts=[{key:'chiryo_v',label:'治療',color:'rgba(79,142,247,.75)'},{key:'kyosei_v',label:'矯正',color:'rgba(45,212,191,.75)'},{key:'este_v',label:'エステ',color:'rgba(249,115,22,.75)'},{key:'kizon',label:'既存',color:'rgba(167,139,250,.75)'}];
+  initStaffChart('c_staff_dept',{type:'bar',data:{labels:active.map(s=>s.name+'さん'),datasets:depts.map(d=>({label:d.label,data:active.map(s=>s[d.key]||0),backgroundColor:d.color,borderRadius:3}))},options:{...CD,responsive:true,scales:{x:{stacked:true,ticks:{color:'#7a8299'},grid:{color:'#1e2436'}},y:{stacked:true,ticks:{callback:v=>Math.round(v/10000)+'万',color:'#7a8299'},grid:{color:'#1e2436'}}}}});
+  const weekTarget=Math.round(target/4);
+  const wDS=active.map(s=>{const col=STAFF_COLORS[s.name]||'#7a8299';return{label:s.name+'さん',data:[s.w1,s.w2,s.w3,s.w4],backgroundColor:col+'bb',borderRadius:3};});
+  wDS.push({label:`週目標 ${Math.round(weekTarget/10000)}万`,data:[weekTarget,weekTarget,weekTarget,weekTarget],type:'line',borderColor:'rgba(255,255,255,.3)',borderDash:[5,4],pointRadius:0,fill:false});
+  initStaffChart('c_staff_weekly',{type:'bar',data:{labels:['1週目','2週目','3週目','4週目'],datasets:wDS},options:{...CD,responsive:true}});
+  document.getElementById('staff_cards').innerHTML=active.map(s=>{
+    const col=STAFF_COLORS[s.name]||'#7a8299';
+    const indTgt=getStaffTarget(s.name);
+    const indRate=indTgt>0?Math.round(s.total/indTgt*100):s.monthly_rate;
+    const indDiff=s.total-indTgt;
+    const pct=Math.min(indRate,120);
+    const barCol=indRate>=100?'var(--green)':indRate>=70?'var(--yellow)':'var(--red)';
+    const sign=indDiff>=0?'+':'';
+    const vals=allKeys.map(k=>{const f=(importedMonths[k]?.staffData||[]).find(x=>x.name===s.name);return f?.total||0;});
+    const maxV=Math.max(...vals,1);
+    const miniBar=`<div class="staff-section" style="grid-column:1/-1;"><div class="staff-section-title">全期間 月別推移（🟩 目標達成月）</div><div style="display:flex;gap:3px;align-items:flex-end;height:44px;margin-bottom:4px;">${allKeys.map((k,i)=>{const h=Math.round(vals[i]/maxV*40);const hit=vals[i]>=target;return`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;"><div title="${monthLabel(k)}: ${vals[i].toLocaleString('ja')}円" style="width:100%;height:${h||2}px;background:${hit?'var(--green)':col};opacity:.8;border-radius:2px 2px 0 0;${k===key?'outline:2px solid white;':''}"></div><div style="font-size:8px;color:var(--muted);">${monthLabel(k).replace(/R\d+ /,'')}</div></div>`;}).join('')}</div></div>`;
     return `<div class="staff-card">
       <div class="staff-header">
         <div class="staff-avatar" style="background:${col}22;color:${col}">${s.name}</div>
         <div style="flex:1;">
           <div class="staff-name">${s.name}さん <span style="font-size:12px;color:var(--muted);font-weight:400;">${monthLabel(key)}</span></div>
           <div class="staff-total" style="color:${barCol}">${Math.round(s.total).toLocaleString('ja')}円</div>
-          <div class="staff-rate" style="color:${barCol}">達成率 ${indRate}%
-            <span style="color:var(--muted);">/ 目標 ${indTgt.toLocaleString('ja')}円</span></div>
+          <div class="staff-rate" style="color:${barCol}">達成率 ${indRate}% <span style="color:var(--muted);">/ 目標 ${indTgt.toLocaleString('ja')}円</span></div>
         </div>
         <div style="text-align:right;">
           <div style="font-size:11px;color:var(--muted);">目標差額</div>
-          <div style="font-size:14px;font-weight:700;font-family:'DM Mono',monospace;color:${s.diff>=0?'var(--green)':'var(--red)'}">
-            ${sign}${Math.round(indDiff).toLocaleString('ja')}</div>
+          <div style="font-size:14px;font-weight:700;font-family:'DM Mono',monospace;color:${s.diff>=0?'var(--green)':'var(--red)'}">${sign}${Math.round(indDiff).toLocaleString('ja')}</div>
         </div>
       </div>
       <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${barCol};"></div></div>
@@ -1212,887 +900,298 @@ function renderStaffMonthDetail(key, names, target, allKeys){
           <div class="staff-dept-row"><span class="staff-dept-name">エステ</span><span class="staff-dept-val">${s.este_n}件 / ${Math.round(s.este_v).toLocaleString('ja')}円</span></div>
           <div class="staff-dept-row"><span class="staff-dept-name">既存</span><span class="staff-dept-val">${Math.round(s.kizon).toLocaleString('ja')}円</span></div>
         </div>
-        ${(s.seizetsu_total > 0) ? `
-        <div class="staff-section" style="grid-column:1/-1;">
-          <div class="staff-section-title">施術人数（延べ）</div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px;">
-            <div style="text-align:center;padding:10px;background:var(--surface);border-radius:8px;">
-              <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">新規</div>
-              <div style="font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent);">${s.seizetsu_shinki}</div>
-              <div style="font-size:10px;color:var(--muted);">人</div>
-            </div>
-            <div style="text-align:center;padding:10px;background:var(--surface);border-radius:8px;">
-              <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">既存</div>
-              <div style="font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent2);">${s.seizetsu_kizon}</div>
-              <div style="font-size:10px;color:var(--muted);">人</div>
-            </div>
-            <div style="text-align:center;padding:10px;background:var(--surface);border-radius:8px;border:1px solid var(--border);">
-              <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">合計</div>
-              <div style="font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--text);">${s.seizetsu_total}</div>
-              <div style="font-size:10px;color:var(--muted);">人</div>
-            </div>
-          </div>
-          <div style="margin-top:8px;background:var(--surface);border-radius:6px;height:6px;overflow:hidden;">
-            <div style="height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:6px;width:${s.seizetsu_total ? Math.min(Math.round(s.seizetsu_kizon/s.seizetsu_total*100),100) : 0}%;"></div>
-          </div>
-          <div style="font-size:10px;color:var(--muted);margin-top:4px;">既存比率 ${s.seizetsu_total ? Math.round(s.seizetsu_kizon/s.seizetsu_total*100) : 0}%</div>
-        </div>` : ''}
-        <div class="staff-section">
-          <div class="staff-section-title">週別進捗</div>
-          <div class="week-grid">
-            ${[1,2,3,4].map(w => {
-              const wv = s[`w${w}`], wr = s[`w${w}r`];
-              const wc = wr>=100?'var(--green)':wr>=70?'var(--yellow)':'var(--red)';
-              return `<div class="week-cell">
-                <div class="week-label">${w}週目</div>
-                <div class="week-val">${wv ? Math.round(wv/10000*10)/10+'万' : '—'}</div>
-                <div class="week-rate" style="color:${wv?wc:'var(--muted)'}">${wv ? wr+'%' : '—'}</div>
-              </div>`;
-            }).join('')}
-          </div>
-        </div>
-        ${allKeys.length > 1 ? miniBar : ''}
-        <div style="grid-column:1/-1;">${getEGComment(s.name, s, target)}</div>
+        ${(s.seizetsu_total>0)?`<div class="staff-section" style="grid-column:1/-1;"><div class="staff-section-title">施術人数（延べ）</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px;"><div style="text-align:center;padding:10px;background:var(--surface);border-radius:8px;"><div style="font-size:10px;color:var(--muted);margin-bottom:4px;">新規</div><div style="font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent);">${s.seizetsu_shinki}</div><div style="font-size:10px;color:var(--muted);">人</div></div><div style="text-align:center;padding:10px;background:var(--surface);border-radius:8px;"><div style="font-size:10px;color:var(--muted);margin-bottom:4px;">既存</div><div style="font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent2);">${s.seizetsu_kizon}</div><div style="font-size:10px;color:var(--muted);">人</div></div><div style="text-align:center;padding:10px;background:var(--surface);border-radius:8px;border:1px solid var(--border);"><div style="font-size:10px;color:var(--muted);margin-bottom:4px;">合計</div><div style="font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--text);">${s.seizetsu_total}</div><div style="font-size:10px;color:var(--muted);">人</div></div></div><div style="margin-top:8px;background:var(--surface);border-radius:6px;height:6px;overflow:hidden;"><div style="height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:6px;width:${s.seizetsu_total?Math.min(Math.round(s.seizetsu_kizon/s.seizetsu_total*100),100):0}%;"></div></div><div style="font-size:10px;color:var(--muted);margin-top:4px;">既存比率 ${s.seizetsu_total?Math.round(s.seizetsu_kizon/s.seizetsu_total*100):0}%</div></div>`:''}
+        <div class="staff-section"><div class="staff-section-title">週別進捗</div><div class="week-grid">${[1,2,3,4].map(w=>{const wv=s[`w${w}`],wr=s[`w${w}r`];const wc=wr>=100?'var(--green)':wr>=70?'var(--yellow)':'var(--red)';return`<div class="week-cell"><div class="week-label">${w}週目</div><div class="week-val">${wv?Math.round(wv/10000*10)/10+'万':'—'}</div><div class="week-rate" style="color:${wv?wc:'var(--muted)'}">${wv?wr+'%':'—'}</div></div>`;}).join('')}</div></div>
+        ${allKeys.length>1?miniBar:''}
+        <div style="grid-column:1/-1;">${getEGComment(s.name,s,target)}</div>
       </div>
     </div>`;
   }).join('');
 }
 
-
-// ============================================================
-// EG プロファイル × 個人売上 AIコメント
-// ============================================================
-
-
 // staffDataにseizetsuを補完する関数
+// 来月以降は日計表XLSXの施術人数シートから自動取得するため固定データ上書きなし
 function enrichStaffDataWithSeizetsu(staffData, monthKey) {
-  // localStorageのデータをそのまま使用
   return staffData;
 }
 
-const EG_PROFILES = {"行時": {"profile": {"分析型": 10, "構造型": 24, "社交型": 29, "コンセプト型": 37}, "traits": ["創造的・アイデア豊富", "社交性を重視する", "相手との関係を大切にする", "新しいことを試みる"], "motivate": "コンセプト型×社交型。新しいアイデアや挑戦を任されると燃える。チームへの貢献を実感できる仕事が◎", "workstyle": "自由度のある環境でアイデアを活かせるとき力を発揮。細かすぎる手順より「目的」を伝えると動きやすい", "request": "「あなたならどう思う？」と意見を聞く形でお願いすると◎。信頼を示してから依頼すると快く引き受ける", "color": "#4f8ef7"}, "諸永": {"profile": {"分析型": 16, "構造型": 31, "社交型": 25, "コンセプト型": 28}, "traits": ["手順を大切にする", "美見性を重視", "計画的に進める", "自分の経験をもとに判断"], "motivate": "構造型・バランス型。「任せた」と明確に役割を渡されると責任感が発揮される。段取りが決まっていると安心", "workstyle": "具体的なゴールと手順が見えているとスムーズ。急な変更より事前共有が大事。丁寧さと正確さが強み", "request": "「○○を○日までにお願いしたい」と具体的に。なぜその仕事が重要かを伝えると動き出しが早い", "color": "#2dd4bf"}, "田中": {"profile": {"分析型": 43, "構造型": 20, "社交型": 7, "コンセプト型": 25}, "traits": ["論理的・データ重視", "明確な思考", "分析することで学ぶ", "理性的"], "motivate": "分析型が突出。データや数字で結果が見える仕事にやりがいを感じる。根拠のある評価が力になる", "workstyle": "情報が整理されていると実力を発揮。「なぜそうするか」の理由を先に伝えると納得感が高まる", "request": "数字・事実ベースで話すと響く。「データを見ると○○だから、あなたに頼みたい」という伝え方が◎", "color": "#f97316"}, "岩丸": {"profile": {"分析型": 20, "構造型": 12, "社交型": 13, "コンセプト型": 77}, "traits": ["創造的・アイデア直感型", "発想が広い", "変わったことが好き", "いろいろ試してみる"], "motivate": "コンセプト型が圧倒的。自由に考えて良い仕事・新しい挑戦にワクワクする。制約より可能性を示す方が動く", "workstyle": "自分なりのやり方で試行錯誤できる環境が最適。「こうしなければ」より「どうすればいい？」という問いかけが合う", "request": "「アイデア聞かせて」「あなたに自由にやってほしい」という形が刺さる。枠を広めに設定するとよい", "color": "#a78bfa"}, "西田": {"profile": {"分析型": 6, "構造型": 13, "社交型": 48, "コンセプト型": 33}, "traits": ["相手との関係を重視", "社会性・協調性が高い", "間しやすい", "人から学ぶことが多い"], "motivate": "社交型が最大。人との関わりや「一緒に頑張ろう」という雰囲気が力になる。感謝や承認の言葉が効く", "workstyle": "誰かと一緒に取り組む・相談しながら進める環境が◎。孤独な作業より対話のある仕事が向いている", "request": "「あなたと一緒にやりたい」「頼りにしてるよ」という温かい言葉を添えてお願いすると快く動いてくれる", "color": "#22c55e"}};
+const EG_PROFILES = {"行時":{"profile":{"分析型":10,"構造型":24,"社交型":29,"コンセプト型":37},"traits":["創造的・アイデア豊富","社交性を重視する","相手との関係を大切にする","新しいことを試みる"],"motivate":"コンセプト型×社交型。新しいアイデアや挑戦を任されると燃える。チームへの貢献を実感できる仕事が◎","workstyle":"自由度のある環境でアイデアを活かせるとき力を発揮。細かすぎる手順より「目的」を伝えると動きやすい","request":"「あなたならどう思う？」と意見を聞く形でお願いすると◎。信頼を示してから依頼すると快く引き受ける","color":"#4f8ef7"},"諸永":{"profile":{"分析型":16,"構造型":31,"社交型":25,"コンセプト型":28},"traits":["手順を大切にする","美見性を重視","計画的に進める","自分の経験をもとに判断"],"motivate":"構造型・バランス型。「任せた」と明確に役割を渡されると責任感が発揮される。段取りが決まっていると安心","workstyle":"具体的なゴールと手順が見えているとスムーズ。急な変更より事前共有が大事。丁寧さと正確さが強み","request":"「○○を○日までにお願いしたい」と具体的に。なぜその仕事が重要かを伝えると動き出しが早い","color":"#2dd4bf"},"田中":{"profile":{"分析型":43,"構造型":20,"社交型":7,"コンセプト型":25},"traits":["論理的・データ重視","明確な思考","分析することで学ぶ","理性的"],"motivate":"分析型が突出。データや数字で結果が見える仕事にやりがいを感じる。根拠のある評価が力になる","workstyle":"情報が整理されていると実力を発揮。「なぜそうするか」の理由を先に伝えると納得感が高まる","request":"数字・事実ベースで話すと響く。「データを見ると○○だから、あなたに頼みたい」という伝え方が◎","color":"#f97316"},"岩丸":{"profile":{"分析型":20,"構造型":12,"社交型":13,"コンセプト型":77},"traits":["創造的・アイデア直感型","発想が広い","変わったことが好き","いろいろ試してみる"],"motivate":"コンセプト型が圧倒的。自由に考えて良い仕事・新しい挑戦にワクワクする。制約より可能性を示す方が動く","workstyle":"自分なりのやり方で試行錯誤できる環境が最適。「こうしなければ」より「どうすればいい？」という問いかけが合う","request":"「アイデア聞かせて」「あなたに自由にやってほしい」という形が刺さる。枠を広めに設定するとよい","color":"#a78bfa"},"西田":{"profile":{"分析型":6,"構造型":13,"社交型":48,"コンセプト型":33},"traits":["相手との関係を重視","社会性・協調性が高い","間しやすい","人から学ぶことが多い"],"motivate":"社交型が最大。人との関わりや「一緒に頑張ろう」という雰囲気が力になる。感謝や承認の言葉が効く","workstyle":"誰かと一緒に取り組む・相談しながら進める環境が◎。孤独な作業より対話のある仕事が向いている","request":"「あなたと一緒にやりたい」「頼りにしてるよ」という温かい言葉を添えてお願いすると快く動いてくれる","color":"#22c55e"}};
 
-function getEGComment(name, staffData, target) {
-  const eg = EG_PROFILES[name];
-  if (!eg || !staffData) return '';
-
-  // 初期表示：ローディングUI（AIが生成中）
-  const containerId = `eg_comment_${name}_${(staffData.month||'').replace(/\s/g,'')}`;
-
-  // 非同期でAPIコメントを生成して差し込む
-  // staffDataをキャッシュ（再生成ボタン用）
-  _staffDataCache[containerId] = staffData;
-  setTimeout(() => generateAIComment(containerId, name, staffData, target, eg), 50);
-
-  return `
-    <div id="${containerId}" style="margin-top:12px;">
-      <div style="background:${eg.color}12;border:1px solid ${eg.color}40;border-radius:10px;padding:14px 16px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-          <div style="width:32px;height:32px;border-radius:50%;background:${eg.color};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🤖</div>
-          <div>
-            <div style="font-size:13px;font-weight:700;color:${eg.color};">${name}専属コーチ</div>
-            <div style="font-size:11px;color:var(--muted);">EGプロファイル分析中...</div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--surface2);border-radius:8px;">
-          <div style="display:flex;gap:4px;">
-            <span style="width:8px;height:8px;border-radius:50%;background:${eg.color};animation:pulse 1s infinite;"></span>
-            <span style="width:8px;height:8px;border-radius:50%;background:${eg.color};animation:pulse 1s infinite .2s;"></span>
-            <span style="width:8px;height:8px;border-radius:50%;background:${eg.color};animation:pulse 1s infinite .4s;"></span>
-          </div>
-          <span style="font-size:12px;color:var(--muted);">コメントを生成中...</span>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
-          ${Object.entries(eg.profile).map(([k,v]) =>
-            `<span style="font-size:11px;padding:2px 9px;border-radius:20px;background:${eg.color}20;color:${eg.color};border:1px solid ${eg.color}40;">${k} ${v}%</span>`
-          ).join('')}
-        </div>
-      </div>
-    </div>`;
+function getEGComment(name,staffData,target){
+  const eg=EG_PROFILES[name];
+  if(!eg||!staffData) return '';
+  const containerId=`eg_comment_${name}_${(staffData.month||'').replace(/\s/g,'')}`;
+  _staffDataCache[containerId]=staffData;
+  setTimeout(()=>generateAIComment(containerId,name,staffData,target,eg),50);
+  return `<div id="${containerId}" style="margin-top:12px;"><div style="background:${eg.color}12;border:1px solid ${eg.color}40;border-radius:10px;padding:14px 16px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><div style="width:32px;height:32px;border-radius:50%;background:${eg.color};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🤖</div><div><div style="font-size:13px;font-weight:700;color:${eg.color};">${name}専属コーチ</div><div style="font-size:11px;color:var(--muted);">EGプロファイル分析中...</div></div></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">${Object.entries(eg.profile).map(([k,v])=>`<span style="font-size:11px;padding:2px 9px;border-radius:20px;background:${eg.color}20;color:${eg.color};border:1px solid ${eg.color}40;">${k} ${v}%</span>`).join('')}</div></div></div>`;
 }
 
-async function generateAIComment(containerId, name, staffData, target, eg) {
-  const el = document.getElementById(containerId);
-  if (!el) return;
-
-  const rate    = staffData.monthly_rate || 0;
-  const diff    = staffData.diff || 0;
-  const total   = staffData.total || 0;
-  const w1r = staffData.w1r||0, w2r = staffData.w2r||0;
-  const w3r = staffData.w3r||0, w4r = staffData.w4r||0;
-  const weekRates = [w1r,w2r,w3r,w4r].filter(r=>r>0);
-  const maxWeek  = weekRates.length ? Math.max(...weekRates) : 0;
-  const minWeek  = weekRates.length ? Math.min(...weekRates) : 0;
-  const sz_total = staffData.seizetsu_total || 0;
-  const sz_kizon = staffData.seizetsu_kizon || 0;
-
-  const characters = {
-    '行時': { emoji:'🌟', role:'行時さん専属の熱血コーチ' },
-    '諸永': { emoji:'🎯', role:'諸永さん専属の戦略コーチ' },
-    '田中': { emoji:'📊', role:'田中さん専属の分析コーチ' },
-    '岩丸': { emoji:'💡', role:'岩丸さん専属のクリエイティブコーチ' },
-    '西田': { emoji:'🤝', role:'西田さん専属のハートフルコーチ' },
-  };
-  const ch = characters[name] || { emoji:'🤖', role:'専属コーチ' };
-
-  // EGプロファイル×達成率ベースのコメントパターン
-  const COMMENTS = {
-    '行時': {
-      high:  [`🌟 やった！${Math.round(total/10000)}万円、目標達成おめでとう！コンセプト型×社交型の綾ちゃんらしいアイデアと人への関わり方が結果に出たね。この勢いで来月もいこう！`, `🎉 ${Math.round(rate)}%達成！アイデアを形にする力と、人を巻き込む力が最高に発揮された月！${sz_total?`${sz_total}人に施術しながら`:''}この数字、誇っていいよ。来月はさらに上を目指そう！`],
-      mid:   [`📈 ${Math.round(total/10000)}万円、あと少し！行時さんの持ち味は「閃いたらすぐ動く」力。${maxWeek?`${maxWeek}%を出した週があった`:''}んだから、その感覚を全週に広げれば絶対届く！`, `💫 惜しい！達成率${Math.round(rate)}%。コンセプト型の直感を信じて、残りの期間で一気に駆け抜けよう。行時さんがエンジン全開になれば止まらないよ！`],
-      low:   [`🔄 今月は仕込みの月にしよう！コンセプト型の行時さんは「試行錯誤」が強み。うまくいかなかったことも全部次への財産。来月どう動くか、作戦を一緒に考えよう！`, `💪 まだまだこれから！${sz_total?`${sz_total}人と向き合った`:'頑張った'}経験は絶対に活きる。社交型の強みを活かして、お客様との会話からヒントを見つけよう！`],
-    },
-    '諸永': {
-      high:  [`🎯 完璧な計画実行力！${Math.round(total/10000)}万円達成。諸永さんの「丁寧に段取りを組む」強みが結果に直結した月。この型を来月も再現しよう！`, `✅ ${Math.round(rate)}%達成！構造型の諸永さんらしい着実な積み上げが数字に出たね。${sz_total?`${sz_total}人の施術`:'丁寧な対応'}が信頼につながってる。来月も同じペースで！`],
-      mid:   [`🎯 ${Math.round(total/10000)}万円、あと${Math.abs(Math.round(diff/10000*10)/10)}万で達成。どの工程で止まったか振り返ってみよう。諸永さんの分析力があれば必ず改善ポイントが見える！`, `📋 惜しい！計画と実績のズレを具体的にチェックしよう。構造型の強みを活かして「来月の修正版プラン」を作れば、次は必ず届く！`],
-      low:   [`🔄 リセットして来月の計画を一から組み直そう！何がうまくいかなかったか言語化することが諸永さんの得意技。丁寧な計画が整えば結果はついてくる！`, `💡 今月の経験を次の計画に活かそう。${sz_total?`${sz_total}人と向き合った`:'積み重ねた'}一つひとつが来月の土台になってる。段取り力で巻き返そう！`],
-    },
-    '田中': {
-      high:  [`📊 データで勝った月！${Math.round(total/10000)}万円達成。分析型の田中さんらしく、数字を武器に結果を出した。何がうまくいったか記録しておくと来月も再現できるよ！`, `🎉 ${Math.round(rate)}%達成！論理的に積み上げた結果がここに出た。${sz_total?`${sz_total}人の施術データも`:'数字も'}しっかり活用して、この勝ちパターンを言語化しよう！`],
-      mid:   [`📊 あと${Math.abs(Math.round(diff/10000*10)/10)}万！どのフェーズでギャップが生まれたか因数分解してみよう。${maxWeek?`最高${maxWeek}%の週`:''}に何が違ったか分析すれば突破口が見える！`, `🔍 達成率${Math.round(rate)}%。田中さんの強みは「原因を数字で特定する」力。週別データをもとに、来月の仮説を立てよう。データが揃えば答えは出る！`],
-      low:   [`📈 まずは今月のデータを整理しよう。分析型の田中さんは「現状を数字で把握する」ことが一番の強み。原因が見えれば、次の行動は自然と決まる！`, `💡 今月は分析と仕込みの月。${sz_total?`${sz_total}人の施術`:'現場'}から得たデータを来月の戦略に変えよう。田中さんの論理力があれば必ず巻き返せる！`],
-    },
-    '岩丸': {
-      high:  [`💡 コンセプト型77%の爆発力が炸裂した月！${Math.round(total/10000)}万円達成🎉 自由に動いた直感が数字になった。この感覚、絶対に記録しておいて！`, `🚀 ${Math.round(rate)}%達成！岩丸さんのアイデア力と行動力が全開の月。${sz_total?`${sz_total}人に価値を届けながら`:''}この結果、すごい。来月はさらに新しいこと試してみよう！`],
-      mid:   [`💫 アイデアはある、あとは「届け方」の精度を上げるだけ。${maxWeek?`${maxWeek}%を出した週`:''}に何をしたか思い出して。コンセプト型の直感を信じて突き進もう！`, `🌈 達成率${Math.round(rate)}%、波がある月はコンセプト型あるある！エネルギーが高い週に集中して動く仕組みを作ると、もっと安定して大きな数字が出るよ！`],
-      low:   [`🔮 今月は仕込みの月！コンセプト型の岩丸さんは「試してみる」が最大の強み。うまくいかなかった経験も全部アイデアの種。来月に活きる新しいやり方を探そう！`, `💡 可能性は無限大！${sz_total?`${sz_total}人の施術`:'現場'}から新しいヒントを拾ってみて。岩丸さんの発想力があれば、次のブレイクスルーはすぐそこ！`],
-    },
-    '西田': {
-      high:  [`🤝 人との繋がりが結果を生んだ月！${Math.round(total/10000)}万円達成🎉 社交型の西田さんの温かさがお客様に伝わってる証拠。この関係性が最大の武器だよ！`, `✨ ${Math.round(rate)}%達成！お客様との絆が数字になった月。${sz_total?`${sz_total}人に`:''}「また来たい」と思ってもらえる接客が売上の土台。来月もこの調子で！`],
-      mid:   [`💛 あと少し！社交型の西田さんはお客様との会話の中に答えがある。もう少し深い関係を作る時間を意識的に増やしてみよう。信頼が積み重なれば数字はついてくる！`, `🌸 達成率${Math.round(rate)}%。${sz_total?`${sz_total}人と向き合った`:'積み重ねた'}経験は本物。既存のお客様との関係をもっと深めることが達成への近道だよ！`],
-      low:   [`🤗 まずは身近な繋がりを大切に！社交型の西田さんにとって、周りとの関係が整うと自然と力が出てくる。チームで一緒に考えよう。あなたの温かさは絶対に武器になる！`, `💪 今月は関係構築の月にしよう！${sz_total?`${sz_total}人の施術`:'お客様'}一人ひとりとの会話を大切に。社交型の強みを全開にすれば、来月は必ず巻き返せる！`],
-    },
-  };
-
-  const tier = rate >= 100 ? 'high' : rate >= 70 ? 'mid' : 'low';
-  const patterns = COMMENTS[name]?.[tier] || [`頑張ってます！達成率${Math.round(rate)}%。来月も一緒に頑張りましょう！`];
-  // ランダムで1つ選ぶ（再生成のたびに変わる）
-  const comment = patterns[Math.floor(Math.random() * patterns.length)];
-
-  el.innerHTML = `
-    <div style="margin-top:12px;background:${eg.color}12;border:1px solid ${eg.color}40;border-radius:10px;padding:14px 16px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,${eg.color},${eg.color}99);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 2px 8px ${eg.color}40;">${ch.emoji}</div>
-        <div>
-          <div style="font-size:13px;font-weight:700;color:${eg.color};">${ch.role}</div>
-          <div style="font-size:11px;color:var(--muted);">EGプロファイル分析</div>
-        </div>
-        <div style="margin-left:auto;">
-          <button onclick="regenerateComment('${containerId}','${name}')"
-            style="background:none;border:1px solid ${eg.color}40;border-radius:6px;color:${eg.color};font-size:11px;padding:4px 10px;cursor:pointer;">
-            🔄 別パターン
-          </button>
-        </div>
-      </div>
-      <div style="font-size:14px;line-height:1.8;color:var(--text);padding:12px;background:var(--surface2);border-radius:8px;border-left:3px solid ${eg.color};">
-        ${comment}
-      </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
-        ${Object.entries(eg.profile).map(([k,v]) =>
-          `<span style="font-size:11px;padding:2px 9px;border-radius:20px;background:${eg.color}20;color:${eg.color};border:1px solid ${eg.color}40;">${k} ${v}%</span>`
-        ).join('')}
-      </div>
-    </div>`;
+async function generateAIComment(containerId,name,staffData,target,eg){
+  const el=document.getElementById(containerId);
+  if(!el) return;
+  const rate=staffData.monthly_rate||0, total=staffData.total||0, diff=staffData.diff||0;
+  const sz_total=staffData.seizetsu_total||0;
+  const characters={'行時':{emoji:'🌟',role:'行時さん専属の熱血コーチ'},'諸永':{emoji:'🎯',role:'諸永さん専属の戦略コーチ'},'田中':{emoji:'📊',role:'田中さん専属の分析コーチ'},'岩丸':{emoji:'💡',role:'岩丸さん専属のクリエイティブコーチ'},'西田':{emoji:'🤝',role:'西田さん専属のハートフルコーチ'}};
+  const ch=characters[name]||{emoji:'🤖',role:'専属コーチ'};
+  const COMMENTS={'行時':{high:[`🌟 やった！${Math.round(total/10000)}万円、目標達成おめでとう！この勢いで来月もいこう！`,`🎉 ${Math.round(rate)}%達成！アイデアを形にする力が最高に発揮された月！`],mid:[`📈 ${Math.round(total/10000)}万円、あと少し！行時さんの持ち味を全週に広げれば絶対届く！`,`💫 惜しい！達成率${Math.round(rate)}%。コンセプト型の直感を信じて！`],low:[`🔄 今月は仕込みの月にしよう！うまくいかなかったことも全部次への財産。`,`💪 まだまだこれから！社交型の強みを活かして、お客様との会話からヒントを見つけよう！`]},'諸永':{high:[`🎯 完璧な計画実行力！${Math.round(total/10000)}万円達成。この型を来月も再現しよう！`,`✅ ${Math.round(rate)}%達成！構造型の諸永さんらしい着実な積み上げが数字に出たね。`],mid:[`🎯 ${Math.round(total/10000)}万円、あと${Math.abs(Math.round(diff/10000*10)/10)}万で達成。改善ポイントを探してみよう！`,`📋 惜しい！「来月の修正版プラン」を作れば、次は必ず届く！`],low:[`🔄 リセットして来月の計画を一から組み直そう！`,`💡 今月の経験を次の計画に活かそう。段取り力で巻き返そう！`]},'田中':{high:[`📊 データで勝った月！${Math.round(total/10000)}万円達成。勝ちパターンを言語化しよう！`,`🎉 ${Math.round(rate)}%達成！論理的に積み上げた結果がここに出た。`],mid:[`📊 あと${Math.abs(Math.round(diff/10000*10)/10)}万！因数分解してみよう。`,`🔍 達成率${Math.round(rate)}%。来月の仮説を立てよう。データが揃えば答えは出る！`],low:[`📈 まずは今月のデータを整理しよう。原因が見えれば、次の行動は自然と決まる！`,`💡 今月は分析と仕込みの月。田中さんの論理力があれば必ず巻き返せる！`]},'岩丸':{high:[`💡 コンセプト型77%の爆発力が炸裂した月！${Math.round(total/10000)}万円達成🎉`,`🚀 ${Math.round(rate)}%達成！岩丸さんのアイデア力と行動力が全開の月。`],mid:[`💫 アイデアはある、あとは「届け方」の精度を上げるだけ。`,`🌈 達成率${Math.round(rate)}%。エネルギーが高い週に集中して動く仕組みを作ろう！`],low:[`🔮 今月は仕込みの月！うまくいかなかった経験も全部アイデアの種。`,`💡 可能性は無限大！岩丸さんの発想力があれば、次のブレイクスルーはすぐそこ！`]},'西田':{high:[`🤝 人との繋がりが結果を生んだ月！${Math.round(total/10000)}万円達成🎉`,`✨ ${Math.round(rate)}%達成！お客様との絆が数字になった月。`],mid:[`💛 あと少し！社交型の西田さんはお客様との会話の中に答えがある。`,`🌸 達成率${Math.round(rate)}%。既存のお客様との関係をもっと深めることが達成への近道！`],low:[`🤗 まずは身近な繋がりを大切に！あなたの温かさは絶対に武器になる！`,`💪 今月は関係構築の月にしよう！社交型の強みを全開にすれば、来月は必ず巻き返せる！`]}};
+  const tier=rate>=100?'high':rate>=70?'mid':'low';
+  const patterns=COMMENTS[name]?.[tier]||[`頑張ってます！達成率${Math.round(rate)}%。来月も一緒に頑張りましょう！`];
+  const comment=patterns[Math.floor(Math.random()*patterns.length)];
+  el.innerHTML=`<div style="margin-top:12px;background:${eg.color}12;border:1px solid ${eg.color}40;border-radius:10px;padding:14px 16px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;"><div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,${eg.color},${eg.color}99);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">${ch.emoji}</div><div><div style="font-size:13px;font-weight:700;color:${eg.color};">${ch.role}</div><div style="font-size:11px;color:var(--muted);">EGプロファイル分析</div></div><div style="margin-left:auto;"><button onclick="regenerateComment('${containerId}','${name}')" style="background:none;border:1px solid ${eg.color}40;border-radius:6px;color:${eg.color};font-size:11px;padding:4px 10px;cursor:pointer;">🔄 別パターン</button></div></div><div style="font-size:14px;line-height:1.8;color:var(--text);padding:12px;background:var(--surface2);border-radius:8px;border-left:3px solid ${eg.color};">${comment}</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">${Object.entries(eg.profile).map(([k,v])=>`<span style="font-size:11px;padding:2px 9px;border-radius:20px;background:${eg.color}20;color:${eg.color};border:1px solid ${eg.color}40;">${k} ${v}%</span>`).join('')}</div></div>`;
 }
 
-
-// 再生成ボタン用
-function regenerateComment(containerId, name) {
-  const eg = EG_PROFILES[name];
-  if (!eg) return;
-  const target = getStaffTarget();
-  const staffData = _staffDataCache[containerId] || {};
-  const el = document.getElementById(containerId);
-  if (el) {
-    el.innerHTML = `
-      <div style="margin-top:12px;background:${eg.color}12;border:1px solid ${eg.color}40;border-radius:10px;padding:14px 16px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-          <div style="width:32px;height:32px;border-radius:50%;background:${eg.color};display:flex;align-items:center;justify-content:center;font-size:16px;">🤖</div>
-          <div style="font-size:13px;color:var(--muted);">再生成中...</div>
-        </div>
-        <div style="height:40px;background:var(--surface2);border-radius:8px;"></div>
-      </div>`;
-  }
-  generateAIComment(containerId, name, staffData, target, eg);
+function regenerateComment(containerId,name){
+  const eg=EG_PROFILES[name]; if(!eg) return;
+  const target=getStaffTarget(); const staffData=_staffDataCache[containerId]||{};
+  const el=document.getElementById(containerId);
+  if(el) el.innerHTML=`<div style="margin-top:12px;background:${eg.color}12;border:1px solid ${eg.color}40;border-radius:10px;padding:14px 16px;"><div style="font-size:13px;color:var(--muted);">再生成中...</div></div>`;
+  generateAIComment(containerId,name,staffData,target,eg);
 }
 
-
-// ============================================================
-// NAOLT集計 取込
-// ============================================================
-
-function switchImportTab(n) {
-  document.getElementById('importZone1').style.display = n===1 ? 'block' : 'none';
-  document.getElementById('importZone2').style.display = n===2 ? 'block' : 'none';
-  document.getElementById('importTab1').className = n===1 ? 'btn' : 'btn btn-ghost';
-  document.getElementById('importTab2').className = n===2 ? 'btn' : 'btn btn-ghost';
-  // ドラッグアンドドロップを切り替え
+function switchImportTab(n){
+  document.getElementById('importZone1').style.display=n===1?'block':'none';
+  document.getElementById('importZone2').style.display=n===2?'block':'none';
+  document.getElementById('importTab1').className=n===1?'btn':'btn btn-ghost';
+  document.getElementById('importTab2').className=n===2?'btn':'btn btn-ghost';
   setupNAOLTDrop();
 }
 
 function setupNAOLTDrop(){
-  const dz2 = document.getElementById('importZone2');
+  const dz2=document.getElementById('importZone2');
   if(!dz2) return;
-  dz2.addEventListener('dragover', e=>{e.preventDefault();dz2.classList.add('dragover');});
-  dz2.addEventListener('dragleave', ()=>dz2.classList.remove('dragover'));
-  dz2.addEventListener('drop', e=>{
-    e.preventDefault(); dz2.classList.remove('dragover');
-    if(e.dataTransfer.files[0]) handleNAOLTFile(e.dataTransfer.files[0]);
-  });
+  dz2.addEventListener('dragover',e=>{e.preventDefault();dz2.classList.add('dragover');});
+  dz2.addEventListener('dragleave',()=>dz2.classList.remove('dragover'));
+  dz2.addEventListener('drop',e=>{e.preventDefault();dz2.classList.remove('dragover');if(e.dataTransfer.files[0]) handleNAOLTFile(e.dataTransfer.files[0]);});
 }
 setupNAOLTDrop();
 
-function handleNAOLTFile(file) {
+function handleNAOLTFile(file){
   if(!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const wb = XLSX.read(e.target.result, {type:'array', cellDates:false});
-      console.log('[NAOLT] シート:', wb.SheetNames);
-      const result = parseNAOLT(wb);
-      localStorage.setItem('zen_naolt', JSON.stringify({
-        ...result,
-        fileName: file.name,
-        importedAt: new Date().toLocaleString('ja')
-      }));
-      logImport(file.name, 'success',
-        `NAOLT集計 取込完了 — KPIデータ ${result.months?.length || 0}ヶ月分 / 集客データ ${result.collectionMonths?.length || 0}ヶ月分`
-      );
-      updateCharts();
-      updateImportedList();
-    } catch(err) {
-      logImport(file.name, 'error', 'パースエラー: ' + err.message);
-    }
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array',cellDates:false});
+      const result=parseNAOLT(wb);
+      localStorage.setItem('zen_naolt',JSON.stringify({...result,fileName:file.name,importedAt:new Date().toLocaleString('ja')}));
+      logImport(file.name,'success',`NAOLT集計 取込完了 — KPIデータ ${result.months?.length||0}ヶ月分 / 集客データ ${result.collectionMonths?.length||0}ヶ月分`);
+      updateCharts(); updateImportedList();
+    }catch(err){ logImport(file.name,'error','パースエラー: '+err.message); }
   };
   reader.readAsArrayBuffer(file);
 }
 
-function parseNAOLT(wb) {
-  const result = { kpi:{}, collection:{}, months:[], collectionMonths:[] };
-  const monthCols = {2:1, 3:2, 4:3, 5:4, 6:5, 7:6, 8:7, 9:8, 10:9, 11:10, 12:11, 1:12}; // 月→列インデックス（0始まり、col0=ラベル、col1=5月...）
-
-  // ===== ５期KPIシート =====
-  const kpiSheet = wb.SheetNames.find(n => n.includes('KPI'));
-  if(kpiSheet) {
-    const raw = XLSX.utils.sheet_to_json(wb.Sheets[kpiSheet], {header:1, defval:null, raw:true});
-    // row1がヘッダー（5月〜4月）、col2〜col13が5月〜4月
-    // col2=5月, col3=6月, ..., col11=2月, col12=3月, col13=4月
-    const ROW = {
-      prevSales: 2, totalSales: 3, chiryo: 4, shinKizon: 5, shinNum: 6, keiyakuNum: 8,
-      keiyakuRate: 9, receNum: 10, 離反率: 11, kizonSales: 12, soShijutsu: 14,
-      memberSales: 18, memberCount: 19, memberIn: 20, memberOut: 21,
-      kyoseiSales: 25, kyoseiShinNum: 26, kyoseiKeiyaku: 28, kyoseiKeiyakuRate: 29,
-      esteSales: 33, esteShinNum: 34, esteKeiyaku: 35,
-      jibaiSales: 41, buhanSales: 46,
-    };
-    // 月→列のマッピング（row1から読む）
-    const headerRow = raw[1] || [];
-    const monthColMap = {};
-    const ORDER = ['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月','3月','4月'];
-    headerRow.forEach((v, ci) => {
-      if(v && ORDER.includes(String(v).trim())) monthColMap[String(v).trim()] = ci;
-    });
-    result.months = Object.keys(monthColMap);
-
-    Object.entries(ROW).forEach(([key, ri]) => {
-      result.kpi[key] = {};
-      Object.entries(monthColMap).forEach(([m, ci]) => {
-        const v = raw[ri]?.[ci];
-        result.kpi[key][m] = (v !== null && v !== undefined && !isNaN(Number(v))) ? Number(v) : null;
-      });
-    });
+function parseNAOLT(wb){
+  const result={kpi:{},collection:{},months:[],collectionMonths:[]};
+  const kpiSheet=wb.SheetNames.find(n=>n.includes('KPI'));
+  if(kpiSheet){
+    const raw=XLSX.utils.sheet_to_json(wb.Sheets[kpiSheet],{header:1,defval:null,raw:true});
+    const ROW={prevSales:2,totalSales:3,chiryo:4,shinKizon:5,shinNum:6,keiyakuNum:8,keiyakuRate:9,receNum:10,離反率:11,kizonSales:12,soShijutsu:14,memberSales:18,memberCount:19,memberIn:20,memberOut:21,kyoseiSales:25,kyoseiShinNum:26,kyoseiKeiyaku:28,kyoseiKeiyakuRate:29,esteSales:33,esteShinNum:34,esteKeiyaku:35,jibaiSales:41,buhanSales:46};
+    const headerRow=raw[1]||[];
+    const monthColMap={};
+    const ORDER=['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月','3月','4月'];
+    headerRow.forEach((v,ci)=>{if(v&&ORDER.includes(String(v).trim())) monthColMap[String(v).trim()]=ci;});
+    result.months=Object.keys(monthColMap);
+    Object.entries(ROW).forEach(([key,ri])=>{result.kpi[key]={};Object.entries(monthColMap).forEach(([m,ci])=>{const v=raw[ri]?.[ci];result.kpi[key][m]=(v!==null&&v!==undefined&&!isNaN(Number(v)))?Number(v):null;});});
   }
-
-  // ===== ５期集客部門シート =====
-  const colSheet = wb.SheetNames.find(n => n.includes('集客'));
-  if(colSheet) {
-    const raw2 = XLSX.utils.sheet_to_json(wb.Sheets[colSheet], {header:1, defval:null, raw:true});
-    // row0がヘッダー
-    const headerRow2 = raw2[0] || [];
-    const ORDER2 = ['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月','3月','4月'];
-    const colMap2 = {};
-    headerRow2.forEach((v, ci) => {
-      if(v && ORDER2.includes(String(v).trim())) colMap2[String(v).trim()] = ci;
-    });
-    result.collectionMonths = Object.keys(colMap2).filter(m => {
-      // 有効なデータがある月のみ
-      return Object.values(colMap2).some(ci => {
-        return raw2.some(r => r[ci] !== null && r[ci] !== undefined);
-      });
-    });
-
-    const COL_ROW = {
-      chIryo_inquiry: 1, chiryo_shin: 2, chiryo_来店率: 5,
-      chiryo_google: 6, chiryo_pmax: 7, chiryo_yahoo: 8, chiryo_meta: 9,
-      chiryo_roas: 11, chiryo_cpa: 12, chiryo_shinSales: 10,
-      sangoIinquiry: 13, sango_shin: 14, sango_来店率: 17,
-      sango_google: 18, sango_pmax: 19, sango_yahoo: 20, sango_meta: 21, sango_hpb: 22,
-      sango_roas: 24, sango_cpa: 25, sango_shinSales: 23,
-      este_inquiry: 26, este_shin: 27, este_来店率: 30,
-      este_google: 31, este_pmax: 32, este_yahoo: 33, este_meta: 34, este_hpb: 35,
-      este_roas: 37, este_cpa: 38, este_shinSales: 36,
-      consul: 46, totalCost: 47,
-    };
-    Object.entries(COL_ROW).forEach(([key, ri]) => {
-      result.collection[key] = {};
-      Object.entries(colMap2).forEach(([m, ci]) => {
-        const v = raw2[ri]?.[ci];
-        result.collection[key][m] = (v !== null && v !== undefined && !isNaN(Number(v))) ? Number(v) : null;
-      });
-    });
+  const colSheet=wb.SheetNames.find(n=>n.includes('集客'));
+  if(colSheet){
+    const raw2=XLSX.utils.sheet_to_json(wb.Sheets[colSheet],{header:1,defval:null,raw:true});
+    const headerRow2=raw2[0]||[];
+    const ORDER2=['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月','3月','4月'];
+    const colMap2={};
+    headerRow2.forEach((v,ci)=>{if(v&&ORDER2.includes(String(v).trim())) colMap2[String(v).trim()]=ci;});
+    result.collectionMonths=Object.keys(colMap2);
+    const COL_ROW={chIryo_inquiry:1,chiryo_shin:2,chiryo_来店率:5,chiryo_google:6,chiryo_pmax:7,chiryo_yahoo:8,chiryo_meta:9,chiryo_roas:11,chiryo_cpa:12,chiryo_shinSales:10,sangoIinquiry:13,sango_shin:14,sango_来店率:17,sango_google:18,sango_pmax:19,sango_yahoo:20,sango_meta:21,sango_hpb:22,sango_roas:24,sango_cpa:25,sango_shinSales:23,este_inquiry:26,este_shin:27,este_来店率:30,este_google:31,este_pmax:32,este_yahoo:33,este_meta:34,este_hpb:35,este_roas:37,este_cpa:38,este_shinSales:36,consul:46,totalCost:47};
+    Object.entries(COL_ROW).forEach(([key,ri])=>{result.collection[key]={};Object.entries(colMap2).forEach(([m,ci])=>{const v=raw2[ri]?.[ci];result.collection[key][m]=(v!==null&&v!==undefined&&!isNaN(Number(v)))?Number(v):null;});});
   }
-
   return result;
 }
 
-function deleteNAOLT(){
-  if(!confirm('NAOLT集計データを削除しますか？')) return;
-  localStorage.removeItem('zen_naolt');
-  updateImportedList();
-  updateCharts();
-}
+function deleteNAOLT(){ if(!confirm('NAOLT集計データを削除しますか？')) return; localStorage.removeItem('zen_naolt'); updateImportedList(); updateCharts(); }
 
+const DEFAULT_TARGETS={'行時':1100000,'諸永':1100000,'田中':1100000,'岩丸':1100000,'西田':1100000};
+let _individualTargets=null, _useIndividual=false;
 
-// ============================================================
-// ② スタッフ個別目標
-// ============================================================
-const DEFAULT_TARGETS = {'行時':1100000,'諸永':1100000,'田中':1100000,'岩丸':1100000,'西田':1100000};
-let _individualTargets = null;
-let _useIndividual = false;
-
-function loadIndividualTargets(){
-  const saved = localStorage.getItem('zen_ind_targets');
-  _individualTargets = saved ? JSON.parse(saved) : {...DEFAULT_TARGETS};
-  _useIndividual = !!localStorage.getItem('zen_use_ind');
-}
+function loadIndividualTargets(){ const saved=localStorage.getItem('zen_ind_targets'); _individualTargets=saved?JSON.parse(saved):{...DEFAULT_TARGETS}; _useIndividual=!!localStorage.getItem('zen_use_ind'); }
 loadIndividualTargets();
 
-function getStaffTarget(name){
-  if(_useIndividual && name && _individualTargets[name]) return _individualTargets[name];
-  return parseInt(_staffTargetCache || '1100000');
-}
-
-function onTargetChange(){
-  const v = document.getElementById('staffTarget').value;
-  _staffTargetCache = v;
-  storageSet('zen_staff_target', v);
-  if(!_useIndividual) renderStaff();
-}
-
-function toggleIndividualTargets(){
-  _useIndividual = !_useIndividual;
-  if(_useIndividual) localStorage.setItem('zen_use_ind','1');
-  else localStorage.removeItem('zen_use_ind');
-  renderIndTargets();
-  renderStaff();
-}
-
+function getStaffTarget(name){ if(_useIndividual&&name&&_individualTargets[name]) return _individualTargets[name]; return parseInt(_staffTargetCache||'1100000'); }
+function onTargetChange(){ const v=document.getElementById('staffTarget').value; _staffTargetCache=v; storageSet('zen_staff_target',v); if(!_useIndividual) renderStaff(); }
+function toggleIndividualTargets(){ _useIndividual=!_useIndividual; if(_useIndividual) localStorage.setItem('zen_use_ind','1'); else localStorage.removeItem('zen_use_ind'); renderIndTargets(); renderStaff(); }
 function renderIndTargets(){
-  const btn = document.getElementById('targetToggleBtn');
-  const wrap = document.getElementById('staffTargetWrap');
+  const btn=document.getElementById('targetToggleBtn'); const wrap=document.getElementById('staffTargetWrap');
   if(!wrap) return;
-  if(!_useIndividual){
-    btn.textContent = '個別設定';
-    // 個別入力欄を削除
-    wrap.querySelectorAll('.ind-target').forEach(el=>el.remove());
-    return;
-  }
-  btn.textContent = '共通に戻す';
-  // 個別入力欄を生成
-  wrap.querySelectorAll('.ind-target').forEach(el=>el.remove());
-  STAFF_NAMES.forEach(name => {
-    const col = STAFF_COLORS[name];
-    const div = document.createElement('div');
-    div.className = 'ind-target';
-    div.style.cssText = 'display:flex;align-items:center;gap:4px;';
-    div.innerHTML = `
-      <span style="font-size:11px;color:${col};font-weight:600;">${name}</span>
-      <input type="number" step="50000" value="${_individualTargets[name]||1100000}"
-        style="width:100px;background:var(--surface2);border:1px solid ${col}40;border-radius:6px;color:var(--text);padding:4px 8px;font-size:12px;"
-        onchange="setIndTarget('${name}',this.value)">
-      <span style="font-size:10px;color:var(--muted);">円</span>`;
-    wrap.appendChild(div);
-  });
+  if(!_useIndividual){ btn.textContent='個別設定'; wrap.querySelectorAll('.ind-target').forEach(el=>el.remove()); return; }
+  btn.textContent='共通に戻す'; wrap.querySelectorAll('.ind-target').forEach(el=>el.remove());
+  STAFF_NAMES.forEach(name=>{const col=STAFF_COLORS[name];const div=document.createElement('div');div.className='ind-target';div.style.cssText='display:flex;align-items:center;gap:4px;';div.innerHTML=`<span style="font-size:11px;color:${col};font-weight:600;">${name}</span><input type="number" step="50000" value="${_individualTargets[name]||1100000}" style="width:100px;background:var(--surface2);border:1px solid ${col}40;border-radius:6px;color:var(--text);padding:4px 8px;font-size:12px;" onchange="setIndTarget('${name}',this.value)"><span style="font-size:10px;color:var(--muted);">円</span>`;wrap.appendChild(div);});
 }
+function setIndTarget(name,val){ _individualTargets[name]=parseInt(val); localStorage.setItem('zen_ind_targets',JSON.stringify(_individualTargets)); renderStaff(); }
 
-function setIndTarget(name, val){
-  _individualTargets[name] = parseInt(val);
-  localStorage.setItem('zen_ind_targets', JSON.stringify(_individualTargets));
-  renderStaff();
-}
-
-// ============================================================
-// ③ KPI動的更新
-// ============================================================
 function updateOverviewKPI(){
-  const D = buildMonthlyData();
-  const M = D.months;
-  const naolt = getNAOLT();
-
-  // 総売上累計
-  const totalSum = D.totalSales.reduce((a,v)=>a+(v||0),0);
-  const months_count = D.totalSales.filter(v=>v>0).length;
-  const annualForecast = months_count > 0 ? Math.round(totalSum / months_count * 12) : 0;
-  const el_total = document.getElementById('kpi_total_value');
-  const el_total_label = document.getElementById('kpi_total_label');
-  const el_total_sub = document.getElementById('kpi_total_sub');
-  if(el_total){ el_total.textContent = Math.round(totalSum/10000)+'万'; }
-  if(el_total_label){ el_total_label.textContent = `総売上（${months_count}ヶ月累計）`; }
-  if(el_total_sub){ el_total_sub.textContent = `年間予測: ${Math.round(annualForecast/10000).toLocaleString('ja')}万`; }
-
-  // 前年比
-  const prevSum = D.prevSales.filter(v=>v).reduce((a,v)=>a+v,0);
-  const yoy = prevSum > 0 ? Math.round(totalSum/prevSum*1000)/10 : null;
-  const el_yoy = document.getElementById('kpi_yoy');
-  const el_yoy_sub = document.getElementById('kpi_yoy_sub');
-  if(el_yoy && yoy){ el_yoy.textContent = yoy+'%'; el_yoy.className = 'kpi-value '+(yoy>=100?'up':'down'); }
-  if(el_yoy_sub && prevSum){ el_yoy_sub.textContent = `前年: ${Math.round(prevSum/10000).toLocaleString('ja')}万`; }
-
-  // 最高月
-  const maxVal = Math.max(...D.totalSales.filter(v=>v>0));
-  const maxIdx = D.totalSales.indexOf(maxVal);
-  const el_max = document.getElementById('kpi_max_month');
-  const el_max_sub = document.getElementById('kpi_max_month_sub');
-  if(el_max && maxVal>0){ el_max.textContent = Math.round(maxVal/10000)+'万'; }
-  if(el_max_sub && maxIdx>=0){ el_max_sub.textContent = M[maxIdx]; }
-
-  // 前月比（⑧）
-  const validSales = D.totalSales.map((v,i)=>({v,m:M[i]})).filter(x=>x.v>0);
-  const momCard = document.getElementById('kpi_mom_card');
-  if(validSales.length >= 2 && momCard){
-    momCard.style.display = '';
-    const cur = validSales[validSales.length-1];
-    const prev = validSales[validSales.length-2];
-    const momRate = Math.round(cur.v/prev.v*1000)/10;
-    const diff = Math.round((cur.v-prev.v)/10000*10)/10;
-    const sign = diff>=0?'+':'';
-    const el_mom = document.getElementById('kpi_mom_value');
-    const el_mom_label = document.getElementById('kpi_mom_label');
-    const el_mom_sub = document.getElementById('kpi_mom_sub');
-    if(el_mom){ el_mom.textContent = momRate+'%'; el_mom.className='kpi-value '+(momRate>=100?'up':'down'); }
-    if(el_mom_label){ el_mom_label.textContent = `前月比（${cur.m}）`; }
-    if(el_mom_sub){ el_mom_sub.textContent = `${sign}${diff}万 vs ${prev.m}`; }
+  const D=buildMonthlyData(); const M=D.months;
+  const totalSum=D.totalSales.reduce((a,v)=>a+(v||0),0);
+  const months_count=D.totalSales.filter(v=>v>0).length;
+  const annualForecast=months_count>0?Math.round(totalSum/months_count*12):0;
+  const el_total=document.getElementById('kpi_total_value');
+  const el_total_label=document.getElementById('kpi_total_label');
+  const el_total_sub=document.getElementById('kpi_total_sub');
+  if(el_total) el_total.textContent=Math.round(totalSum/10000)+'万';
+  if(el_total_label) el_total_label.textContent=`総売上（${months_count}ヶ月累計）`;
+  if(el_total_sub) el_total_sub.textContent=`年間予測: ${Math.round(annualForecast/10000).toLocaleString('ja')}万`;
+  const prevSum=D.prevSales.filter(v=>v).reduce((a,v)=>a+v,0);
+  const yoy=prevSum>0?Math.round(totalSum/prevSum*1000)/10:null;
+  const el_yoy=document.getElementById('kpi_yoy'); const el_yoy_sub=document.getElementById('kpi_yoy_sub');
+  if(el_yoy&&yoy){el_yoy.textContent=yoy+'%';el_yoy.className='kpi-value '+(yoy>=100?'up':'down');}
+  if(el_yoy_sub&&prevSum) el_yoy_sub.textContent=`前年: ${Math.round(prevSum/10000).toLocaleString('ja')}万`;
+  const maxVal=Math.max(...D.totalSales.filter(v=>v>0));
+  const maxIdx=D.totalSales.indexOf(maxVal);
+  const el_max=document.getElementById('kpi_max_month'); const el_max_sub=document.getElementById('kpi_max_month_sub');
+  if(el_max&&maxVal>0) el_max.textContent=Math.round(maxVal/10000)+'万';
+  if(el_max_sub&&maxIdx>=0) el_max_sub.textContent=M[maxIdx];
+  const validSales=D.totalSales.map((v,i)=>({v,m:M[i]})).filter(x=>x.v>0);
+  const momCard=document.getElementById('kpi_mom_card');
+  if(validSales.length>=2&&momCard){
+    momCard.style.display='';
+    const cur=validSales[validSales.length-1]; const prev=validSales[validSales.length-2];
+    const momRate=Math.round(cur.v/prev.v*1000)/10; const diff=Math.round((cur.v-prev.v)/10000*10)/10; const sign=diff>=0?'+':'';
+    const el_mom=document.getElementById('kpi_mom_value'); const el_mom_label=document.getElementById('kpi_mom_label'); const el_mom_sub=document.getElementById('kpi_mom_sub');
+    if(el_mom){el_mom.textContent=momRate+'%';el_mom.className='kpi-value '+(momRate>=100?'up':'down');}
+    if(el_mom_label) el_mom_label.textContent=`前月比（${cur.m}）`;
+    if(el_mom_sub) el_mom_sub.textContent=`${sign}${diff}万 vs ${prev.m}`;
   }
-
-  // ④ 離反警告
-  const recentChurn = D.churnChiryo.filter(v=>v!=null).slice(-3);
-  const avgChurn = recentChurn.length ? recentChurn.reduce((a,v)=>a+v,0)/recentChurn.length : 0;
-  const churnCard = document.getElementById('kpi_churn_card');
-  if(churnCard && avgChurn > 0){
-    churnCard.style.display = '';
-    const el_churn = document.getElementById('kpi_churn_value');
-    const el_churn_sub = document.getElementById('kpi_churn_sub');
-    const churnLevel = avgChurn >= 20 ? '🔴 高め' : avgChurn >= 15 ? '🟡 注意' : '🟢 安定';
-    if(el_churn){ el_churn.textContent = churnLevel; el_churn.style.fontSize='16px'; }
-    if(el_churn_sub){ el_churn_sub.textContent = `直近3ヶ月平均 ${Math.round(avgChurn*10)/10}%`; }
+  const recentChurn=D.churnChiryo.filter(v=>v!=null).slice(-3);
+  const avgChurn=recentChurn.length?recentChurn.reduce((a,v)=>a+v,0)/recentChurn.length:0;
+  const churnCard=document.getElementById('kpi_churn_card');
+  if(churnCard&&avgChurn>0){
+    churnCard.style.display='';
+    const el_churn=document.getElementById('kpi_churn_value'); const el_churn_sub=document.getElementById('kpi_churn_sub');
+    const churnLevel=avgChurn>=20?'🔴 高め':avgChurn>=15?'🟡 注意':'🟢 安定';
+    if(el_churn){el_churn.textContent=churnLevel;el_churn.style.fontSize='16px';}
+    if(el_churn_sub) el_churn_sub.textContent=`直近3ヶ月平均 ${Math.round(avgChurn*10)/10}%`;
   }
-
-  // 矯正平均契約率
-  const kyoseiRates = D.contractKyosei.filter(v=>v!=null && v>0);
-  const avgKyosei = kyoseiRates.length ? Math.round(kyoseiRates.reduce((a,v)=>a+v,0)/kyoseiRates.length*10)/10 : null;
-  const el_kyosei = document.getElementById('kpi_kyosei_rate');
-  if(el_kyosei && avgKyosei){ el_kyosei.textContent = avgKyosei+'%'; }
+  const kyoseiRates=D.contractKyosei.filter(v=>v!=null&&v>0);
+  const avgKyosei=kyoseiRates.length?Math.round(kyoseiRates.reduce((a,v)=>a+v,0)/kyoseiRates.length*10)/10:null;
+  const el_kyosei=document.getElementById('kpi_kyosei_rate');
+  if(el_kyosei&&avgKyosei) el_kyosei.textContent=avgKyosei+'%';
 }
 
-// ============================================================
-// ⑤ 集客ファネル
-// ============================================================
 function updateFunnel(){
-  const wrap = document.getElementById('funnel_wrap');
-  if(!wrap) return;
-  const naolt = getNAOLT();
-  const c = naolt?.collection;
-  if(!c){ wrap.innerHTML = '<div style="color:var(--muted);padding:16px;">NAOLT集計.xlsxを取込んでください</div>'; return; }
-
-  const MONTHS = ['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月'];
-  const depts = [
-    { label:'🔵 治療', color:'#4f8ef7', inquiry:'chIryo_inquiry', shin:'chiryo_shin', contract:'chiryo_roas' },
-    { label:'🟢 産後矯正', color:'#2dd4bf', inquiry:'sangoIinquiry', shin:'sango_shin', contract:'sango_roas' },
-    { label:'🟠 ダイエット', color:'#f97316', inquiry:'este_inquiry', shin:'este_shin', contract:'este_roas' },
-  ];
-
-  const funnelHTML = depts.map(dept => {
-    const validMs = MONTHS.filter(m => c?.[dept.inquiry]?.[m] != null);
-    if(!validMs.length) return '';
-    const totalInquiry = validMs.reduce((a,m)=>a+(c[dept.inquiry][m]||0),0);
-    const totalShin = validMs.reduce((a,m)=>a+(c[dept.shin]?.[m]||0),0);
-    // NAOLT集計の契約数から算出
-    const inquiryToShin = totalInquiry>0 ? Math.round(totalShin/totalInquiry*100) : 0;
-
-    // バーの幅
-    const w1 = 100, w2 = Math.max(inquiryToShin, 5);
-
-    return `
-      <div style="margin-bottom:16px;">
-        <div style="font-size:13px;font-weight:600;color:${dept.color};margin-bottom:8px;">${dept.label}</div>
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
-          <div style="width:90px;font-size:11px;color:var(--muted);">問い合わせ</div>
-          <div style="flex:1;background:${dept.color}30;border-radius:4px;height:28px;display:flex;align-items:center;padding:0 10px;">
-            <span style="font-size:14px;font-weight:700;color:${dept.color};">${totalInquiry}件</span>
-            <span style="font-size:11px;color:var(--muted);margin-left:8px;">${validMs.length}ヶ月合計</span>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
-          <div style="width:90px;font-size:11px;color:var(--muted);">新規来院</div>
-          <div style="flex:1;position:relative;height:28px;">
-            <div style="width:${w2}%;background:${dept.color}60;border-radius:4px;height:100%;display:flex;align-items:center;padding:0 10px;min-width:80px;">
-              <span style="font-size:14px;font-weight:700;color:${dept.color};">${totalShin}件</span>
-              <span style="font-size:11px;color:var(--muted);margin-left:8px;">来店率 ${inquiryToShin}%</span>
-            </div>
-          </div>
-        </div>
-      </div>`;
+  const wrap=document.getElementById('funnel_wrap'); if(!wrap) return;
+  const naolt=getNAOLT(); const c=naolt?.collection;
+  if(!c){wrap.innerHTML='<div style="color:var(--muted);padding:16px;">NAOLT集計.xlsxを取込んでください</div>';return;}
+  const MONTHS=['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月'];
+  const depts=[{label:'🔵 治療',color:'#4f8ef7',inquiry:'chIryo_inquiry',shin:'chiryo_shin'},{label:'🟢 産後矯正',color:'#2dd4bf',inquiry:'sangoIinquiry',shin:'sango_shin'},{label:'🟠 ダイエット',color:'#f97316',inquiry:'este_inquiry',shin:'este_shin'}];
+  const funnelHTML=depts.map(dept=>{
+    const validMs=MONTHS.filter(m=>c?.[dept.inquiry]?.[m]!=null); if(!validMs.length) return '';
+    const totalInquiry=validMs.reduce((a,m)=>a+(c[dept.inquiry][m]||0),0);
+    const totalShin=validMs.reduce((a,m)=>a+(c[dept.shin]?.[m]||0),0);
+    const inquiryToShin=totalInquiry>0?Math.round(totalShin/totalInquiry*100):0;
+    return `<div style="margin-bottom:16px;"><div style="font-size:13px;font-weight:600;color:${dept.color};margin-bottom:8px;">${dept.label}</div><div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;"><div style="width:90px;font-size:11px;color:var(--muted);">問い合わせ</div><div style="flex:1;background:${dept.color}30;border-radius:4px;height:28px;display:flex;align-items:center;padding:0 10px;"><span style="font-size:14px;font-weight:700;color:${dept.color};">${totalInquiry}件</span><span style="font-size:11px;color:var(--muted);margin-left:8px;">${validMs.length}ヶ月合計</span></div></div><div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;"><div style="width:90px;font-size:11px;color:var(--muted);">新規来院</div><div style="flex:1;position:relative;height:28px;"><div style="width:${Math.max(inquiryToShin,5)}%;background:${dept.color}60;border-radius:4px;height:100%;display:flex;align-items:center;padding:0 10px;min-width:80px;"><span style="font-size:14px;font-weight:700;color:${dept.color};">${totalShin}件</span><span style="font-size:11px;color:var(--muted);margin-left:8px;">来店率 ${inquiryToShin}%</span></div></div></div></div>`;
   }).join('');
-
-  wrap.innerHTML = `<div style="padding:4px 0;">${funnelHTML}</div>`;
+  wrap.innerHTML=`<div style="padding:4px 0;">${funnelHTML}</div>`;
 }
 
-// ============================================================
-// ⑥ モバイル用スタイル追加 & ⑦ 印刷スタイル
-// ============================================================
-
-// ============================================================
-// 集客部門 詳細テーブル
-// ============================================================
-function updateCollectionDetail() {
-  const wrap = document.getElementById('collection_detail_wrap');
-  if(!wrap) return;
-  const naolt = getNAOLT();
-  const c = naolt?.collection;
-  const MONTHS = ['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月','3月'];
-
-  function roasClass(v) {
-    if(!v) return 'rd';
-    if(v >= 1000) return 'rg';
-    if(v >= 700)  return 'ro';
-    if(v >= 600)  return 'rw';
-    return 'rd';
+function updateCollectionDetail(){
+  const wrap=document.getElementById('collection_detail_wrap'); if(!wrap) return;
+  const naolt=getNAOLT(); const c=naolt?.collection;
+  const MONTHS=['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月','3月'];
+  function roasClass(v){if(!v) return 'rd';if(v>=1000) return 'rg';if(v>=700) return 'ro';if(v>=600) return 'rw';return 'rd';}
+  function buildTable(title,color,keys){
+    const{inquiry,shin,rate,roas,cpa,shinSales}=keys;
+    const validMonths=MONTHS.filter(m=>c?.[inquiry]?.[m]!=null||c?.[shin]?.[m]!=null);
+    if(!validMonths.length) return `<div class="table-card" style="margin-bottom:15px;"><div class="table-hdr" style="border-left:3px solid ${color};">${title}</div><div style="padding:16px;color:var(--muted);font-size:13px;">データ未取込</div></div>`;
+    const avg=(key,isRate=false)=>{const vals=validMonths.map(m=>c?.[key]?.[m]).filter(v=>v!=null&&v!==0);if(!vals.length) return null;const a=vals.reduce((s,v)=>s+v,0)/vals.length;return isRate?Math.round(a*100):Math.round(a);};
+    const roasVals=validMonths.map(m=>{const v=c?.[roas]?.[m];return v!=null?Math.round(v*100):null;});
+    const rows=[{label:'問い合わせ数',vals:validMonths.map(m=>c?.[inquiry]?.[m]),avg:avg(inquiry),unit:''},{label:'新規来院数',vals:validMonths.map(m=>c?.[shin]?.[m]),avg:avg(shin),unit:''},{label:'来店率',vals:validMonths.map(m=>c?.[rate]?.[m]!=null?Math.round(c[rate][m]*100):null),avg:avg(rate,true),unit:'%'},{label:'新規売上',vals:validMonths.map(m=>c?.[shinSales]?.[m]!=null?Math.round(c[shinSales][m]):null),avg:avg(shinSales),unit:'円',fmt:true},{label:'ROAS',vals:roasVals,avg:null,unit:'%',isRoas:true},{label:'CPA',vals:validMonths.map(m=>c?.[cpa]?.[m]!=null?Math.round(c[cpa][m]):null),avg:avg(cpa),unit:'円',fmt:true}];
+    const headers=validMonths.map(m=>`<th>${m}</th>`).join('')+'<th>平均</th>';
+    const bodyRows=rows.map(row=>{const cells=row.vals.map(v=>{if(v==null) return '<td>—</td>';if(row.isRoas){const cls=roasClass(v);return`<td><span class="rb ${cls}">${v.toLocaleString('ja')}%</span></td>`;}if(row.unit==='%') return`<td>${v}%</td>`;if(row.fmt) return`<td>${v.toLocaleString('ja')}</td>`;return`<td>${v}</td>`;}).join('');let avgCell='—';if(row.avg!=null){if(row.isRoas) avgCell=`<span class="rb ${roasClass(row.avg)}">${row.avg.toLocaleString('ja')}%</span>`;else if(row.unit==='%') avgCell=`${row.avg}%`;else if(row.fmt) avgCell=row.avg.toLocaleString('ja');else avgCell=String(row.avg);}return`<tr><td>${row.label}</td>${cells}<td>${avgCell}</td></tr>`;}).join('');
+    return`<div class="table-card" style="margin-bottom:15px;"><div class="table-hdr" style="border-left:3px solid ${color};">${title}</div><div style="overflow-x:auto;"><table><thead><tr><th>項目</th>${headers}</tr></thead><tbody>${bodyRows}</tbody></table></div></div>`;
   }
-
-  function buildTable(title, color, keys) {
-    const { inquiry, shin, rate, roas, cpa, shinSales } = keys;
-    const validMonths = MONTHS.filter(m => c?.[inquiry]?.[m] != null || c?.[shin]?.[m] != null);
-    if(!validMonths.length) return `
-      <div class="table-card" style="margin-bottom:15px;">
-        <div class="table-hdr" style="border-left:3px solid ${color};">${title}</div>
-        <div style="padding:16px;color:var(--muted);font-size:13px;">データ未取込（NAOLT集計.xlsxをアップロードしてください）</div>
-      </div>`;
-
-    // 平均計算
-    const avg = (key, isRate=false) => {
-      const vals = validMonths.map(m=>c?.[key]?.[m]).filter(v=>v!=null && v!==0);
-      if(!vals.length) return null;
-      const a = vals.reduce((s,v)=>s+v,0)/vals.length;
-      return isRate ? Math.round(a*100) : Math.round(a);
-    };
-
-    const roasVals = validMonths.map(m => {
-      const v = c?.[roas]?.[m];
-      return v != null ? Math.round(v*100) : null;
-    });
-
-    const rows = [
-      { label: '問い合わせ数', vals: validMonths.map(m=>c?.[inquiry]?.[m]), avg: avg(inquiry), unit:'' },
-      { label: '新規来院数', vals: validMonths.map(m=>c?.[shin]?.[m]), avg: avg(shin), unit:'' },
-      { label: '来店率', vals: validMonths.map(m=>c?.[rate]?.[m]!=null?Math.round(c[rate][m]*100):null), avg: avg(rate,true), unit:'%' },
-      { label: '新規売上', vals: validMonths.map(m=>c?.[shinSales]?.[m]!=null?Math.round(c[shinSales][m]):null), avg: avg(shinSales), unit:'円', fmt:true },
-      { label: 'ROAS', vals: roasVals, avg: null, unit:'%', isRoas:true },
-      { label: 'CPA', vals: validMonths.map(m=>c?.[cpa]?.[m]!=null?Math.round(c[cpa][m]):null), avg: avg(cpa), unit:'円', fmt:true },
-    ];
-
-    const headers = validMonths.map(m=>`<th>${m}</th>`).join('') + '<th>平均</th>';
-    const bodyRows = rows.map(row => {
-      const cells = row.vals.map((v, i) => {
-        if(v==null) return '<td>—</td>';
-        if(row.isRoas) {
-          const cls = roasClass(v);
-          return `<td><span class="rb ${cls}">${v.toLocaleString('ja')}%</span></td>`;
-        }
-        if(row.unit==='%') return `<td>${v}%</td>`;
-        if(row.fmt) return `<td>${v.toLocaleString('ja')}</td>`;
-        return `<td>${v}</td>`;
-      }).join('');
-      let avgCell = '—';
-      if(row.avg!=null) {
-        if(row.isRoas) avgCell = `<span class="rb ${roasClass(row.avg)}">${row.avg.toLocaleString('ja')}%</span>`;
-        else if(row.unit==='%') avgCell = `${row.avg}%`;
-        else if(row.fmt) avgCell = row.avg.toLocaleString('ja');
-        else avgCell = String(row.avg);
-      }
-      return `<tr><td>${row.label}</td>${cells}<td>${avgCell}</td></tr>`;
-    }).join('');
-
-    return `
-      <div class="table-card" style="margin-bottom:15px;">
-        <div class="table-hdr" style="border-left:3px solid ${color};">${title}</div>
-        <div style="overflow-x:auto;">
-          <table>
-            <thead><tr><th>項目</th>${headers}</tr></thead>
-            <tbody>${bodyRows}</tbody>
-          </table>
-        </div>
-      </div>`;
+  function buildCostTable(){
+    const validMonths=MONTHS.filter(m=>c?.totalCost?.[m]!=null&&c.totalCost[m]>0); if(!validMonths.length) return '';
+    const headers=validMonths.map(m=>`<th>${m}</th>`).join('')+'<th>合計</th>';
+    const adRows=[{label:'治療 Google',key:'chiryo_google',color:'#4f8ef7'},{label:'治療 P-MAX',key:'chiryo_pmax',color:'#4f8ef7'},{label:'治療 Yahoo!',key:'chiryo_yahoo',color:'#4f8ef7'},{label:'治療 メタ',key:'chiryo_meta',color:'#4f8ef7'},{label:'矯正 Google',key:'sango_google',color:'#2dd4bf'},{label:'矯正 P-MAX',key:'sango_pmax',color:'#2dd4bf'},{label:'矯正 Yahoo!',key:'sango_yahoo',color:'#2dd4bf'},{label:'矯正 メタ',key:'sango_meta',color:'#2dd4bf'},{label:'矯正 HPB',key:'sango_hpb',color:'#2dd4bf'},{label:'ダイエット Google',key:'este_google',color:'#f97316'},{label:'ダイエット P-MAX',key:'este_pmax',color:'#f97316'},{label:'ダイエット Yahoo!',key:'este_yahoo',color:'#f97316'},{label:'ダイエット メタ',key:'este_meta',color:'#f97316'},{label:'ダイエット HPB',key:'este_hpb',color:'#f97316'},{label:'アクセル（コンサル）',key:'consul',color:'#7a8299',divider:true},{label:'🔢 合計（コンサル込）',key:'totalCost',color:'#e8eaf0',bold:true}];
+    const bodyRows=adRows.map(row=>{const vals=validMonths.map(m=>{const v=c?.[row.key]?.[m];return(v!=null&&v>0)?Math.round(v):null;});const total=vals.reduce((a,v)=>a+(v||0),0);if(total===0&&!row.bold) return '';const cells=vals.map(v=>v?`<td>${(v/10000).toFixed(1)}万</td>`:'<td style="color:var(--muted)">—</td>').join('');const dividerStyle=row.divider?'border-top:2px solid var(--border);':'';const boldStyle=row.bold?'font-weight:700;':'';const colorDot=`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${row.color};margin-right:6px;"></span>`;return`<tr style="${dividerStyle}${boldStyle}"><td style="white-space:nowrap;">${colorDot}${row.label}</td>${cells}<td style="font-weight:600;">${total>0?(total/10000).toFixed(1)+'万':'—'}</td></tr>`;}).join('');
+    return`<div class="table-card" style="margin-bottom:15px;"><div class="table-hdr" style="border-left:3px solid var(--muted);">📊 広告費内訳（媒体別・部門別）</div><div style="overflow-x:auto;"><table><thead><tr><th>媒体</th>${headers}</tr></thead><tbody>${bodyRows}</tbody></table></div></div>`;
   }
-
-  // 広告費内訳テーブル
-  function buildCostTable() {
-    const validMonths = MONTHS.filter(m => c?.totalCost?.[m] != null && c.totalCost[m] > 0);
-    if(!validMonths.length) return '';
-    const headers = validMonths.map(m=>`<th>${m}</th>`).join('') + '<th>合計</th>';
-
-    // 各部門・媒体の広告費行
-    const adRows = [
-      // 治療
-      { label:'治療 Google', key:'chiryo_google', color:'#4f8ef7' },
-      { label:'治療 P-MAX',  key:'chiryo_pmax',   color:'#4f8ef7' },
-      { label:'治療 Yahoo!', key:'chiryo_yahoo',  color:'#4f8ef7' },
-      { label:'治療 メタ',   key:'chiryo_meta',   color:'#4f8ef7' },
-      // 産後矯正
-      { label:'矯正 Google', key:'sango_google',  color:'#2dd4bf' },
-      { label:'矯正 P-MAX',  key:'sango_pmax',    color:'#2dd4bf' },
-      { label:'矯正 Yahoo!', key:'sango_yahoo',   color:'#2dd4bf' },
-      { label:'矯正 メタ',   key:'sango_meta',    color:'#2dd4bf' },
-      { label:'矯正 HPB',    key:'sango_hpb',     color:'#2dd4bf' },
-      // ダイエット
-      { label:'ダイエット Google', key:'este_google', color:'#f97316' },
-      { label:'ダイエット P-MAX',  key:'este_pmax',   color:'#f97316' },
-      { label:'ダイエット Yahoo!', key:'este_yahoo',  color:'#f97316' },
-      { label:'ダイエット メタ',   key:'este_meta',   color:'#f97316' },
-      { label:'ダイエット HPB',    key:'este_hpb',    color:'#f97316' },
-      // コンサル・合計
-      { label:'アクセル（コンサル）', key:'consul',     color:'#7a8299', divider:true },
-      { label:'🔢 合計（コンサル込）', key:'totalCost', color:'#e8eaf0', bold:true },
-    ];
-
-    const bodyRows = adRows.map(row => {
-      const vals = validMonths.map(m => {
-        const v = c?.[row.key]?.[m];
-        return (v != null && v > 0) ? Math.round(v) : null;
-      });
-      const total = vals.reduce((a,v)=>a+(v||0), 0);
-      if(total === 0 && !row.bold) return ''; // データなし行はスキップ
-      const cells = vals.map(v => v ? `<td>${(v/10000).toFixed(1)}万</td>` : '<td style="color:var(--muted)">—</td>').join('');
-      const dividerStyle = row.divider ? 'border-top:2px solid var(--border);' : '';
-      const boldStyle = row.bold ? 'font-weight:700;' : '';
-      const colorDot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${row.color};margin-right:6px;"></span>`;
-      return `<tr style="${dividerStyle}${boldStyle}">
-        <td style="white-space:nowrap;">${colorDot}${row.label}</td>
-        ${cells}
-        <td style="font-weight:600;">${total>0?(total/10000).toFixed(1)+'万':'—'}</td>
-      </tr>`;
-    }).join('');
-
-    return `
-      <div class="table-card" style="margin-bottom:15px;">
-        <div class="table-hdr" style="border-left:3px solid var(--muted);">📊 広告費内訳（媒体別・部門別）</div>
-        <div style="overflow-x:auto;">
-          <table>
-            <thead><tr><th>媒体</th>${headers}</tr></thead>
-            <tbody>${bodyRows}</tbody>
-          </table>
-        </div>
-      </div>`;
-  }
-
-  wrap.innerHTML =
-    buildCostTable() +
-    buildTable('🔵 治療部門', '#4f8ef7', {
-      inquiry:'chIryo_inquiry', shin:'chiryo_shin', rate:'chiryo_来店率',
-      roas:'chiryo_roas', cpa:'chiryo_cpa', shinSales:'chiryo_shinSales'
-    }) +
-    buildTable('🟢 産後矯正部門', '#2dd4bf', {
-      inquiry:'sangoIinquiry', shin:'sango_shin', rate:'sango_来店率',
-      roas:'sango_roas', cpa:'sango_cpa', shinSales:'sango_shinSales'
-    }) +
-    buildTable('🟠 ダイエット部門', '#f97316', {
-      inquiry:'este_inquiry', shin:'este_shin', rate:'este_来店率',
-      roas:'este_roas', cpa:'este_cpa', shinSales:'este_shinSales'
-    });
+  wrap.innerHTML=buildCostTable()+buildTable('🔵 治療部門','#4f8ef7',{inquiry:'chIryo_inquiry',shin:'chiryo_shin',rate:'chiryo_来店率',roas:'chiryo_roas',cpa:'chiryo_cpa',shinSales:'chiryo_shinSales'})+buildTable('🟢 産後矯正部門','#2dd4bf',{inquiry:'sangoIinquiry',shin:'sango_shin',rate:'sango_来店率',roas:'sango_roas',cpa:'sango_cpa',shinSales:'sango_shinSales'})+buildTable('🟠 ダイエット部門','#f97316',{inquiry:'este_inquiry',shin:'este_shin',rate:'este_来店率',roas:'este_roas',cpa:'este_cpa',shinSales:'este_shinSales'});
 }
 
-function getNAOLT(){ return JSON.parse(localStorage.getItem('zen_naolt') || 'null'); }
+function getNAOLT(){ return JSON.parse(localStorage.getItem('zen_naolt')||'null'); }
 
-// ============================================================
-// CHARTS（取込データと合算して更新可能）
-// ============================================================
-const CHARTS = {};
+const CHARTS={};
 
-function buildMonthlyData() {
-  // BASE_DATA（5〜1月）+ importedMonths（2月以降）を合算
-  const ORDER = ['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月','3月','4月'];
-  const imported = Object.keys(importedMonths).sort((a,b) => monthSortKey(a) - monthSortKey(b));
-
-  // BASE_DATAの月リスト
-  const baseMonths = BASE_DATA.months;
-
-  // importedMonthsのキーを「月のみ」に正規化するヘルパー
-  // "R8-2月" → "2月", "2月" → "2月"
-  function toMonthOnly(key) {
-    const m = key.match(/(\d+)月$/);
-    return m ? m[1] + '月' : key;
-  }
-
-  // 取込済み月をORDER形式（"2月"等）に変換したリスト
-  const importedNorm = imported.map(k => toMonthOnly(k));
-
-  // NAOLTに含まれる月も追加対象に含める
-  const naoltForMonths = getNAOLT();
-  const naoltMonths = naoltForMonths?.months || [];
-
-  // 追加月（BASEにない月のみ）— 日計表 OR NAOLTのどちらかにあればOK
-  const extraMonths = ORDER.filter(m =>
-    !baseMonths.includes(m) && (importedNorm.includes(m) || naoltMonths.includes(m))
-  );
-
-  // 全月リスト（順序通り）
-  const allMonths = ORDER.filter(m => baseMonths.includes(m) || extraMonths.includes(m));
-
-  // キー正規化版のimportedMonthsを参照するヘルパー
-  function getImported(monthOnly) {
-    // "2月" → "R8-2月" のような実際のキーを探す
-    const key = imported.find(k => toMonthOnly(k) === monthOnly);
-    return key ? importedMonths[key] : null;
-  }
-
-  // 各指標の配列をallMonthsの順で構築
-  function arr(baseArr, key) {
-    const naolt = getNAOLT();
-    const nk = naolt?.kpi;
-    return allMonths.map((m, i) => {
-      const bi = baseMonths.indexOf(m);
-      if(bi >= 0) return baseArr[bi];
-      // NAOLTデータ優先、なければ日計表データ
-      const d = getImported(m);
-      if(key === 'totalSales') return nk?.totalSales?.[m] ?? d?.totalSales ?? 0;
-      if(key === 'chiryo')     return nk?.chiryo?.[m] ?? d?.chiryo ?? 0;
-      if(key === 'kyosei')     return nk?.kyoseiSales?.[m] ?? d?.kyosei ?? 0;
-      if(key === 'este')       return nk?.esteSales?.[m] ?? ((d?.totalSales||0)-(d?.chiryo||0)-(d?.kyosei||0)) ?? 0;
-      if(key === 'memberTotal') return nk?.memberCount?.[m] ?? d?.memberTotal ?? 0;
-      if(key === 'shinChiryo') return nk?.shinNum?.[m] ?? d?.shinChiryo ?? 0;
-      if(key === 'shinKyosei') return nk?.kyoseiShinNum?.[m] ?? d?.shinKyosei ?? 0;
-      if(!d) return 0;
-      return 0;
+function buildMonthlyData(){
+  const ORDER=['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月','3月','4月'];
+  const imported=Object.keys(importedMonths).sort((a,b)=>monthSortKey(a)-monthSortKey(b));
+  const baseMonths=BASE_DATA.months;
+  function toMonthOnly(key){const m=key.match(/(\d+)月$/);return m?m[1]+'月':key;}
+  const importedNorm=imported.map(k=>toMonthOnly(k));
+  const naoltForMonths=getNAOLT(); const naoltMonths=naoltForMonths?.months||[];
+  const extraMonths=ORDER.filter(m=>!baseMonths.includes(m)&&(importedNorm.includes(m)||naoltMonths.includes(m)));
+  const allMonths=ORDER.filter(m=>baseMonths.includes(m)||extraMonths.includes(m));
+  function getImported(monthOnly){const key=imported.find(k=>toMonthOnly(k)===monthOnly);return key?importedMonths[key]:null;}
+  function arr(baseArr,key){
+    const naolt=getNAOLT(); const nk=naolt?.kpi;
+    return allMonths.map((m,i)=>{
+      const bi=baseMonths.indexOf(m); if(bi>=0) return baseArr[bi];
+      const d=getImported(m);
+      if(key==='totalSales') return nk?.totalSales?.[m]??d?.totalSales??0;
+      if(key==='chiryo') return nk?.chiryo?.[m]??d?.chiryo??0;
+      if(key==='kyosei') return nk?.kyoseiSales?.[m]??d?.kyosei??0;
+      if(key==='este') return nk?.esteSales?.[m]??((d?.totalSales||0)-(d?.chiryo||0)-(d?.kyosei||0))??0;
+      if(key==='shinChiryo') return nk?.shinNum?.[m]??d?.shinChiryo??0;
+      if(key==='shinKyosei') return nk?.kyoseiShinNum?.[m]??d?.shinKyosei??0;
+      if(!d) return 0; return 0;
     });
   }
-
-  return {
-    months: allMonths,
-    totalSales: arr(BASE_DATA.totalSales, 'totalSales'),
-    prevSales:  allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); if(bi>=0) return BASE_DATA.prevSales[bi]; const naolt=getNAOLT(); return naolt?.kpi?.prevSales?.[m] ?? null; }),
-    chiryo:     arr(BASE_DATA.chiryo, 'chiryo'),
-    kyosei:     arr(BASE_DATA.kyosei, 'kyosei'),
-    este:       arr(BASE_DATA.este, 'este'),
-    members:    allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); if(bi>=0) return BASE_DATA.members[bi]; const d=getImported(m); return d&&d.memberTotal?d.memberTotal:null; }),
-    shinChiryo: arr(BASE_DATA.shinChiryo, 'shinChiryo'),
-    shinKyosei: arr(BASE_DATA.shinKyosei, 'shinKyosei'),
-    shinEste:   arr(BASE_DATA.shinEste, 'shinEste'),
-    memberIn:   allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.memberIn[bi]:null; }),
-    memberOut:  allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.memberOut[bi]:null; }),
-    churnChiryo:allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.churnChiryo[bi]:null; }),
-    churnMember:allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.churnMember[bi]:null; }),
-    contractChiryo: allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.contractChiryo[bi]:null; }),
-    contractKyosei: allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.contractKyosei[bi]:null; }),
-    contractEste:   allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.contractEste[bi]:null; }),
-    targetDiff: allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.targetDiff[bi]:null; }),
-    roas_chiryo:allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.roas_chiryo[bi]:null; }),
-    roas_kyosei:allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.roas_kyosei[bi]:null; }),
-    roas_este:  allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.roas_este[bi]:null; }),
-    inquiry_c:  allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.inquiry_c[bi]:null; }),
-    inquiry_k:  allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.inquiry_k[bi]:null; }),
-    inquiry_e:  allMonths.map((m,i)=>{ const bi=BASE_DATA.months.indexOf(m); return bi>=0?BASE_DATA.inquiry_e[bi]:null; }),
+  return{
+    months:allMonths,
+    totalSales:arr(BASE_DATA.totalSales,'totalSales'),
+    prevSales:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);if(bi>=0) return BASE_DATA.prevSales[bi];const naolt=getNAOLT();return naolt?.kpi?.prevSales?.[m]??null;}),
+    chiryo:arr(BASE_DATA.chiryo,'chiryo'),kyosei:arr(BASE_DATA.kyosei,'kyosei'),este:arr(BASE_DATA.este,'este'),
+    members:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);if(bi>=0) return BASE_DATA.members[bi];const d=getImported(m);return d&&d.memberTotal?d.memberTotal:null;}),
+    shinChiryo:arr(BASE_DATA.shinChiryo,'shinChiryo'),shinKyosei:arr(BASE_DATA.shinKyosei,'shinKyosei'),shinEste:arr(BASE_DATA.shinEste,'shinEste'),
+    memberIn:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.memberIn[bi]:null;}),
+    memberOut:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.memberOut[bi]:null;}),
+    churnChiryo:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.churnChiryo[bi]:null;}),
+    churnMember:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.churnMember[bi]:null;}),
+    contractChiryo:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.contractChiryo[bi]:null;}),
+    contractKyosei:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.contractKyosei[bi]:null;}),
+    contractEste:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.contractEste[bi]:null;}),
+    targetDiff:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.targetDiff[bi]:null;}),
+    roas_chiryo:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.roas_chiryo[bi]:null;}),
+    roas_kyosei:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.roas_kyosei[bi]:null;}),
+    roas_este:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.roas_este[bi]:null;}),
+    inquiry_c:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.inquiry_c[bi]:null;}),
+    inquiry_k:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.inquiry_k[bi]:null;}),
+    inquiry_e:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.inquiry_e[bi]:null;}),
   };
 }
 
-function initChart(id, config) {
-  if(CHARTS[id]) { CHARTS[id].destroy(); }
-  CHARTS[id] = new Chart(document.getElementById(id), config);
-}
+function initChart(id,config){if(CHARTS[id]){CHARTS[id].destroy();}CHARTS[id]=new Chart(document.getElementById(id),config);}
 
-function updateCharts() {
-  const D = buildMonthlyData();
-  const M = D.months;
-
-  initChart('c_total',{type:'bar',data:{labels:M,datasets:[
-    {label:'今期',data:D.totalSales,backgroundColor:'rgba(79,142,247,.7)',borderRadius:4},
-    {label:'前年',data:D.prevSales.map(v=>v||0),backgroundColor:'rgba(122,130,153,.3)',borderRadius:4}
-  ]},options:{...CD,responsive:true}});
-
-  initChart('c_donut',{type:'doughnut',data:{
-    labels:['治療','矯正','エステ','その他'],
-    datasets:[{data:[
-      D.chiryo.reduce((a,v)=>a+(v||0),0),
-      D.kyosei.reduce((a,v)=>a+(v||0),0),
-      D.este.reduce((a,v)=>a+(v||0),0),
-      D.totalSales.reduce((a,v)=>a+(v||0),0) - D.chiryo.reduce((a,v)=>a+(v||0),0) - D.kyosei.reduce((a,v)=>a+(v||0),0) - D.este.reduce((a,v)=>a+(v||0),0)
-    ],backgroundColor:['#4f8ef7','#2dd4bf','#f97316','#a78bfa'],borderWidth:0}]
-  },options:{responsive:true,plugins:{legend:{labels:{color:'#7a8299',font:{size:11}}}},cutout:'65%'}});
-
-  initChart('c_target',{type:'bar',data:{labels:M,datasets:[
-    {label:'治療 目標差',data:D.targetDiff,backgroundColor:function(ctx){return (ctx.raw||0)>=0?'rgba(34,197,94,.6)':'rgba(239,68,68,.6)'},borderRadius:3}
-  ]},options:{...CD,responsive:true}});
-
-  initChart('c_member',{type:'line',data:{labels:M,datasets:[
-    {label:'会員数',data:D.members,borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,.1)',fill:true,tension:.4,pointBackgroundColor:'#a78bfa',spanGaps:true}
-  ]},options:{...CD,responsive:true}});
-
-  initChart('c_dept',{type:'line',data:{labels:M,datasets:[
-    {label:'治療',data:D.chiryo,borderColor:'#4f8ef7',fill:false,tension:.4,spanGaps:true},
-    {label:'矯正',data:D.kyosei,borderColor:'#2dd4bf',fill:false,tension:.4,spanGaps:true},
-    {label:'エステ',data:D.este,borderColor:'#f97316',fill:false,tension:.4,spanGaps:true}
-  ]},options:{...CD,responsive:true}});
-
-  initChart('c_yoy',{type:'bar',data:{labels:M,datasets:[
-    {label:'今期',data:D.totalSales,backgroundColor:'rgba(79,142,247,.7)',borderRadius:4},
-    {label:'前年',data:D.prevSales.map(v=>v||0),backgroundColor:'rgba(122,130,153,.3)',borderRadius:4}
-  ]},options:{...CD,responsive:true}});
-
-  initChart('c_new',{type:'bar',data:{labels:M,datasets:[
-    {label:'治療',data:D.shinChiryo,backgroundColor:'rgba(79,142,247,.7)',borderRadius:3},
-    {label:'矯正',data:D.shinKyosei,backgroundColor:'rgba(45,212,191,.7)',borderRadius:3},
-    {label:'エステ',data:D.shinEste,backgroundColor:'rgba(249,115,22,.7)',borderRadius:3}
-  ]},options:{...CD,responsive:true}});
-
-  initChart('c_flow',{type:'bar',data:{labels:M,datasets:[
-    {label:'入会',data:D.memberIn,backgroundColor:'rgba(34,197,94,.7)',borderRadius:3},
-    {label:'退会',data:D.memberOut,backgroundColor:'rgba(239,68,68,.7)',borderRadius:3}
-  ]},options:{...CD,responsive:true}});
-
-  initChart('c_churn',{type:'line',data:{labels:M,datasets:[
-    {label:'治療',data:D.churnChiryo,borderColor:'#ef4444',fill:false,tension:.4,spanGaps:true},
-    {label:'会員',data:D.churnMember,borderColor:'#a78bfa',fill:false,tension:.4,spanGaps:true}
-  ]},options:{...CD,responsive:true,scales:{...CD.scales,y:{...CD.scales.y,ticks:{callback:v=>v+'%',color:'#7a8299'}}}}});
-
-  initChart('c_contract',{type:'line',data:{labels:M,datasets:[
-    {label:'治療',data:D.contractChiryo,borderColor:'#4f8ef7',fill:false,tension:.4,pointRadius:5,spanGaps:true},
-    {label:'矯正',data:D.contractKyosei,borderColor:'#2dd4bf',fill:false,tension:.4,pointRadius:5,spanGaps:true},
-    {label:'エステ',data:D.contractEste,borderColor:'#f97316',fill:false,tension:.4,pointRadius:5,spanGaps:true}
-  ]},options:{...CD,responsive:true,scales:{...CD.scales,y:{...CD.scales.y,ticks:{callback:v=>v+'%',color:'#7a8299'}}}}});
-
-  initChart('c_roas',{type:'line',data:{labels:M,datasets:[
-    {label:'治療',data:D.roas_chiryo,borderColor:'#ef4444',fill:false,tension:.4,spanGaps:true},
-    {label:'産後矯正',data:D.roas_kyosei,borderColor:'#2dd4bf',fill:false,tension:.4,spanGaps:true},
-    {label:'ダイエット',data:D.roas_este,borderColor:'#f97316',fill:false,tension:.4,spanGaps:true}
-  ]},options:{...CD,responsive:true,scales:{...CD.scales,y:{...CD.scales.y,ticks:{callback:v=>v+'%',color:'#7a8299'}}}}});
-
-  initChart('c_inquiry',{type:'bar',data:{labels:M,datasets:[
-    {label:'治療',data:D.inquiry_c,backgroundColor:'rgba(79,142,247,.7)',borderRadius:3},
-    {label:'産後矯正',data:D.inquiry_k,backgroundColor:'rgba(45,212,191,.7)',borderRadius:3},
-    {label:'ダイエット',data:D.inquiry_e,backgroundColor:'rgba(249,115,22,.7)',borderRadius:3}
-  ]},options:{...CD,responsive:true}});
-
-  // 集客詳細テーブルを更新
+function updateCharts(){
+  const D=buildMonthlyData(); const M=D.months;
+  initChart('c_total',{type:'bar',data:{labels:M,datasets:[{label:'今期',data:D.totalSales,backgroundColor:'rgba(79,142,247,.7)',borderRadius:4},{label:'前年',data:D.prevSales.map(v=>v||0),backgroundColor:'rgba(122,130,153,.3)',borderRadius:4}]},options:{...CD,responsive:true}});
+  initChart('c_donut',{type:'doughnut',data:{labels:['治療','矯正','エステ','その他'],datasets:[{data:[D.chiryo.reduce((a,v)=>a+(v||0),0),D.kyosei.reduce((a,v)=>a+(v||0),0),D.este.reduce((a,v)=>a+(v||0),0),D.totalSales.reduce((a,v)=>a+(v||0),0)-D.chiryo.reduce((a,v)=>a+(v||0),0)-D.kyosei.reduce((a,v)=>a+(v||0),0)-D.este.reduce((a,v)=>a+(v||0),0)],backgroundColor:['#4f8ef7','#2dd4bf','#f97316','#a78bfa'],borderWidth:0}]},options:{responsive:true,plugins:{legend:{labels:{color:'#7a8299',font:{size:11}}}},cutout:'65%'}});
+  initChart('c_target',{type:'bar',data:{labels:M,datasets:[{label:'治療 目標差',data:D.targetDiff,backgroundColor:function(ctx){return(ctx.raw||0)>=0?'rgba(34,197,94,.6)':'rgba(239,68,68,.6)'},borderRadius:3}]},options:{...CD,responsive:true}});
+  initChart('c_member',{type:'line',data:{labels:M,datasets:[{label:'会員数',data:D.members,borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,.1)',fill:true,tension:.4,pointBackgroundColor:'#a78bfa',spanGaps:true}]},options:{...CD,responsive:true}});
+  initChart('c_dept',{type:'line',data:{labels:M,datasets:[{label:'治療',data:D.chiryo,borderColor:'#4f8ef7',fill:false,tension:.4,spanGaps:true},{label:'矯正',data:D.kyosei,borderColor:'#2dd4bf',fill:false,tension:.4,spanGaps:true},{label:'エステ',data:D.este,borderColor:'#f97316',fill:false,tension:.4,spanGaps:true}]},options:{...CD,responsive:true}});
+  initChart('c_yoy',{type:'bar',data:{labels:M,datasets:[{label:'今期',data:D.totalSales,backgroundColor:'rgba(79,142,247,.7)',borderRadius:4},{label:'前年',data:D.prevSales.map(v=>v||0),backgroundColor:'rgba(122,130,153,.3)',borderRadius:4}]},options:{...CD,responsive:true}});
+  initChart('c_new',{type:'bar',data:{labels:M,datasets:[{label:'治療',data:D.shinChiryo,backgroundColor:'rgba(79,142,247,.7)',borderRadius:3},{label:'矯正',data:D.shinKyosei,backgroundColor:'rgba(45,212,191,.7)',borderRadius:3},{label:'エステ',data:D.shinEste,backgroundColor:'rgba(249,115,22,.7)',borderRadius:3}]},options:{...CD,responsive:true}});
+  initChart('c_flow',{type:'bar',data:{labels:M,datasets:[{label:'入会',data:D.memberIn,backgroundColor:'rgba(34,197,94,.7)',borderRadius:3},{label:'退会',data:D.memberOut,backgroundColor:'rgba(239,68,68,.7)',borderRadius:3}]},options:{...CD,responsive:true}});
+  initChart('c_churn',{type:'line',data:{labels:M,datasets:[{label:'治療',data:D.churnChiryo,borderColor:'#ef4444',fill:false,tension:.4,spanGaps:true},{label:'会員',data:D.churnMember,borderColor:'#a78bfa',fill:false,tension:.4,spanGaps:true}]},options:{...CD,responsive:true,scales:{...CD.scales,y:{...CD.scales.y,ticks:{callback:v=>v+'%',color:'#7a8299'}}}}});
+  initChart('c_contract',{type:'line',data:{labels:M,datasets:[{label:'治療',data:D.contractChiryo,borderColor:'#4f8ef7',fill:false,tension:.4,pointRadius:5,spanGaps:true},{label:'矯正',data:D.contractKyosei,borderColor:'#2dd4bf',fill:false,tension:.4,pointRadius:5,spanGaps:true},{label:'エステ',data:D.contractEste,borderColor:'#f97316',fill:false,tension:.4,pointRadius:5,spanGaps:true}]},options:{...CD,responsive:true,scales:{...CD.scales,y:{...CD.scales.y,ticks:{callback:v=>v+'%',color:'#7a8299'}}}}});
+  initChart('c_roas',{type:'line',data:{labels:M,datasets:[{label:'治療',data:D.roas_chiryo,borderColor:'#ef4444',fill:false,tension:.4,spanGaps:true},{label:'産後矯正',data:D.roas_kyosei,borderColor:'#2dd4bf',fill:false,tension:.4,spanGaps:true},{label:'ダイエット',data:D.roas_este,borderColor:'#f97316',fill:false,tension:.4,spanGaps:true}]},options:{...CD,responsive:true,scales:{...CD.scales,y:{...CD.scales.y,ticks:{callback:v=>v+'%',color:'#7a8299'}}}}});
+  initChart('c_inquiry',{type:'bar',data:{labels:M,datasets:[{label:'治療',data:D.inquiry_c,backgroundColor:'rgba(79,142,247,.7)',borderRadius:3},{label:'産後矯正',data:D.inquiry_k,backgroundColor:'rgba(45,212,191,.7)',borderRadius:3},{label:'ダイエット',data:D.inquiry_e,backgroundColor:'rgba(249,115,22,.7)',borderRadius:3}]},options:{...CD,responsive:true}});
   updateCollectionDetail();
-
-  // KPI動的更新（③⑧）
   updateOverviewKPI();
-  // 集客ファネル更新（⑤）
   updateFunnel();
 }
 
-
 initStorage().then(() => {
-
-    // 2月の売上データも設定
+  // 2月の売上データ（固定）
   const k2 = 'R8-2月';
   if(!importedMonths[k2]) importedMonths[k2] = {};
   const d2 = importedMonths[k2];
@@ -2102,29 +1201,13 @@ initStorage().then(() => {
   d2.fileName='R8_2月_日計表_大手町.xlsx';
   if(!d2.staffData || !d2.staffData.length) {
     d2.staffData = [
-      {name:'行時', chiryo_n:1,chiryo_v:126720, kyosei_n:4,kyosei_v:256720, este_n:0,este_v:0,
-       total:831820, kizon:448380, seizetsu_shinki:5,seizetsu_kizon:156,seizetsu_total:161,
-       w1:386940,w1r:140.7, w2:27700,w2r:10.1, w3:272920,w3r:99.2, w4:144260,w4r:52.5,
-       monthly_rate:75.6, diff:-268180},
-      {name:'諸永', chiryo_n:4,chiryo_v:114680, kyosei_n:5,kyosei_v:346640, este_n:1,este_v:1980,
-       total:720580, kizon:257280, seizetsu_shinki:10,seizetsu_kizon:176,seizetsu_total:186,
-       w1:296060,w1r:107.7, w2:248780,w2r:90.5, w3:147560,w3r:53.7, w4:28180,w4r:10.2,
-       monthly_rate:65.5, diff:-379420},
-      {name:'田中', chiryo_n:1,chiryo_v:1980, kyosei_n:7,kyosei_v:391540, este_n:1,este_v:1980,
-       total:517100, kizon:121600, seizetsu_shinki:9,seizetsu_kizon:165,seizetsu_total:174,
-       w1:46580,w1r:16.9, w2:10000,w2r:3.6, w3:441640,w3r:160.6, w4:18880,w4r:6.9,
-       monthly_rate:47.0, diff:-582900},
-      {name:'岩丸', chiryo_n:2,chiryo_v:51060, kyosei_n:6,kyosei_v:277160, este_n:1,este_v:398000,
-       total:913800, kizon:187580, seizetsu_shinki:9,seizetsu_kizon:145,seizetsu_total:154,
-       w1:17760,w1r:6.5, w2:492700,w2r:179.2, w3:214520,w3r:78.0, w4:188820,w4r:68.7,
-       monthly_rate:83.1, diff:-186200},
-      {name:'西田', chiryo_n:0,chiryo_v:0, kyosei_n:0,kyosei_v:0, este_n:0,este_v:0,
-       total:0, kizon:0, seizetsu_shinki:0,seizetsu_kizon:1,seizetsu_total:1,
-       w1:0,w1r:0, w2:0,w2r:0, w3:0,w3r:0, w4:0,w4r:0,
-       monthly_rate:0, diff:-1100000},
+      {name:'行時',chiryo_n:1,chiryo_v:126720,kyosei_n:4,kyosei_v:256720,este_n:0,este_v:0,total:831820,kizon:448380,seizetsu_shinki:5,seizetsu_kizon:156,seizetsu_total:161,w1:386940,w1r:140.7,w2:27700,w2r:10.1,w3:272920,w3r:99.2,w4:144260,w4r:52.5,monthly_rate:75.6,diff:-268180},
+      {name:'諸永',chiryo_n:4,chiryo_v:114680,kyosei_n:5,kyosei_v:346640,este_n:1,este_v:1980,total:720580,kizon:257280,seizetsu_shinki:10,seizetsu_kizon:176,seizetsu_total:186,w1:296060,w1r:107.7,w2:248780,w2r:90.5,w3:147560,w3r:53.7,w4:28180,w4r:10.2,monthly_rate:65.5,diff:-379420},
+      {name:'田中',chiryo_n:1,chiryo_v:1980,kyosei_n:7,kyosei_v:391540,este_n:1,este_v:1980,total:517100,kizon:121600,seizetsu_shinki:9,seizetsu_kizon:165,seizetsu_total:174,w1:46580,w1r:16.9,w2:10000,w2r:3.6,w3:441640,w3r:160.6,w4:18880,w4r:6.9,monthly_rate:47.0,diff:-582900},
+      {name:'岩丸',chiryo_n:2,chiryo_v:51060,kyosei_n:6,kyosei_v:277160,este_n:1,este_v:398000,total:913800,kizon:187580,seizetsu_shinki:9,seizetsu_kizon:145,seizetsu_total:154,w1:17760,w1r:6.5,w2:492700,w2r:179.2,w3:214520,w3r:78.0,w4:188820,w4r:68.7,monthly_rate:83.1,diff:-186200},
+      {name:'西田',chiryo_n:0,chiryo_v:0,kyosei_n:0,kyosei_v:0,este_n:0,este_v:0,total:0,kizon:0,seizetsu_shinki:0,seizetsu_kizon:1,seizetsu_total:1,w1:0,w1r:0,w2:0,w2r:0,w3:0,w3r:0,w4:0,w4r:0,monthly_rate:0,diff:-1100000},
     ];
   }
-
   updateBadges();
   updateSalesTable();
   updateCharts();
