@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>zen 報告アプリ</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --green: #2E7D32;
+    --green-light: #43A047;
+    --green-pale: #E8F5E9;
+    --green-dark: #1B5E20;
+    --red: #C62828;
+    --red-pale: #FFEBEE;
+    --yellow: #F57F17;
+    --yellow-pale: #FFF8E1;
+    --grey-50: #FAFAFA;
+    --grey-100: #F5F5F5;
+    --grey-200: #EEEEEE;
+    --grey-300: #E0E0E0;
+    --grey-400: #BDBDBD;
+    --grey-600: #757575;
+    --grey-800: #424242;
+    --grey-900: #212121;
+    --white: #FFFFFF;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--grey-100);
+    color: var(--grey-900);
+    min-height: 100vh;
+  }
+
+  /* ── ヘッダー ── */
+  .header {
+    background: var(--green-dark);
+    color: white;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow-md);
+  }
+  .header-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .header-date {
+    font-size: 12px;
+    opacity: 0.8;
+  }
+
+  /* ── タブ ── */
+  .tabs {
+    display: flex;
+    background: var(--white);
+    border-bottom: 1px solid var(--grey-200);
+    padding: 0 16px;
+    position: sticky;
+    top: 56px;
+    z-index: 99;
+    box-shadow: var(--shadow-sm);
+  }
+  .tab {
+    padding: 14px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--grey-600);
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .tab.active {
+    color: var(--green);
+    border-bottom-color: var(--green);
+  }
+
+  /* ── コンテンツ ── */
+  .content { padding: 16px; max-width: 680px; margin: 0 auto; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── カード ── */
+  .card {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid var(--grey-200);
+    transition: box-shadow 0.2s;
+  }
+  .card:hover { box-shadow: var(--shadow-md); }
+  .card.resolved {
+    opacity: 0.5;
+    background: var(--grey-50);
+  }
+
+  /* ── 申し送りカード ── */
+  .moshi-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .moshi-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .badge-red    { background: var(--red-pale);    color: var(--red); }
+  .badge-yellow { background: var(--yellow-pale); color: var(--yellow); }
+  .badge-green  { background: var(--green-pale);  color: var(--green); }
+  .badge-grey   { background: var(--grey-200);    color: var(--grey-600); }
+
+  .moshi-patient {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--grey-900);
+  }
+  .moshi-content {
+    font-size: 14px;
+    color: var(--grey-800);
+    line-height: 1.6;
+    margin: 8px 0;
+  }
+  .moshi-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+  .moshi-info {
+    font-size: 11px;
+    color: var(--grey-400);
+  }
+
+  /* ── ボタン ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+  }
+  .btn-primary {
+    background: var(--green);
+    color: white;
+  }
+  .btn-primary:hover { background: var(--green-light); }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--grey-300);
+    color: var(--grey-600);
+  }
+  .btn-outline:hover { background: var(--grey-100); }
+  .btn-resolve {
+    background: var(--green-pale);
+    color: var(--green);
+    border: 1px solid #A5D6A7;
+  }
+  .btn-resolve:hover { background: #C8E6C9; }
+  .btn-resolved {
+    background: var(--grey-200);
+    color: var(--grey-400);
+  }
+  .btn-lg {
+    padding: 12px 24px;
+    font-size: 14px;
+    border-radius: var(--radius-sm);
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* ── FAB ── */
+  .fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--green);
+    color: white;
+    font-size: 24px;
+    border: none;
+    cursor: pointer;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s, background 0.15s;
+    z-index: 200;
+  }
+  .fab:hover { transform: scale(1.08); background: var(--green-light); }
+
+  /* ── モーダル ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 300;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--white);
+    border-radius: var(--radius) var(--radius) 0 0;
+    padding: 24px 20px 32px;
+    width: 100%;
+    max-width: 680px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+  .modal-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--green-dark);
+  }
+
+  /* ── フォーム ── */
+  .form-group { margin-bottom: 14px; }
+  .form-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--grey-600);
+    margin-bottom: 6px;
+  }
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--grey-300);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: 'Noto Sans JP', sans-serif;
+    color: var(--grey-900);
+    background: var(--white);
+    transition: border-color 0.15s;
+    outline: none;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--green);
+  }
+  .form-textarea { min-height: 80px; resize: vertical; line-height: 1.5; }
+
+  .urgency-group {
+    display: flex;
+    gap: 8px;
+  }
+  .urgency-btn {
+    flex: 1;
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    border: 2px solid var(--grey-200);
+    background: var(--white);
+    font-size: 13px;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .urgency-btn.selected-high   { border-color: var(--red);    background: var(--red-pale); }
+  .urgency-btn.selected-medium { border-color: var(--yellow); background: var(--yellow-pale); }
+  .urgency-btn.selected-low    { border-color: var(--green);  background: var(--green-pale); }
+
+  /* ── フィルター ── */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+  .filter-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid var(--grey-300);
+    background: var(--white);
+    color: var(--grey-600);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  .filter-btn.active {
+    background: var(--green);
+    border-color: var(--green);
+    color: white;
+  }
+
+  /* ── 口コミページ ── */
+  .kuchikomi-form {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--grey-200);
+    margin-bottom: 20px;
+  }
+  .kuchikomi-form-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--green-dark);
+    margin-bottom: 14px;
+  }
+  .staff-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .staff-btn {
+    padding: 10px 8px;
+    border-radius: var(--radius-sm);
+    border: 2px solid var(--grey-200);
+    background: var(--white);
+    font-size: 13px;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    font-weight: 500;
+  }
+  .staff-btn.selected {
+    border-color: var(--green);
+    background: var(--green-pale);
+    color: var(--green-dark);
+  }
+  .media-count-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .media-count-item {
+    background: var(--grey-50);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid var(--grey-200);
+  }
+  .media-count-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--grey-800);
+  }
+  .count-input {
+    width: 56px;
+    text-align: center;
+    padding: 4px 8px;
+    border: 1px solid var(--grey-300);
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'Noto Sans JP', sans-serif;
+    color: var(--green-dark);
+  }
+  .count-input:focus { outline: none; border-color: var(--green); }
+
+  /* ── 月次集計 ── */
+  .stats-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--grey-600);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--white);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    font-size: 13px;
+  }
+  .stats-table th {
+    background: var(--green-dark);
+    color: white;
+    padding: 10px 12px;
+    text-align: center;
+    font-weight: 500;
+  }
+  .stats-table td {
+    padding: 10px 12px;
+    text-align: center;
+    border-bottom: 1px solid var(--grey-100);
+    color: var(--grey-800);
+  }
+  .stats-table tr:last-child td { border-bottom: none; }
+  .stats-table tr:nth-child(even) td { background: var(--grey-50); }
+  .stats-total td {
+    font-weight: 700;
+    color: var(--green-dark);
+    background: var(--green-pale) !important;
+  }
+
+  /* ── ローディング・空状態 ── */
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--grey-400);
+  }
+  .empty-state-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state-text { font-size: 14px; }
+  .loading { text-align: center; padding: 32px; color: var(--grey-400); font-size: 14px; }
+
+  /* ── セクションタイトル ── */
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--grey-400);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 20px 0 10px;
+  }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">zen 報告アプリ</div>
+    <div class="header-date" id="headerDate"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('moshiokuri')">📋 申し送り</div>
+  <div class="tab" onclick="switchTab('kuchikomi')">⭐ 口コミ</div>
+</div>
+
+<div class="content">
+
+  <!-- ── 申し送りページ ── -->
+  <div class="page active" id="page-moshiokuri">
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="setFilter('all', this)">すべて</button>
+      <button class="filter-btn" onclick="setFilter('unresolved', this)">未対応</button>
+      <button class="filter-btn" onclick="setFilter('high', this)">🔴 緊急</button>
+      <button class="filter-btn" onclick="setFilter('resolved', this)">✅ 対応済</button>
+    </div>
+    <div id="moshiokuri-list">
+      <div class="loading">読み込み中...</div>
+    </div>
+  </div>
+
+  <!-- ── 口コミページ ── -->
+  <div class="page" id="page-kuchikomi">
+
+    <div class="kuchikomi-form">
+      <div class="kuchikomi-form-title">📝 今日の口コミを記録</div>
+
+      <div class="form-group">
+        <div class="form-label">担当スタッフ</div>
+        <div class="staff-grid">
+          <button class="staff-btn" onclick="selectStaff('岩丸')">岩丸</button>
+          <button class="staff-btn" onclick="selectStaff('行時')">行時</button>
+          <button class="staff-btn" onclick="selectStaff('諸永')">諸永</button>
+          <button class="staff-btn" onclick="selectStaff('井上')">井上</button>
+          <button class="staff-btn" onclick="selectStaff('岩崎')">岩崎</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="form-label">媒体別件数</div>
+        <div class="media-count-grid">
+          <div class="media-count-item">
+            <span class="media-count-label">🔍 Google</span>
+            <input class="count-input" type="number" id="count-google" value="0" min="0">
+          </div>
+          <div class="media-count-item">
+            <span class="media-count-label">🏥 HPB</span>
+            <input class="count-input" type="number" id="count-hpb" value="0" min="0">
+          </div>
+          <div class="media-count-item">
+            <span class="media-count-label">🗣 患者様の声</span>
+            <input class="count-input" type="number" id="count-kanja" value="0" min="0">
+          </div>
+          <div class="media-count-item">
+            <span class="media-count-label">📋 ホワイトボード</span>
+            <input class="count-input" type="number" id="count-wb" value="0" min="0">
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-lg" onclick="submitKuchikomi()">記録する</button>
+    </div>
+
+    <div class="section-title">今月の集計</div>
+    <div id="kuchikomi-stats">
+      <div class="loading">読み込み中...</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── FAB ── -->
+<button class="fab" onclick="openModal()" id="fab">＋</button>
+
+<!-- ── 申し送り投稿モーダル ── -->
+<div class="modal-overlay" id="modal" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-title">📋 申し送りを追加</div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">患者名</label>
+        <input class="form-input" id="f-patient" placeholder="例：山田 花子" type="text">
+      </div>
+      <div class="form-group">
+        <label class="form-label">連絡区分</label>
+        <select class="form-select" id="f-category">
+          <option>治療</option>
+          <option>産後</option>
+          <option>ダイエット</option>
+          <option>自賠責</option>
+          <option>メンテ</option>
+          <option>その他</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">内容（LINEの内容・クレーム・気になること等）</label>
+      <textarea class="form-textarea" id="f-content" placeholder="例：施術後に痛いとLINEが来ている。次回来院時に確認が必要。"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">緊急度</label>
+      <div class="urgency-group">
+        <button class="urgency-btn" onclick="selectUrgency('high', this)">🔴 高</button>
+        <button class="urgency-btn" onclick="selectUrgency('medium', this)">🟡 中</button>
+        <button class="urgency-btn selected-low" onclick="selectUrgency('low', this)">🟢 低</button>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">担当スタッフ</label>
+        <select class="form-select" id="f-staff">
+          <option>岩丸</option>
+          <option>行時</option>
+          <option>諸永</option>
+          <option>井上</option>
+          <option>岩崎</option>
+          <option>原田</option>
+          <option>長藤</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">日付</label>
+        <input class="form-input" id="f-date" type="date">
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px; margin-top:8px;">
+      <button class="btn btn-outline" style="flex:1; justify-content:center; padding:12px;" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-primary" style="flex:2; justify-content:center; padding:12px; border-radius:8px; font-size:14px;" onclick="submitMoshiokuri()">送信する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://jklmucpzlejazkrserdc.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprbG11Y3B6bGVqYXprcnNlcmRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2Njk2MzcsImV4cCI6MjA5MjI0NTYzN30.kekDG-kTCSJFzLOI3w-eIogjrblLnGIObTQRnHOYqac';
+
+const headers = {
+  'Content-Type': 'application/json',
+  'apikey': SUPABASE_KEY,
+  'Authorization': `Bearer ${SUPABASE_KEY}`
+};
+
+async function api(method, table, body = null, query = '') {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${query}`, {
+    method,
+    headers: { ...headers, 'Prefer': method === 'POST' ? 'return=representation' : 'return=minimal' },
+    body: body ? JSON.stringify(body) : null
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.status === 204 ? null : res.json();
+}
+
+// ── 状態 ──
+let currentFilter = 'all';
+let selectedUrgency = 'low';
+let selectedStaff = null;
+let moshiokuriData = [];
+
+// ── サンプルデータ ──
+const SAMPLE_MOSHIOKURI = [
+  {
+    date: '2026-04-20',
+    patient_name: '山田 花子',
+    category: '産後',
+    content: '施術後に「首のあたりが少し痛い気がする、大丈夫でしょうか？」とLINEが来ています。初回施術なので好転反応の可能性が高いですが、次回担当者は必ず最初に確認してください。',
+    urgency: 'high',
+    staff: '諸永',
+    resolved: false
+  },
+  {
+    date: '2026-04-20',
+    patient_name: '田中 美咲',
+    category: 'ダイエット',
+    content: '「先週から体重が全く落ちていないのですが、どうしたらいいですか？」とLINEあり。停滞期に入っている可能性。次回来院時に食事記録を確認して諸永さんから説明お願いします。',
+    urgency: 'medium',
+    staff: '行時',
+    resolved: false
+  },
+  {
+    date: '2026-04-19',
+    patient_name: '佐藤 由紀',
+    category: '治療',
+    content: '帰り際に「今日の担当の方、少し説明が雑だった」とひと言あり。本人は怒っている様子ではなかったが、次回は丁寧な対応を心がけること。岩丸さんに共有済み。',
+    urgency: 'medium',
+    staff: '原田',
+    resolved: false
+  },
+  {
+    date: '2026-04-19',
+    patient_name: '木村 あゆみ',
+    category: '産後',
+    content: '次回予約を4/25（金）11:00に変更希望とのこと。システムでは変更済みですが、担当の岩丸さんに口頭でも伝えてください。',
+    urgency: 'low',
+    staff: '長藤',
+    resolved: true
+  },
+  {
+    date: '2026-04-18',
+    patient_name: '中村 さくら',
+    category: '自賠責',
+    content: '保険会社から書類の追加提出依頼が来ています。同意書のコピーが必要とのこと。西田さんに確認をお願いします。',
+    urgency: 'high',
+    staff: '岩丸',
+    resolved: false
+  },
+  {
+    date: '2026-04-18',
+    patient_name: '吉田 恵子',
+    category: 'メンテ',
+    content: '「毎月来てるのにポイントカードが見当たらない」とおっしゃっていました。次回来院時に再発行の対応をお願いします。',
+    urgency: 'low',
+    staff: '原田',
+    resolved: false
+  }
+];
+
+const SAMPLE_KUCHIKOMI = [
+  { date: '2026-04-20', staff: '岩丸',  media: 'Google',      count: 2 },
+  { date: '2026-04-20', staff: '諸永',  media: 'HPB',         count: 1 },
+  { date: '2026-04-19', staff: '行時',  media: 'Google',      count: 1 },
+  { date: '2026-04-19', staff: '岩丸',  media: '患者様の声',  count: 1 },
+  { date: '2026-04-18', staff: '諸永',  media: 'Google',      count: 1 },
+  { date: '2026-04-18', staff: '井上',  media: 'HPB',         count: 1 },
+  { date: '2026-04-17', staff: '岩崎',  media: 'ホワイトボード', count: 2 },
+  { date: '2026-04-17', staff: '行時',  media: '患者様の声',  count: 1 },
+  { date: '2026-04-16', staff: '岩丸',  media: 'Google',      count: 1 },
+  { date: '2026-04-16', staff: '諸永',  media: 'ホワイトボード', count: 1 },
+];
+
+async function seedSampleData() {
+  // すでにデータがあれば投入しない
+  const existing = await api('GET', 'moshiokuri', null, '?limit=1');
+  if (existing && existing.length > 0) return;
+
+  for (const d of SAMPLE_MOSHIOKURI) {
+    await api('POST', 'moshiokuri', d);
+  }
+  for (const d of SAMPLE_KUCHIKOMI) {
+    await api('POST', 'kuchikomi', d);
+  }
+}
+
+// ── 初期化 ──
+document.addEventListener('DOMContentLoaded', async () => {
+  const today = new Date();
+  document.getElementById('headerDate').textContent =
+    today.toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric', weekday:'short' });
+  document.getElementById('f-date').value = today.toISOString().split('T')[0];
+  await seedSampleData();
+  loadMoshiokuri();
+});
+
+// ── タブ切り替え ──
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['moshiokuri','kuchikomi'][i] === tab);
+  });
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(`page-${tab}`).classList.add('active');
+  document.getElementById('fab').style.display = tab === 'moshiokuri' ? 'flex' : 'none';
+  if (tab === 'kuchikomi') loadKuchikomistats();
+}
+
+// ── 申し送り ──
+async function loadMoshiokuri() {
+  try {
+    const data = await api('GET', 'moshiokuri', null, '?order=created_at.desc');
+    moshiokuriData = data;
+    renderMoshiokuri();
+  } catch(e) {
+    document.getElementById('moshiokuri-list').innerHTML =
+      `<div class="empty-state"><div class="empty-state-icon">⚠️</div><div>読み込みエラー</div></div>`;
+  }
+}
+
+function renderMoshiokuri() {
+  const list = document.getElementById('moshiokuri-list');
+  let filtered = moshiokuriData;
+  if (currentFilter === 'unresolved') filtered = filtered.filter(d => !d.resolved);
+  if (currentFilter === 'resolved')   filtered = filtered.filter(d => d.resolved);
+  if (currentFilter === 'high')       filtered = filtered.filter(d => d.urgency === 'high' && !d.resolved);
+
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-text">申し送りはありません</div></div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(d => {
+    const urgencyBadge = d.urgency === 'high'
+      ? '<span class="badge badge-red">🔴 緊急</span>'
+      : d.urgency === 'medium'
+      ? '<span class="badge badge-yellow">🟡 中</span>'
+      : '<span class="badge badge-green">🟢 低</span>';
+
+    const date = d.date || new Date(d.created_at).toLocaleDateString('ja-JP');
+    const resolveBtn = d.resolved
+      ? `<button class="btn btn-resolved" disabled>✓ 対応済</button>`
+      : `<button class="btn btn-resolve" onclick="resolve('${d.id}')">対応済にする</button>`;
+
+    return `
+      <div class="card ${d.resolved ? 'resolved' : ''}" id="card-${d.id}">
+        <div class="moshi-header">
+          <div>
+            <div class="moshi-meta">
+              ${urgencyBadge}
+              <span class="badge badge-grey">${d.category || ''}</span>
+              <span class="badge badge-grey">${d.staff || ''}</span>
+            </div>
+            <div class="moshi-patient" style="margin-top:6px;">${d.patient_name || '（患者名なし）'}</div>
+          </div>
+        </div>
+        <div class="moshi-content">${(d.content || '').replace(/\n/g, '<br>')}</div>
+        <div class="moshi-footer">
+          <div class="moshi-info">${date}</div>
+          ${resolveBtn}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMoshiokuri();
+}
+
+async function resolve(id) {
+  try {
+    await api('PATCH', `moshiokuri?id=eq.${id}`, { resolved: true });
+    const item = moshiokuriData.find(d => d.id === id);
+    if (item) item.resolved = true;
+    renderMoshiokuri();
+  } catch(e) { alert('更新に失敗しました'); }
+}
+
+// ── モーダル ──
+function openModal() {
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+function closeModalOutside(e) {
+  if (e.target === document.getElementById('modal')) closeModal();
+}
+
+function selectUrgency(level, btn) {
+  selectedUrgency = level;
+  document.querySelectorAll('.urgency-btn').forEach(b => {
+    b.className = 'urgency-btn';
+  });
+  btn.classList.add(`selected-${level}`);
+}
+
+async function submitMoshiokuri() {
+  const patient = document.getElementById('f-patient').value.trim();
+  const content = document.getElementById('f-content').value.trim();
+  if (!content) { alert('内容を入力してください'); return; }
+
+  try {
+    const data = await api('POST', 'moshiokuri', {
+      date:         document.getElementById('f-date').value,
+      patient_name: patient,
+      category:     document.getElementById('f-category').value,
+      content,
+      urgency:      selectedUrgency,
+      staff:        document.getElementById('f-staff').value,
+      resolved:     false
+    });
+    moshiokuriData.unshift(data[0]);
+    renderMoshiokuri();
+    closeModal();
+    document.getElementById('f-patient').value = '';
+    document.getElementById('f-content').value = '';
+  } catch(e) { alert('送信に失敗しました: ' + e.message); }
+}
+
+// ── 口コミ ──
+function selectStaff(name) {
+  selectedStaff = name;
+  document.querySelectorAll('.staff-btn').forEach(b => {
+    b.classList.toggle('selected', b.textContent === name);
+  });
+}
+
+async function submitKuchikomi() {
+  if (!selectedStaff) { alert('スタッフを選択してください'); return; }
+  const today = new Date().toISOString().split('T')[0];
+  const media = {
+    'Google':       parseInt(document.getElementById('count-google').value) || 0,
+    'HPB':          parseInt(document.getElementById('count-hpb').value) || 0,
+    '患者様の声':   parseInt(document.getElementById('count-kanja').value) || 0,
+    'ホワイトボード': parseInt(document.getElementById('count-wb').value) || 0,
+  };
+
+  const total = Object.values(media).reduce((a,b) => a+b, 0);
+  if (total === 0) { alert('1件以上入力してください'); return; }
+
+  try {
+    for (const [m, count] of Object.entries(media)) {
+      if (count > 0) {
+        await api('POST', 'kuchikomi', { date: today, staff: selectedStaff, media: m, count });
+      }
+    }
+    ['google','hpb','kanja','wb'].forEach(k =>
+      document.getElementById(`count-${k}`).value = 0
+    );
+    alert('記録しました！');
+    loadKuchikomistats();
+  } catch(e) { alert('送信に失敗しました'); }
+}
+
+async function loadKuchikomistats() {
+  const el = document.getElementById('kuchikomi-stats');
+  try {
+    const now = new Date();
+    const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const data = await api('GET', 'kuchikomi', null, `?date=gte.${ym}-01&order=date.desc`);
+
+    const staffs = ['岩丸','行時','諸永','井上','岩崎'];
+    const medias = ['Google','HPB','患者様の声','ホワイトボード'];
+
+    // スタッフ×媒体の集計
+    const tbl = {};
+    staffs.forEach(s => { tbl[s] = {}; medias.forEach(m => tbl[s][m] = 0); });
+    data.forEach(d => {
+      if (tbl[d.staff] && medias.includes(d.media)) {
+        tbl[d.staff][d.media] += d.count;
+      }
+    });
+
+    const totals = {};
+    medias.forEach(m => { totals[m] = staffs.reduce((a,s) => a + tbl[s][m], 0); });
+    const grandTotal = Object.values(totals).reduce((a,b) => a+b, 0);
+
+    el.innerHTML = `
+      <table class="stats-table">
+        <thead>
+          <tr>
+            <th>スタッフ</th>
+            ${medias.map(m => `<th>${m}</th>`).join('')}
+            <th>合計</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${staffs.map(s => {
+            const rowTotal = medias.reduce((a,m) => a + tbl[s][m], 0);
+            return `<tr>
+              <td style="font-weight:600;text-align:left;padding-left:16px;">${s}</td>
+              ${medias.map(m => `<td>${tbl[s][m] || '—'}</td>`).join('')}
+              <td style="font-weight:700;color:var(--green-dark)">${rowTotal || '—'}</td>
+            </tr>`;
+          }).join('')}
+          <tr class="stats-total">
+            <td style="text-align:left;padding-left:16px;">合計</td>
+            ${medias.map(m => `<td>${totals[m]}</td>`).join('')}
+            <td>${grandTotal}</td>
+          </tr>
+        </tbody>
+      </table>`;
+  } catch(e) {
+    el.innerHTML = `<div class="empty-state"><div>読み込みエラー</div></div>`;
+  }
+}
+</script>
+</body>
+</html>
