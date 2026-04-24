@@ -895,7 +895,7 @@ async function loadMoshiokuri() {
     const [y,m] = ym.split('-').map(Number);
     const from = `${ym}-01`;
     const to   = `${ym}-${String(new Date(y,m,0).getDate()).padStart(2,'0')}`;
-    moshiokuriData = await api('GET','moshiokuri',null,`?date=gte.${from}&date=lte.${to}&order=created_at.desc`);
+    moshiokuriData = await api('GET','moshiokuri',null,`?date=gte.${from}&date=lte.${to}&order=resolved.asc,urgency.desc,created_at.desc`);
     renderMoshiokuri();
   } catch(e) {
     document.getElementById('moshiokuri-list').innerHTML =
