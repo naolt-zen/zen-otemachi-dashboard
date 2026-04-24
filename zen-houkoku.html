@@ -513,6 +513,57 @@
   .loading { text-align: center; padding: 40px; color: var(--g400); font-size: 14px; }
   .section-label { font-size: 11px; font-weight: 700; color: var(--g400); letter-spacing: 0.8px; text-transform: uppercase; margin: 18px 0 10px; }
 
+  /* 未リアクションバッジ */
+  .tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--red);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    padding: 0 5px;
+    margin-left: 5px;
+    vertical-align: middle;
+  }
+
+  /* 要対応バッジ */
+  .action-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    background: #FFF3E0;
+    color: #E65100;
+    border: 1px solid #FFB74D;
+  }
+  .action-done-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    background: var(--green-pale);
+    color: var(--green);
+  }
+  .btn-action { background: #FFF3E0; color: #E65100; border: 1.5px solid #FFB74D; font-size: 12px; }
+  .btn-action:active { background: #FFE0B2; }
+
+  /* 自分宛ハイライト */
+  .card.my-card {
+    border-left: 3px solid var(--blue);
+  }
+  .card.my-card.unread {
+    border-left: 3px solid var(--red);
+    background: #FFFBFB;
+  }
+
   /* ── モーダルフッター ── */
   .modal-footer { display: flex; gap: 10px; margin-top: 10px; }
   .modal-footer .btn { flex: 1; padding: 14px; font-size: 15px; border-radius: 12px; }
@@ -572,7 +623,7 @@
 </div>
 
 <div class="tabs">
-  <div class="tab active" onclick="switchTab('moshiokuri')">📋 申し送り</div>
+  <div class="tab active" onclick="switchTab('moshiokuri')">📋 申し送り<span class="tab-badge" id="badge-moshi" style="display:none;"></span></div>
   <div class="tab"        onclick="switchTab('kuchikomi')">⭐ 口コミ</div>
   <div class="tab"        onclick="switchTab('tasks')">✅ タスク</div>
 </div>
@@ -592,7 +643,8 @@
     </div>
     <div class="filter-bar">
       <button class="filter-btn active" onclick="setFilter('all',this)">すべて</button>
-      <button class="filter-btn" onclick="setFilter('unresolved',this)">未対応</button>
+      <button class="filter-btn" onclick="setFilter('unresolved',this)">未確認</button>
+      <button class="filter-btn" onclick="setFilter('action',this)">🔧 要対応</button>
       <button class="filter-btn" onclick="setFilter('high',this)">🔴 緊急</button>
       <button class="filter-btn" onclick="setFilter('tome',this)">📨 自分宛</button>
       <button class="filter-btn" onclick="setFilter('resolved',this)">✅ 対応済</button>
@@ -722,6 +774,14 @@
       </div>
     </div>
 
+    <div class="form-group">
+      <div class="form-label">対応が必要ですか？</div>
+      <div style="display:flex;gap:10px;">
+        <button class="sel-btn" id="req-action-no" onclick="setRequiresAction(false,this)" style="flex:1;border-color:var(--green);background:var(--green-pale);color:var(--green);">👍 確認だけでOK</button>
+        <button class="sel-btn" id="req-action-yes" onclick="setRequiresAction(true,this)" style="flex:1;">🔧 要対応あり</button>
+      </div>
+    </div>
+
     <div class="form-row">
       <div class="form-group">
         <div class="form-label">投稿者</div>
@@ -808,6 +868,7 @@ async function api(method, table, body=null, query='') {
 let currentFilter = 'all';
 let selectedUrgency = 'low';
 let selectedTo = 'ALL';
+let requiresAction = false;
 let selectedStaff = null;
 let moshiokuriData = [];
 let currentMonth = '';
@@ -907,10 +968,25 @@ function renderMoshiokuri() {
   const list = document.getElementById('moshiokuri-list');
   const isArchive = currentMonth !== thisMonth();
   let d = [...moshiokuriData];
+
+  // 自分宛の未リアクション件数をバッジ表示
+  const unread = moshiokuriData.filter(x =>
+    !x.resolved &&
+    (x.to_staff === 'ALL' || x.to_staff === myName) &&
+    !(Array.isArray(x.confirmed_by) && x.confirmed_by.includes(myName))
+  );
+  const badge = document.getElementById('badge-moshi');
+  if (unread.length > 0) {
+    badge.textContent = unread.length;
+    badge.style.display = 'inline-flex';
+  } else {
+    badge.style.display = 'none';
+  }
   if (currentFilter === 'unresolved') d = d.filter(x => !x.resolved);
   if (currentFilter === 'resolved')   d = d.filter(x => x.resolved);
   if (currentFilter === 'high')       d = d.filter(x => x.urgency==='high' && !x.resolved);
   if (currentFilter === 'tome')       d = d.filter(x => x.to_staff==='ALL' || x.to_staff===myName);
+  if (currentFilter === 'action')     d = d.filter(x => x.requires_action && !x.resolved);
 
   if (!d.length) {
     list.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-text">${isArchive?'この月のデータはありません':'申し送りはありません'}</div></div>`;
@@ -931,18 +1007,23 @@ function renderMoshiokuri() {
         : `<button class="btn btn-confirm" onclick="doConfirm('${x.id}')">👍 了解</button>`;
 
     const resolveBtn = isArchive ? '' :
+      !x.requires_action ? '' :
       x.resolved
         ? `<button class="btn btn-resolved">✓ 対応済</button>`
-        : `<button class="btn btn-resolve" onclick="doResolve('${x.id}')">対応済にする</button>`;
+        : `<button class="btn btn-action" onclick="doResolve('${x.id}')">🔧 対応済みにする</button>`;
 
     const chips = confirmed.length
       ? `<div class="confirmed-row">${confirmed.map(n=>`<span class="confirmed-chip">👍 ${n}</span>`).join('')}</div>`
       : '';
 
-    return `<div class="card ${x.resolved?'resolved':''}" id="card-${x.id}">
+    const isMyCard = x.to_staff === 'ALL' || x.to_staff === myName;
+    const isUnread = isMyCard && !x.resolved && !(Array.isArray(x.confirmed_by) && x.confirmed_by.includes(myName));
+    return `<div class="card ${x.resolved?'resolved':''} ${isMyCard?'my-card':''} ${isUnread?'unread':''}" id="card-${x.id}">
       <div class="to-tag">📨 TO: ${x.to_staff||'ALL'}</div>
       <div class="card-badges">
         ${urg}
+        ${x.requires_action && !x.resolved ? '<span class="action-badge">🔧 要対応</span>' : ''}
+        ${x.requires_action && x.resolved  ? '<span class="action-done-badge">✅ 対応完了</span>' : ''}
         <span class="badge b-grey">${x.category||''}</span>
         <span class="badge b-grey">${x.staff||''}</span>
       </div>
@@ -1001,6 +1082,27 @@ function selectUrgency(level, btn) {
   btn.classList.add(`sel-${level}`);
 }
 
+function setRequiresAction(val, btn) {
+  requiresAction = val;
+  const no  = document.getElementById('req-action-no');
+  const yes = document.getElementById('req-action-yes');
+  if (val) {
+    yes.style.borderColor = '#E65100';
+    yes.style.background  = '#FFF3E0';
+    yes.style.color       = '#E65100';
+    no.style.borderColor  = 'var(--g200)';
+    no.style.background   = 'var(--white)';
+    no.style.color        = 'var(--g800)';
+  } else {
+    no.style.borderColor  = 'var(--green)';
+    no.style.background   = 'var(--green-pale)';
+    no.style.color        = 'var(--green)';
+    yes.style.borderColor = 'var(--g200)';
+    yes.style.background  = 'var(--white)';
+    yes.style.color       = 'var(--g800)';
+  }
+}
+
 async function submitMoshiokuri() {
   const content = document.getElementById('f-content').value.trim();
   if (!content) { alert('内容を入力してください'); return; }
@@ -1011,7 +1113,8 @@ async function submitMoshiokuri() {
       category: document.getElementById('f-category').value,
       content, urgency: selectedUrgency,
       staff: document.getElementById('f-staff').value,
-      to_staff: selectedTo, resolved: false, confirmed_by: []
+      to_staff: selectedTo, resolved: false, confirmed_by: [],
+      requires_action: requiresAction
     });
     if (currentMonth === thisMonth()) {
       moshiokuriData.unshift(data[0]);
@@ -1021,6 +1124,8 @@ async function submitMoshiokuri() {
     closeModal();
     document.getElementById('f-patient').value='';
     document.getElementById('f-content').value='';
+    requiresAction = false;
+    setRequiresAction(false, document.getElementById('req-action-no'));
   } catch(e) { alert('送信失敗: '+e.message); }
 }
 
