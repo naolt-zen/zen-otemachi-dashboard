@@ -520,6 +520,46 @@
 </head>
 <body>
 
+<!-- 名前選択画面 -->
+<div id="name-picker" style="
+  display:none; position:fixed; inset:0; background:var(--green-dark);
+  z-index:999; flex-direction:column; align-items:center; justify-content:center;
+  padding:32px 24px;
+">
+  <div style="font-size:28px; margin-bottom:8px;">👋</div>
+  <div style="color:white; font-size:20px; font-weight:700; margin-bottom:6px;">はじめまして！</div>
+  <div style="color:rgba(255,255,255,0.75); font-size:14px; margin-bottom:32px;">あなたの名前を選んでください</div>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; width:100%; max-width:320px;">
+    <button class="name-pick-btn" onclick="selectMyName('岩丸')">岩丸</button>
+    <button class="name-pick-btn" onclick="selectMyName('行時')">行時</button>
+    <button class="name-pick-btn" onclick="selectMyName('諸永')">諸永</button>
+    <button class="name-pick-btn" onclick="selectMyName('井上')">井上</button>
+    <button class="name-pick-btn" onclick="selectMyName('岩崎')">岩崎</button>
+    <button class="name-pick-btn" onclick="selectMyName('竹藤')">竹藤</button>
+    <button class="name-pick-btn" onclick="selectMyName('原田')">原田</button>
+    <button class="name-pick-btn" onclick="selectMyName('西田')">西田</button>
+  </div>
+</div>
+<style>
+.name-pick-btn {
+  padding: 18px 12px;
+  border-radius: 14px;
+  border: 2px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.12);
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  font-family: 'Noto Sans JP', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.name-pick-btn:active {
+  background: rgba(255,255,255,0.28);
+  transform: scale(0.95);
+}
+</style>
+
 <div class="header">
   <div>
     <div class="header-title">zen 報告</div>
@@ -708,15 +748,16 @@
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title">✅ 週次タスクを追加</div>
+    <div id="rota-preview" style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:14px;"></div>
     <div class="form-group">
-      <div class="form-label">週ラベル（例：5/1〜5/7）</div>
-      <input class="form-input" id="t-week" placeholder="5/1〜5/7" type="text">
+      <div class="form-label">週（自動入力・変更可）</div>
+      <input class="form-input" id="t-week" placeholder="4/21〜4/26" type="text" style="font-size:14px;">
     </div>
+    <div style="font-size:11px;color:var(--g400);margin-bottom:12px;">👇 担当は自動でローテーション。変更もできます</div>
     <div id="task-rows"></div>
-    <button class="btn btn-outline" style="width:100%;justify-content:center;padding:12px;margin-bottom:14px;" onclick="addTaskRow()">＋ タスクを追加</button>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeTaskModal()">キャンセル</button>
-      <button class="btn btn-primary" style="flex:2;" onclick="submitTasks()">追加する</button>
+      <button class="btn btn-primary" style="flex:2;" onclick="submitTasks()">この週を追加する</button>
     </div>
   </div>
 </div>
@@ -725,22 +766,27 @@
 const SUPABASE_URL = 'https://jklmucpzlejazkrserdc.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprbG11Y3B6bGVqYXprcnNlcmRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2Njk2MzcsImV4cCI6MjA5MjI0NTYzN30.kekDG-kTCSJFzLOI3w-eIogjrblLnGIObTQRnHOYqac';
 
-const STAFF_LIST = ['岩丸','行時','諸永','井上','岩崎','竹藤','原田'];
+const STAFF_LIST = ['岩丸','行時','諸永','井上','岩崎','竹藤','原田','西田'];
 
 // 名前管理
 let myName = localStorage.getItem('zen_myname') || '';
-if (!myName) {
-  let idx = null;
-  while (!idx || isNaN(idx) || idx < 1 || idx > STAFF_LIST.length) {
-    idx = parseInt(prompt('あなたの名前を選んでください：\n' + STAFF_LIST.map((n,i) => `${i+1}: ${n}`).join('\n')));
-  }
-  myName = STAFF_LIST[idx - 1];
-  localStorage.setItem('zen_myname', myName);
+
+function showNamePicker() {
+  document.getElementById('name-picker').style.display = 'flex';
+}
+
+function selectMyName(name) {
+  myName = name;
+  localStorage.setItem('zen_myname', name);
+  document.getElementById('name-picker').style.display = 'none';
+  if (myName) document.getElementById('myNameDisp').textContent = myName;
+  [...document.getElementById('f-staff').options].forEach(o => { if(o.value===myName) o.selected=true; });
 }
 
 function changeName() {
   localStorage.removeItem('zen_myname');
-  location.reload();
+  myName = '';
+  showNamePicker();
 }
 
 async function api(method, table, body=null, query='') {
@@ -779,6 +825,10 @@ function fmtMonth(ym) {
 
 // ── 初期化 ──
 document.addEventListener('DOMContentLoaded', async () => {
+  // 名前未設定なら選択画面を表示
+  if (!myName) {
+    showNamePicker();
+  }
   const today = new Date();
   document.getElementById('headerDate').textContent =
     today.toLocaleDateString('ja-JP', {month:'long', day:'numeric', weekday:'short'});
@@ -1088,32 +1138,115 @@ async function toggleTask(id, currentDone) {
   } catch(e) { alert('更新失敗'); }
 }
 
-const DEFAULT_TASKS = [
-  {task:'HPブログ（治療/交通事故）',staff:''},
-  {task:'HPBブログ（産後）',staff:''},
-  {task:'HPBブログ（痩身）',staff:''},
-  {task:'Google投稿/写真（治療/交通事故）',staff:'西田'},
-  {task:'インスタ投稿用動画（産後）',staff:''},
-  {task:'インスタ投稿用写真（産後）',staff:''},
-];
+// ── ローテーション設定 ──
+const ROTA_STAFF = ['岩丸','行時','諸永','井上','岩崎']; // 社員5名
+const ROTA_UKETSUKE = ['竹藤','原田']; // 受付2名
+
+// 月曜日を基準に何週目かを計算してローテを決める
+function getWeekIndex(mondayStr) {
+  // mondayStr: 'YYYY-MM-DD' 形式の月曜日
+  // 2026-04-13を基準週(week=0)として計算
+  const base = new Date('2026-04-13');
+  const target = new Date(mondayStr);
+  const diff = Math.round((target - base) / (7 * 24 * 60 * 60 * 1000));
+  return diff;
+}
+
+// 週ラベル（例: '4/21〜4/26'）から月曜日のDateを取得
+function getMondayFromLabel(label) {
+  // ラベルから日付を特定するため、今年・今月基準で計算
+  // フォーマット: M/D〜M/D
+  const match = label.match(/^(\d+)\/(\d+)/);
+  if (!match) return null;
+  const m = parseInt(match[1]);
+  const d = parseInt(match[2]);
+  const now = new Date();
+  let year = now.getFullYear();
+  // 月が現在より大きければ去年かもしれないが基本今年で
+  const date = new Date(year, m-1, d);
+  return date;
+}
+
+// 週の自動タスク生成
+function generateWeekTasks(mondayDate) {
+  const weekIdx = Math.round((mondayDate - new Date('2026-04-13')) / (7*24*60*60*1000));
+  
+  // 社員ローテ（5名）
+  const s0 = ROTA_STAFF[(weekIdx + 0) % ROTA_STAFF.length];
+  const s1 = ROTA_STAFF[(weekIdx + 1) % ROTA_STAFF.length];
+  const s2 = ROTA_STAFF[(weekIdx + 2) % ROTA_STAFF.length];
+  const s3 = ROTA_STAFF[(weekIdx + 3) % ROTA_STAFF.length];
+  
+  // 受付ローテ（2名）
+  const u0 = ROTA_UKETSUKE[weekIdx % ROTA_UKETSUKE.length];
+  const u1 = ROTA_UKETSUKE[(weekIdx + 1) % ROTA_UKETSUKE.length];
+  
+  return [
+    { task: 'HPブログ（治療・交通事故・産後）', staff: s0, note: '' },
+    { task: 'Google投稿（治療・交通事故・産後）', staff: s1, note: '' },
+    { task: 'HPBブログ（産後・ダイエット）', staff: s2, note: '' },
+    { task: 'ストーリー動画：施術スタッフ出演', staff: s3, note: 'どんなスタッフが施術するか紹介' },
+    { task: 'ストーリー動画：受付スタッフ出演（週1必須）', staff: u0, note: 'スタッフが映ること！託児の様子中心OK' },
+  ];
+}
+
+// 今週の月曜日を取得
+function getThisMonday() {
+  const now = new Date();
+  const day = now.getDay(); // 0=日, 1=月...
+  const diff = day === 0 ? -6 : 1 - day;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + diff);
+  return monday;
+}
+
+// 月曜日から土曜日のラベルを生成
+function makeWeekLabel(monday) {
+  const sat = new Date(monday);
+  sat.setDate(monday.getDate() + 5);
+  const fm = d => `${d.getMonth()+1}/${d.getDate()}`;
+  return `${fm(monday)}〜${fm(sat)}`;
+}
 
 function openTaskModal() {
   document.getElementById('task-modal').classList.add('open');
-  document.getElementById('task-rows').innerHTML='';
-  DEFAULT_TASKS.forEach(t => addTaskRow(t.task, t.staff));
+  // 今週の月曜日を基準に自動生成
+  const monday = getThisMonday();
+  const label = makeWeekLabel(monday);
+  document.getElementById('t-week').value = label;
+  
+  const tasks = generateWeekTasks(monday);
+  const rows = document.getElementById('task-rows');
+  rows.innerHTML = '';
+  tasks.forEach(t => addTaskRow(t.task, t.staff, t.note));
+  
+  // プレビュー表示
+  updateRotaPreview(monday);
 }
+
+function updateRotaPreview(monday) {
+  const prev = document.getElementById('rota-preview');
+  if (!prev) return;
+  const label = makeWeekLabel(monday);
+  prev.textContent = `📅 ${label} のローテーション`;
+}
+
 function closeTaskModal() { document.getElementById('task-modal').classList.remove('open'); }
 function closeTaskModalOutside(e) { if(e.target===document.getElementById('task-modal')) closeTaskModal(); }
 
-function addTaskRow(taskName='', staffName='') {
+function addTaskRow(taskName='', staffName='', note='') {
   const div = document.createElement('div');
-  div.className='form-row'; div.style.marginBottom='8px';
-  div.innerHTML=`
-    <input class="form-input task-name-input" placeholder="タスク名" value="${taskName}" style="font-size:14px;">
-    <select class="form-select task-staff-input" style="font-size:14px;">
-      <option value="">担当</option>
-      ${[...STAFF_LIST,'西田'].map(n=>`<option ${n===staffName?'selected':''}>${n}</option>`).join('')}
-    </select>`;
+  div.style.marginBottom = '10px';
+  div.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-bottom:4px;">
+      <div style="font-size:13px;font-weight:600;color:var(--g800);">${taskName}</div>
+      <select class="form-select task-staff-input" style="font-size:13px;width:90px;padding:8px 10px;">
+        <option value="">担当</option>
+        ${[...ROTA_STAFF,...ROTA_UKETSUKE,'西田'].map(n=>`<option ${n===staffName?'selected':''}>${n}</option>`).join('')}
+      </select>
+    </div>
+    ${note ? `<div style="font-size:11px;color:var(--g400);padding-left:2px;">💡 ${note}</div>` : ''}
+    <input type="hidden" class="task-name-input" value="${taskName}">`;
   document.getElementById('task-rows').appendChild(div);
 }
 
@@ -1123,7 +1256,9 @@ async function submitTasks() {
   const names  = document.querySelectorAll('.task-name-input');
   const staffs = document.querySelectorAll('.task-staff-input');
   const tasks  = [];
-  names.forEach((n,i) => { if(n.value.trim()) tasks.push({week_label:week,task_name:n.value.trim(),staff:staffs[i].value,done:false}); });
+  names.forEach((n,i) => {
+    if(n.value.trim()) tasks.push({week_label:week, task_name:n.value.trim(), staff:staffs[i].value, done:false});
+  });
   if (!tasks.length) { alert('タスクを入力してください'); return; }
   try {
     for (const t of tasks) await api('POST','tasks',t);
