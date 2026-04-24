@@ -530,6 +530,27 @@
     vertical-align: middle;
   }
 
+  /* 週ナビボタン */
+  .week-nav-btn {
+    padding: 8px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--g300);
+    background: var(--white);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Noto Sans JP', sans-serif;
+    color: var(--g600);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .week-nav-btn:active { transform: scale(0.95); }
+  .week-nav-btn.active {
+    background: var(--green);
+    border-color: var(--green);
+    color: white;
+  }
+
   /* 要対応バッジ */
   .action-badge {
     display: inline-flex;
@@ -643,7 +664,6 @@
     </div>
     <div class="filter-bar">
       <button class="filter-btn active" onclick="setFilter('all',this)">すべて</button>
-      <button class="filter-btn" onclick="setFilter('unresolved',this)">未確認</button>
       <button class="filter-btn" onclick="setFilter('action',this)">🔧 要対応</button>
       <button class="filter-btn" onclick="setFilter('high',this)">🔴 緊急</button>
       <button class="filter-btn" onclick="setFilter('tome',this)">📨 自分宛</button>
@@ -787,7 +807,7 @@
         <div class="form-label">投稿者</div>
         <select class="form-select" id="f-staff">
           <option>岩丸</option><option>行時</option><option>諸永</option>
-          <option>井上</option><option>岩崎</option><option>竹藤</option><option>原田</option>
+          <option>井上</option><option>岩崎</option><option>竹藤</option><option>原田</option><option>西田</option>
         </select>
       </div>
       <div class="form-group">
@@ -808,10 +828,17 @@
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title">✅ 週次タスクを追加</div>
-    <div id="rota-preview" style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:14px;"></div>
     <div class="form-group">
-      <div class="form-label">週（自動入力・変更可）</div>
-      <input class="form-input" id="t-week" placeholder="4/21〜4/26" type="text" style="font-size:14px;">
+      <div class="form-label">週を選択</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;overflow-x:auto;padding-bottom:2px;">
+        <button class="week-nav-btn" onclick="shiftModalWeek(-1)">◀ 前の週</button>
+        <button class="week-nav-btn active" id="week-nav-this" onclick="shiftModalWeek(0)">今週</button>
+        <button class="week-nav-btn" onclick="shiftModalWeek(1)">次の週 ▶</button>
+        <button class="week-nav-btn" onclick="shiftModalWeek(2)">2週後 ▶▶</button>
+        <button class="week-nav-btn" onclick="shiftModalWeek(3)">3週後 ▶▶▶</button>
+      </div>
+      <div id="rota-preview" style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:8px;"></div>
+      <input class="form-input" id="t-week" placeholder="4/21〜4/26" type="text" style="font-size:14px;color:var(--g600);" readonly>
     </div>
     <div style="font-size:11px;color:var(--g400);margin-bottom:12px;">👇 担当は自動でローテーション。変更もできます</div>
     <div id="task-rows"></div>
@@ -1313,20 +1340,33 @@ function makeWeekLabel(monday) {
   return `${fm(monday)}〜${fm(sat)}`;
 }
 
+let modalWeekOffset = 0;
+
 function openTaskModal() {
+  modalWeekOffset = 0;
   document.getElementById('task-modal').classList.add('open');
-  // 今週の月曜日を基準に自動生成
+  renderModalWeek();
+}
+
+function shiftModalWeek(offset) {
+  modalWeekOffset = offset;
+  // ナビボタンのactive更新
+  document.querySelectorAll('.week-nav-btn').forEach((b, i) => {
+    b.classList.toggle('active', i === offset + 1); // -1,0,1,2,3 → index 0,1,2,3,4
+  });
+  renderModalWeek();
+}
+
+function renderModalWeek() {
   const monday = getThisMonday();
+  monday.setDate(monday.getDate() + modalWeekOffset * 7);
   const label = makeWeekLabel(monday);
   document.getElementById('t-week').value = label;
-  
+  updateRotaPreview(monday);
   const tasks = generateWeekTasks(monday);
   const rows = document.getElementById('task-rows');
   rows.innerHTML = '';
   tasks.forEach(t => addTaskRow(t.task, t.staff, t.note));
-  
-  // プレビュー表示
-  updateRotaPreview(monday);
 }
 
 function updateRotaPreview(monday) {
