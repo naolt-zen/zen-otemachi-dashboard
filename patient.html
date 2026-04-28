@@ -638,7 +638,37 @@ const dk=d=>d.toISOString().split('T')[0];
 const mo=d=>d.getMonth()+1;
 
 function loadAll(){ try{ allData=JSON.parse(localStorage.getItem('zenDietAll')||'{}'); }catch(e){ allData={}; } }
-function saveAll(){ localStorage.setItem('zenDietAll',JSON.stringify(allData)); }
+function saveAll(){
+  try {
+    const stripped = JSON.parse(JSON.stringify(allData));
+    Object.keys(stripped).forEach(name => {
+      Object.keys(stripped[name]).forEach(k => {
+        if(k.startsWith('_')) return;
+        const d = stripped[name][k];
+        if(d && d.photos){
+          ['morning','lunch','dinner'].forEach(slot => {
+            if(d.photos[slot] && d.photos[slot].startsWith('data:')) d.photos[slot] = null;
+          });
+          if(d.photos.free) d.photos.free = d.photos.free.filter(f => !f.startsWith('data:'));
+        }
+      });
+    });
+    localStorage.setItem('zenDietAll', JSON.stringify(stripped));
+  } catch(e) {
+    try {
+      const minimal = {};
+      Object.keys(allData).forEach(name => {
+        minimal[name] = {};
+        Object.keys(allData[name]).forEach(k => {
+          if(k.startsWith('_')){ minimal[name][k] = allData[name][k]; return; }
+          const d = allData[name][k];
+          if(d) minimal[name][k] = {...d, photos:{morning:null,lunch:null,dinner:null,free:[]}};
+        });
+      });
+      localStorage.setItem('zenDietAll', JSON.stringify(minimal));
+    } catch(e2) { console.log('localStorage save failed:', e2); }
+  }
+}
 
 async function loadFromSupabase(name) {
   try {
