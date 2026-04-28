@@ -843,31 +843,78 @@ function toggleCheck(id){ document.getElementById(id).classList.toggle('on'); }
 function triggerPhoto(slot){ document.getElementById('file-'+slot).click(); }
 function triggerFreePhoto(){ document.getElementById('file-free').click(); }
 
-function handlePhoto(e,slot){
-  const file=e.target.files[0]; if(!file) return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    todayPhotos[slot]=ev.target.result;
-    renderPhotoSlots();
-  };
-  reader.readAsDataURL(file);
-  e.target.value='';
+async function uploadToStorage(file, path){
+  // Compress image before upload
+  const compressed = await compressImage(file, 800);
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/photos/${path}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'image/jpeg',
+      'x-upsert': 'true'
+    },
+    body: compressed
+  });
+  if(!res.ok) throw new Error('Upload failed: ' + res.status);
+  return `${SUPABASE_URL}/storage/v1/object/public/photos/${path}`;
 }
 
-function handleFreePhoto(e){
-  const files=Array.from(e.target.files); if(!files.length) return;
-  let loaded=0;
-  files.forEach(file=>{
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      if(!todayPhotos.free) todayPhotos.free=[];
-      todayPhotos.free.push(ev.target.result);
-      loaded++;
-      if(loaded===files.length) renderPhotoSlots();
+function compressImage(file, maxWidth){
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if(w > maxWidth){ h = Math.round(h * maxWidth / w); w = maxWidth; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.75);
     };
-    reader.readAsDataURL(file);
+    img.src = url;
   });
-  e.target.value='';
+}
+
+async function handlePhoto(e, slot){
+  const file = e.target.files[0]; if(!file) return;
+  const slotEl = document.getElementById('slot-' + slot);
+  slotEl.style.opacity = '0.5';
+  showToast('📤 アップロード中...');
+  try {
+    const dateStr = dk(currentDate);
+    const path = `${encodeURIComponent(userName)}/${dateStr}/${slot}_${Date.now()}.jpg`;
+    const url = await uploadToStorage(file, path);
+    todayPhotos[slot] = url;
+    renderPhotoSlots();
+    showToast('✓ 写真を保存しました');
+  } catch(err) {
+    console.log('Upload error:', err);
+    showToast('⚠️ アップロード失敗');
+  } finally {
+    slotEl.style.opacity = '1';
+  }
+  e.target.value = '';
+}
+
+async function handleFreePhoto(e){
+  const files = Array.from(e.target.files); if(!files.length) return;
+  showToast('📤 アップロード中...');
+  for(const file of files){
+    try {
+      const dateStr = dk(currentDate);
+      const path = `${encodeURIComponent(userName)}/${dateStr}/free_${Date.now()}_${Math.random().toString(36).substr(2,5)}.jpg`;
+      const url = await uploadToStorage(file, path);
+      if(!todayPhotos.free) todayPhotos.free = [];
+      todayPhotos.free.push(url);
+    } catch(err) {
+      console.log('Free photo upload error:', err);
+    }
+  }
+  renderPhotoSlots();
+  showToast('✓ 写真を保存しました');
+  e.target.value = '';
 }
 
 function renderPhotoSlots(){
