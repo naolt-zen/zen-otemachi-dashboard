@@ -811,20 +811,20 @@ function renderAdminFoodLog(){
 }
 
 function buildAdviceContent(summary, days){
-  // Collect recent photos (last 3 days with photos)
+  // Collect recent photos (last 3 days with photos) - URL only, no base64
   const photoDays = days.filter(d => {
     const p = d.photos || {};
-    return p.morning || p.lunch || p.dinner;
+    return (p.morning && !p.morning.startsWith('data:')) ||
+           (p.lunch && !p.lunch.startsWith('data:')) ||
+           (p.dinner && !p.dinner.startsWith('data:'));
   }).slice(-3);
 
   if(photoDays.length === 0){
-    // Text only
     return `以下の患者データを分析して、スタッフ向けのトークメモを作成してください。\n\n${summary}`;
   }
 
-  // Build multimodal content with photos
+  // Build multimodal content with URL-based images
   const contentParts = [];
-
   contentParts.push({
     type: 'text',
     text: `以下の患者データと食事写真を分析して、スタッフ向けのトークメモを作成してください。写真から食事内容（主食・タンパク質・副菜のバランス、量）も確認してコメントしてください。\n\n${summary}\n\n【食事写真】`
@@ -836,23 +836,13 @@ function buildAdviceContent(summary, days){
     const p = day.photos || {};
     const dateObj = new Date(day.date + 'T00:00:00');
     const dateLabel = `${dateObj.getMonth()+1}/${dateObj.getDate()}`;
-
     ['morning','lunch','dinner'].forEach(slot => {
-      if(p[slot]){
-        // Extract base64 data
-        const src = p[slot];
-        const match = src.match(/^data:(image\/\w+);base64,(.+)$/);
-        if(match){
-          contentParts.push({ type:'text', text: `${dateLabel} ${slotLabels[slot]}：` });
-          contentParts.push({
-            type: 'image',
-            source: {
-              type: 'base64',
-              media_type: match[1],
-              data: match[2]
-            }
-          });
-        }
+      if(p[slot] && !p[slot].startsWith('data:')){
+        contentParts.push({ type:'text', text: `${dateLabel} ${slotLabels[slot]}：` });
+        contentParts.push({
+          type: 'image',
+          source: { type: 'url', url: p[slot] }
+        });
       }
     });
   });
