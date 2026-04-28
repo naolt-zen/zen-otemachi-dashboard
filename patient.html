@@ -914,7 +914,8 @@ async function handlePhoto(e, slot){
   showToast('📤 アップロード中...');
   try {
     const dateStr = dk(currentDate);
-    const path = `${encodeURIComponent(userName)}/${dateStr}/${slot}_${Date.now()}.jpg`;
+    const safeUser = allData[userName]?._cardNumber || btoa(encodeURIComponent(userName)).replace(/[^a-zA-Z0-9]/g,'').slice(0,16);
+    const path = `${safeUser}/${dateStr}/${slot}_${Date.now()}.jpg`;
     const url = await uploadToStorage(file, path);
     todayPhotos[slot] = url;
     renderPhotoSlots();
@@ -934,7 +935,8 @@ async function handleFreePhoto(e){
   for(const file of files){
     try {
       const dateStr = dk(currentDate);
-      const path = `${encodeURIComponent(userName)}/${dateStr}/free_${Date.now()}_${Math.random().toString(36).substr(2,5)}.jpg`;
+      const safeUser2 = allData[userName]?._cardNumber || btoa(encodeURIComponent(userName)).replace(/[^a-zA-Z0-9]/g,'').slice(0,16);
+      const path = `${safeUser2}/${dateStr}/free_${Date.now()}_${Math.random().toString(36).substr(2,5)}.jpg`;
       const url = await uploadToStorage(file, path);
       if(!todayPhotos.free) todayPhotos.free = [];
       todayPhotos.free.push(url);
