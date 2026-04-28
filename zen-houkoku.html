@@ -807,6 +807,8 @@
       <div class="form-label">TO（宛先）</div>
       <div class="sel-group" id="to-group">
         <button class="sel-btn sel-to" onclick="selectTo('ALL',this)">📢 ALL</button>
+        <button class="sel-btn" onclick="selectTo('施術者',this)">🩺 施術者</button>
+        <button class="sel-btn" onclick="selectTo('受付',this)">📋 受付</button>
         <button class="sel-btn" onclick="selectTo('岩丸',this)">岩丸</button>
         <button class="sel-btn" onclick="selectTo('行時',this)">行時</button>
         <button class="sel-btn" onclick="selectTo('諸永',this)">諸永</button>
@@ -820,14 +822,14 @@
 
     <div class="form-row">
       <div class="form-group">
-        <div class="form-label">患者名</div>
+        <div class="form-label">タイトル（患者名）</div>
         <input class="form-input" id="f-patient" placeholder="山田 花子" type="text" autocomplete="off">
       </div>
       <div class="form-group">
         <div class="form-label">連絡区分</div>
         <select class="form-select" id="f-category">
           <option>治療</option><option>産後</option><option>ダイエット</option>
-          <option>自賠責</option><option>メンテ</option><option>その他</option>
+          <option>自賠責</option><option>会員</option><option>その他</option>
         </select>
       </div>
     </div>
@@ -1059,9 +1061,16 @@ function renderMoshiokuri() {
   let d = [...moshiokuriData];
 
   // 自分宛の未リアクション件数をバッジ表示
+  const 施術者List = ['岩丸','行時','諸永','井上','岩崎'];
+  const 受付List   = ['竹藤','原田'];
   const unread = moshiokuriData.filter(x =>
     !x.resolved &&
-    (x.to_staff === 'ALL' || x.to_staff === myName) &&
+    (
+      x.to_staff === 'ALL' ||
+      x.to_staff === myName ||
+      (x.to_staff === '施術者' && 施術者List.includes(myName)) ||
+      (x.to_staff === '受付'   && 受付List.includes(myName))
+    ) &&
     !(Array.isArray(x.confirmed_by) && x.confirmed_by.includes(myName))
   );
   const badge = document.getElementById('badge-moshi');
@@ -1074,7 +1083,16 @@ function renderMoshiokuri() {
   if (currentFilter === 'unresolved') d = d.filter(x => !x.resolved);
   if (currentFilter === 'resolved')   d = d.filter(x => x.resolved);
   if (currentFilter === 'high')       d = d.filter(x => x.urgency==='high' && !x.resolved);
-  if (currentFilter === 'tome')       d = d.filter(x => x.to_staff==='ALL' || x.to_staff===myName);
+  if (currentFilter === 'tome') {
+    const 施術者List = ['岩丸','行時','諸永','井上','岩崎'];
+    const 受付List   = ['竹藤','原田'];
+    d = d.filter(x =>
+      x.to_staff === 'ALL' ||
+      x.to_staff === myName ||
+      (x.to_staff === '施術者' && 施術者List.includes(myName)) ||
+      (x.to_staff === '受付'   && 受付List.includes(myName))
+    );
+  }
   if (currentFilter === 'action')     d = d.filter(x => x.requires_action && !x.resolved);
 
   if (!d.length) {
@@ -1092,10 +1110,20 @@ function renderMoshiokuri() {
     const isMyCard = x.to_staff === 'ALL' || x.to_staff === myName;
     const isUnread = isMyCard && !x.resolved && !iConfirmed;
     // 全員既読チェック
-    const allStaffs = ['岩丸','行時','諸永','井上','岩崎','竹藤','原田','西田'];
-    const isAllRead = x.to_staff === 'ALL'
-      ? allStaffs.every(s => confirmed.includes(s))
-      : confirmed.includes(x.to_staff);
+    const allStaffs    = ['岩丸','行時','諸永','井上','岩崎','竹藤','原田','西田'];
+    const 施術者Staffs = ['岩丸','行時','諸永','井上','岩崎'];
+    const 受付Staffs   = ['竹藤','原田'];
+    // 発信者を除いた対象メンバーが全員👍したら既読
+    const targetMembers = x.to_staff === 'ALL'
+      ? allStaffs.filter(s => s !== x.staff)
+      : x.to_staff === '施術者'
+      ? 施術者Staffs.filter(s => s !== x.staff)
+      : x.to_staff === '受付'
+      ? 受付Staffs.filter(s => s !== x.staff)
+      : [x.to_staff];
+    const isAllRead = targetMembers.length > 0
+      ? targetMembers.every(s => confirmed.includes(s))
+      : false;
 
     const confirmBtn = isArchive || x.resolved ? '' :
       iConfirmed
@@ -1113,7 +1141,11 @@ function renderMoshiokuri() {
       : '';
     return `<div class="card ${x.resolved?'resolved':''} ${isAllRead&&!x.resolved?'all-read':''} ${isMyCard?'my-card':''} ${isUnread?'unread':''}" id="card-${x.id}">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
-        <div class="to-tag">📨 TO: ${x.to_staff||'ALL'}</div>
+        <div class="to-tag">📨 TO: ${
+          x.to_staff === '施術者' ? '🩺 施術者' :
+          x.to_staff === '受付'   ? '📋 受付' :
+          x.to_staff || 'ALL'
+        }</div>
         ${!isArchive ? `<button class="btn-trash" onclick="deleteItem('moshiokuri','${x.id}')" title="削除">🗑️</button>` : ''}
       </div>
       <div class="card-badges">
