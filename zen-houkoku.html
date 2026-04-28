@@ -1089,6 +1089,13 @@ function renderMoshiokuri() {
     const date = x.date || new Date(x.created_at).toLocaleDateString('ja-JP');
     const confirmed = Array.isArray(x.confirmed_by) ? x.confirmed_by : [];
     const iConfirmed = confirmed.includes(myName);
+    const isMyCard = x.to_staff === 'ALL' || x.to_staff === myName;
+    const isUnread = isMyCard && !x.resolved && !iConfirmed;
+    // 全員既読チェック
+    const allStaffs = ['岩丸','行時','諸永','井上','岩崎','竹藤','原田','西田'];
+    const isAllRead = x.to_staff === 'ALL'
+      ? allStaffs.every(s => confirmed.includes(s))
+      : confirmed.includes(x.to_staff);
 
     const confirmBtn = isArchive || x.resolved ? '' :
       iConfirmed
@@ -1104,15 +1111,6 @@ function renderMoshiokuri() {
     const chips = confirmed.length
       ? `<div class="confirmed-row">${confirmed.map(n=>`<span class="confirmed-chip">👍 ${n}</span>`).join('')}</div>`
       : '';
-
-    const isMyCard = x.to_staff === 'ALL' || x.to_staff === myName;
-    const isUnread = isMyCard && !x.resolved && !(Array.isArray(x.confirmed_by) && x.confirmed_by.includes(myName));
-    // 全員既読チェック
-    const confirmed = Array.isArray(x.confirmed_by) ? x.confirmed_by : [];
-    const allStaffs = ['岩丸','行時','諸永','井上','岩崎','竹藤','原田','西田'];
-    const isAllRead = x.to_staff === 'ALL'
-      ? allStaffs.every(s => confirmed.includes(s))
-      : confirmed.includes(x.to_staff);
     return `<div class="card ${x.resolved?'resolved':''} ${isAllRead&&!x.resolved?'all-read':''} ${isMyCard?'my-card':''} ${isUnread?'unread':''}" id="card-${x.id}">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
         <div class="to-tag">📨 TO: ${x.to_staff||'ALL'}</div>
