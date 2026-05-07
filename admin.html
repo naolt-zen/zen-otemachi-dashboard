@@ -465,14 +465,16 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 async function sbGetAllUsers() {
   // Fetch all records with high limit
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/records?select=user_name,card_number,date,data&order=user_name,date&limit=10000`, {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/records?select=user_name,card_number,date,data&order=user_name,date&limit=10000&apikey=${SUPABASE_KEY}`, {
+    method: 'GET',
+    mode: 'cors',
     headers: { 
       'apikey': SUPABASE_KEY, 
       'Authorization': 'Bearer ' + SUPABASE_KEY,
-      'Prefer': 'count=none'
+      'Content-Type': 'application/json'
     }
   });
-  if (!res.ok) { console.log('Supabase error:', res.status); return {}; }
+  if (!res.ok) { console.log('Supabase error:', res.status, res.statusText); return {}; }
   const rows = await res.json();
   const result = {};
   rows.forEach(r => {
@@ -504,18 +506,18 @@ function loadAll(){
 async function loadFromSupabase() {
   try {
     const sbData = await sbGetAllUsers();
-    if(Object.keys(sbData).length === 0) {
-      console.log('Supabase returned no data, keeping localStorage');
+    if(!sbData || Object.keys(sbData).length === 0) {
+      console.log('Supabase returned no data');
       return;
     }
-    // Merge Supabase data INTO allData (Supabase wins per patient)
+    // Supabase wins - replace allData completely
+    allData = {};
     Object.keys(sbData).forEach(name => {
       allData[name] = sbData[name];
     });
-    console.log('Loaded', Object.keys(sbData).length, 'patients from Supabase');
+    console.log('Loaded', Object.keys(allData).length, 'patients from Supabase');
   } catch(e) { 
     console.log('Supabase load error:', e);
-    // Keep existing allData from localStorage
   }
 }
 
@@ -1440,18 +1442,24 @@ showDetail = function(name){
   }
 };
 
-// Init - Load localStorage first as immediate fallback, then Supabase
-loadAll();
-injectDemoPatients();
-autoDeleteOldPhotos();
-renderOverview(); // Show localStorage data immediately
-updateStorageMeter();
-
-// Then load from Supabase and update
-loadFromSupabase().then(() => {
+// Init
+(async function(){
+  // Show loading
+  document.getElementById('overviewGrid').innerHTML = '<div class="no-data" style="grid-column:1/-1"><div class="no-data-icon">⏳</div><div class="no-data-text">読み込み中...</div></div>';
+  
+  // Try Supabase first
+  await loadFromSupabase();
+  
+  // If Supabase got nothing, fallback to localStorage
+  if(Object.keys(allData).length === 0){
+    loadAll();
+    injectDemoPatients();
+  }
+  
+  autoDeleteOldPhotos();
   renderOverview();
   updateStorageMeter();
-});
+})();
 
 // Auto-refresh every 30s from Supabase
 setInterval(async ()=>{
