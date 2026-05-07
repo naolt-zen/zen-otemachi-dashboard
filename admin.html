@@ -505,16 +505,17 @@ async function loadFromSupabase() {
   try {
     const sbData = await sbGetAllUsers();
     if(Object.keys(sbData).length === 0) {
-      console.log('Supabase returned no data');
+      console.log('Supabase returned no data, keeping localStorage');
       return;
     }
-    // Replace allData completely with Supabase data
-    allData = sbData;
+    // Merge Supabase data INTO allData (Supabase wins per patient)
+    Object.keys(sbData).forEach(name => {
+      allData[name] = sbData[name];
+    });
     console.log('Loaded', Object.keys(sbData).length, 'patients from Supabase');
   } catch(e) { 
     console.log('Supabase load error:', e);
-    // Fallback to localStorage
-    loadAll();
+    // Keep existing allData from localStorage
   }
 }
 
@@ -1439,17 +1440,15 @@ showDetail = function(name){
   }
 };
 
-// Init - ALWAYS load from Supabase as primary source
-document.getElementById('overviewGrid').innerHTML = '<div class="no-data" style="grid-column:1/-1"><div class="no-data-icon">⏳</div><div class="no-data-text">データを読み込み中...</div></div>';
+// Init - Load localStorage first as immediate fallback, then Supabase
+loadAll();
+injectDemoPatients();
+autoDeleteOldPhotos();
+renderOverview(); // Show localStorage data immediately
+updateStorageMeter();
 
-// Load Supabase first, then fallback to localStorage for demo data only
+// Then load from Supabase and update
 loadFromSupabase().then(() => {
-  // Only inject demo data if Supabase returned nothing
-  if(Object.keys(allData).length === 0){
-    loadAll();
-    injectDemoPatients();
-  }
-  autoDeleteOldPhotos();
   renderOverview();
   updateStorageMeter();
 });
