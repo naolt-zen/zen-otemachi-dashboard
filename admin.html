@@ -310,6 +310,7 @@ td.red { color: var(--red); font-weight: 600; }
   <div class="topbar-right">
     <span class="topbar-date" id="topbarDate"></span>
     <span style="font-size:12px">zen整骨院</span>
+    <button onclick="clearCacheAndReload()" style="background:none;border:1px solid #475569;color:#94a3b8;padding:3px 8px;border-radius:6px;font-size:10px;cursor:pointer">🔄 再読込</button>
   </div>
 </div>
 
@@ -1415,6 +1416,11 @@ function updateStorageMeter(){
       <span class="storage-chip">👥 ${Object.keys(allData).length}名</span>
     `;
   } catch(e) { console.log('storage calc error:', e); }
+}
+
+function clearCacheAndReload(){
+  localStorage.removeItem('zenDietAll');
+  location.reload();
 }
 
 function toggleSidebar(){
