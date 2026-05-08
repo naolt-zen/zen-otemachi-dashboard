@@ -805,6 +805,7 @@
 
     <div class="form-group">
       <div class="form-label">TO（宛先）</div>
+      <div style="font-size:11px;color:var(--g400);margin-bottom:6px;">複数選択できます</div>
       <div class="sel-group" id="to-group">
         <button class="sel-btn sel-to" onclick="selectTo('ALL',this)">📢 ALL</button>
         <button class="sel-btn" onclick="selectTo('施術者',this)">🩺 施術者</button>
@@ -958,7 +959,7 @@ async function api(method, table, body=null, query='') {
 // ── 状態 ──
 let currentFilter = 'all';
 let selectedUrgency = 'low';
-let selectedTo = 'ALL';
+let selectedTo = ['ALL'];
 let requiresAction = false;
 let selectedStaff = null;
 let moshiokuriData = [];
@@ -1063,16 +1064,17 @@ function renderMoshiokuri() {
   // 自分宛の未リアクション件数をバッジ表示
   const 施術者List = ['岩丸','行時','諸永','井上','岩崎'];
   const 受付List   = ['竹藤','原田'];
-  const unread = moshiokuriData.filter(x =>
-    !x.resolved &&
-    (
-      x.to_staff === 'ALL' ||
-      x.to_staff === myName ||
-      (x.to_staff === '施術者' && 施術者List.includes(myName)) ||
-      (x.to_staff === '受付'   && 受付List.includes(myName))
-    ) &&
-    !(Array.isArray(x.confirmed_by) && x.confirmed_by.includes(myName))
-  );
+  const unread = moshiokuriData.filter(x => {
+    if (x.resolved) return false;
+    const toList = (x.to_staff||'ALL').split(',');
+    const isForMe = toList.some(t =>
+      t === 'ALL' ||
+      t === myName ||
+      (t === '施術者' && 施術者List.includes(myName)) ||
+      (t === '受付'   && 受付List.includes(myName))
+    );
+    return isForMe && !(Array.isArray(x.confirmed_by) && x.confirmed_by.includes(myName));
+  });
   const badge = document.getElementById('badge-moshi');
   if (unread.length > 0) {
     badge.textContent = unread.length;
@@ -1086,12 +1088,15 @@ function renderMoshiokuri() {
   if (currentFilter === 'tome') {
     const 施術者List = ['岩丸','行時','諸永','井上','岩崎'];
     const 受付List   = ['竹藤','原田'];
-    d = d.filter(x =>
-      x.to_staff === 'ALL' ||
-      x.to_staff === myName ||
-      (x.to_staff === '施術者' && 施術者List.includes(myName)) ||
-      (x.to_staff === '受付'   && 受付List.includes(myName))
-    );
+    d = d.filter(x => {
+      const toList = (x.to_staff||'ALL').split(',');
+      return toList.some(t =>
+        t === 'ALL' ||
+        t === myName ||
+        (t === '施術者' && 施術者List.includes(myName)) ||
+        (t === '受付'   && 受付List.includes(myName))
+      );
+    });
   }
   if (currentFilter === 'action')     d = d.filter(x => x.requires_action && !x.resolved);
 
@@ -1114,13 +1119,15 @@ function renderMoshiokuri() {
     const 施術者Staffs = ['岩丸','行時','諸永','井上','岩崎'];
     const 受付Staffs   = ['竹藤','原田'];
     // 発信者を除いた対象メンバーが全員👍したら既読
-    const targetMembers = x.to_staff === 'ALL'
-      ? allStaffs.filter(s => s !== x.staff)
-      : x.to_staff === '施術者'
-      ? 施術者Staffs.filter(s => s !== x.staff)
-      : x.to_staff === '受付'
-      ? 受付Staffs.filter(s => s !== x.staff)
-      : [x.to_staff];
+    const toList = (x.to_staff || 'ALL').split(',');
+    let targetMembers = [];
+    toList.forEach(t => {
+      if (t === 'ALL') targetMembers.push(...allStaffs);
+      else if (t === '施術者') targetMembers.push(...施術者Staffs);
+      else if (t === '受付') targetMembers.push(...受付Staffs);
+      else targetMembers.push(t);
+    });
+    targetMembers = [...new Set(targetMembers)].filter(s => s !== x.staff);
     const isAllRead = targetMembers.length > 0
       ? targetMembers.every(s => confirmed.includes(s))
       : false;
@@ -1142,9 +1149,11 @@ function renderMoshiokuri() {
     return `<div class="card ${x.resolved?'resolved':''} ${isAllRead&&!x.resolved?'all-read':''} ${isMyCard?'my-card':''} ${isUnread?'unread':''}" id="card-${x.id}">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
         <div class="to-tag">📨 TO: ${
-          x.to_staff === '施術者' ? '🩺 施術者' :
-          x.to_staff === '受付'   ? '📋 受付' :
-          x.to_staff || 'ALL'
+          (x.to_staff||'ALL').split(',').map(t =>
+            t === '施術者' ? '🩺施術者' :
+            t === '受付'   ? '📋受付' :
+            t
+          ).join(' · ')
         }</div>
         ${!isArchive ? `<button class="btn-trash" onclick="deleteItem('moshiokuri','${x.id}')" title="削除">🗑️</button>` : ''}
       </div>
@@ -1248,9 +1257,40 @@ async function uploadFile(file) {
 }
 
 function selectTo(val, btn) {
-  selectedTo = val;
-  document.querySelectorAll('#to-group .sel-btn').forEach(b => b.classList.remove('sel-to'));
-  btn.classList.add('sel-to');
+  const allIndivs = ['ALL','施術者','受付','岩丸','行時','諸永','井上','岩崎','竹藤','原田','西田'];
+
+  if (val === 'ALL') {
+    // ALLを選んだら他を全解除
+    selectedTo = ['ALL'];
+    document.querySelectorAll('#to-group .sel-btn').forEach(b => b.classList.remove('sel-to'));
+    btn.classList.add('sel-to');
+    return;
+  }
+
+  // ALL以外を選んだ場合
+  // ALLが選ばれてたら解除
+  if (selectedTo.includes('ALL')) {
+    selectedTo = [];
+    document.querySelectorAll('#to-group .sel-btn').forEach(b => {
+      if (b.textContent.includes('ALL')) b.classList.remove('sel-to');
+    });
+  }
+
+  if (selectedTo.includes(val)) {
+    // すでに選択済みなら解除
+    selectedTo = selectedTo.filter(v => v !== val);
+    btn.classList.remove('sel-to');
+    // 何も選ばれなくなったらALLに戻す
+    if (selectedTo.length === 0) {
+      selectedTo = ['ALL'];
+      document.querySelectorAll('#to-group .sel-btn').forEach(b => {
+        if (b.textContent.includes('ALL')) b.classList.add('sel-to');
+      });
+    }
+  } else {
+    selectedTo.push(val);
+    btn.classList.add('sel-to');
+  }
 }
 function selectUrgency(level, btn) {
   selectedUrgency = level;
@@ -1293,7 +1333,7 @@ async function submitMoshiokuri() {
       category: document.getElementById('f-category').value,
       content, urgency: selectedUrgency,
       staff: document.getElementById('f-staff').value,
-      to_staff: selectedTo, resolved: false, confirmed_by: [],
+      to_staff: selectedTo.length === 1 ? selectedTo[0] : selectedTo.join(','), resolved: false, confirmed_by: [],
       requires_action: requiresAction,
       attachment_url: attachmentUrl
     });
@@ -1306,6 +1346,9 @@ async function submitMoshiokuri() {
     document.getElementById('f-patient').value='';
     document.getElementById('f-content').value='';
     requiresAction = false;
+    selectedTo = ['ALL'];
+    document.querySelectorAll('#to-group .sel-btn').forEach(b => b.classList.remove('sel-to'));
+    document.querySelector('#to-group .sel-btn').classList.add('sel-to');
     setRequiresAction(false, document.getElementById('req-action-no'));
     selectedFile = null;
     document.getElementById('f-attachment').value = '';
