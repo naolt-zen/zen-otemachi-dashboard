@@ -597,6 +597,19 @@
   }
 
   /* 要対応バッジ */
+  /* 投稿者バッジ */
+  .poster-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--green-dark);
+    color: white;
+    letter-spacing: 0.3px;
+  }
+
   .action-badge {
     display: inline-flex;
     align-items: center;
@@ -1132,7 +1145,8 @@ function renderMoshiokuri() {
       ? targetMembers.every(s => confirmed.includes(s))
       : false;
 
-    const confirmBtn = isArchive || x.resolved ? '' :
+    const isMyPost = x.staff === myName;
+    const confirmBtn = isArchive || x.resolved || isMyPost ? '' :
       iConfirmed
         ? `<button class="btn btn-confirmed">👍 確認済み</button>`
         : `<button class="btn btn-confirm" onclick="doConfirm('${x.id}')">👍 了解</button>`;
@@ -1157,12 +1171,12 @@ function renderMoshiokuri() {
         }</div>
         ${!isArchive ? `<button class="btn-trash" onclick="deleteItem('moshiokuri','${x.id}')" title="削除">🗑️</button>` : ''}
       </div>
-      <div class="card-badges">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+        <span class="poster-badge">${x.staff||''}</span>
         ${urg}
         ${x.requires_action && !x.resolved ? '<span class="action-badge">🔧 要対応</span>' : ''}
         ${x.requires_action && x.resolved  ? '<span class="action-done-badge">✅ 対応完了</span>' : ''}
         <span class="badge b-grey">${x.category||''}</span>
-        <span class="badge b-grey">${x.staff||''}</span>
       </div>
       <div class="card-patient">${x.patient_name||'（患者名なし）'}</div>
       <div class="card-content">${(x.content||'').replace(/\n/g,'<br>')}</div>
