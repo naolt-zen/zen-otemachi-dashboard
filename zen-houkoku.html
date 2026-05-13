@@ -1587,7 +1587,7 @@ function renderCalendar() {
   const todayStr = new Date().toISOString().split('T')[0];
   const firstJsDow = new Date(calYear, calMonth, 1).getDay(); // 0=日
   // 月曜始まり: 月=0...日=6
-  const firstDow = (firstJsDow + 6) % 7;
+  const firstDow = firstJsDow; // 0=日曜始まり
   const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
   const prevLast = new Date(calYear, calMonth, 0).getDate();
 
