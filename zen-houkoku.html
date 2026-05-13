@@ -798,23 +798,13 @@
 
   <!-- 予定 -->
   <div class="page" id="page-events">
-    <!-- 月ナビ -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-      <button class="btn btn-outline" style="padding:8px 16px;" onclick="shiftCalMonth(-1)">◀</button>
+      <button class="btn btn-outline" style="padding:8px 16px;" onclick="calPrev()">◀</button>
       <div id="cal-month-label" style="font-size:17px;font-weight:700;color:var(--green-dark);"></div>
-      <button class="btn btn-outline" style="padding:8px 16px;" onclick="shiftCalMonth(1)">▶</button>
+      <button class="btn btn-outline" style="padding:8px 16px;" onclick="calNext()">▶</button>
     </div>
-    <!-- 曜日ヘッダー -->
-    <div class="cal-dow-row">
-      <div>月</div><div>火</div><div>水</div><div>木</div><div>金</div>
-      <div style="color:#1565C0;">土</div>
-      <div style="color:#C62828;">日</div>
-    </div>
-    <!-- カレンダーグリッド -->
-    <div id="cal-grid" class="cal-grid"></div>
-    <!-- 選択日の詳細 -->
+    <div id="cal-container"></div>
     <div id="event-detail" style="margin-top:14px;"></div>
-    <!-- 追加ボタン -->
     <button class="btn btn-primary" style="width:100%;justify-content:center;padding:14px;margin-top:14px;" onclick="openEventModal()">＋ 予定を追加</button>
   </div>
 
@@ -1583,6 +1573,97 @@ async function submitAddTask() {
 // ════════════ イベント・予定 ════════════
 const ALL_STAFFS = ['岩丸','行時','諸永','井上','岩崎','竹藤','原田','西田'];
 
+let calYear  = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let calEvents = [];
+let selectedCalDate = null;
+
+function calPrev() { calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
+function calNext() { calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); }
+
+function renderCalendar() {
+  document.getElementById('cal-month-label').textContent = `${calYear}年${calMonth+1}月`;
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const firstJsDow = new Date(calYear, calMonth, 1).getDay(); // 0=日
+  // 月曜始まり: 月=0...日=6
+  const firstDow = (firstJsDow + 6) % 7;
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const prevLast = new Date(calYear, calMonth, 0).getDate();
+
+  // 曜日ヘッダー
+  const dows = ['月','火','水','木','金','土','日'];
+  const dowColors = ['var(--g600)','var(--g600)','var(--g600)','var(--g600)','var(--g600)','#1565C0','#C62828'];
+
+  let gridHTML = `<div style="display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid var(--g200);border-left:1px solid var(--g200);border-radius:10px 10px 0 0;overflow:hidden;">`;
+
+  // 曜日ヘッダー行
+  dows.forEach((d,i) => {
+    gridHTML += `<div style="text-align:center;padding:6px 0;font-size:11px;font-weight:700;color:${dowColors[i]};background:var(--g50);border-right:1px solid var(--g200);border-bottom:1px solid var(--g200);">${d}</div>`;
+  });
+
+  // 前月
+  for(let i=0;i<firstDow;i++){
+    gridHTML += `<div style="min-height:70px;padding:4px;background:var(--g50);border-right:1px solid var(--g200);border-bottom:1px solid var(--g200);"><span style="font-size:12px;color:var(--g400);">${prevLast-firstDow+i+1}</span></div>`;
+  }
+
+  // 当月
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const jsDow = new Date(calYear,calMonth,d).getDay();
+    const isSat = jsDow===6; const isSun = jsDow===0;
+    const isToday = dateStr===todayStr;
+    const isSelected = dateStr===selectedCalDate;
+    const dayColor = isSun?'#C62828':isSat?'#1565C0':'var(--g900)';
+    const bg = isSelected?'var(--green-pale)':isToday?'#FFFDE7':'var(--white)';
+
+    const dayEvents = calEvents.filter(e=>e.event_date===dateStr);
+    const eventChips = dayEvents.map(e=>{
+      const c = e.event_type==='mandatory'?'#C62828':e.event_type==='business'?'#F57F17':'#1565C0';
+      return `<div style="background:${c};color:white;border-radius:3px;padding:1px 3px;font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;">${e.title}</div>`;
+    }).join('');
+
+    const numStyle = isToday
+      ? `display:inline-flex;width:20px;height:20px;align-items:center;justify-content:center;background:var(--green);color:white;border-radius:50%;font-size:11px;font-weight:700;`
+      : `font-size:12px;font-weight:700;color:${dayColor};`;
+
+    gridHTML += `<div onclick="selectCalDate('${dateStr}')" style="min-height:70px;padding:4px;background:${bg};border-right:1px solid var(--g200);border-bottom:1px solid var(--g200);cursor:pointer;overflow:hidden;">
+      <span style="${numStyle}">${d}</span>
+      ${eventChips}
+    </div>`;
+  }
+
+  // 次月
+  const total = firstDow + daysInMonth;
+  const rem = total%7===0?0:7-(total%7);
+  for(let d=1;d<=rem;d++){
+    gridHTML += `<div style="min-height:70px;padding:4px;background:var(--g50);border-right:1px solid var(--g200);border-bottom:1px solid var(--g200);"><span style="font-size:12px;color:var(--g400);">${d}</span></div>`;
+  }
+
+  gridHTML += `</div>`;
+  document.getElementById('cal-container').innerHTML = gridHTML;
+
+  if(selectedCalDate) renderEventDetail(selectedCalDate);
+}
+
+function selectCalDate(dateStr) {
+  selectedCalDate = dateStr;
+  renderCalendar();
+}
+
+function renderEventDetail(dateStr) {
+  const el = document.getElementById('event-detail');
+  const d = new Date(dateStr+'T00:00:00');
+  const label = d.toLocaleDateString('ja-JP',{month:'long',day:'numeric',weekday:'short'});
+  const dayEvents = calEvents.filter(e=>e.event_date===dateStr);
+  if(!dayEvents.length){
+    el.innerHTML=`<div style="text-align:center;padding:14px;color:var(--g400);font-size:13px;">📅 ${label} の予定はありません</div>`;
+    return;
+  }
+  el.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--g800);margin-bottom:10px;">📅 ${label}</div>`
+    +dayEvents.map(e=>renderEventCard(e)).join('');
+}
+
 async function loadEvents() {
   const el = document.getElementById('event-list');
   try {
@@ -1685,7 +1766,8 @@ async function toggleAttend(id, isCurrentlyAttending) {
       if (!attendees.includes(myName)) attendees.push(myName);
     }
     await api('PATCH',`events?id=eq.${id}`,{attendees});
-    loadEvents();
+    calEvents = await api('GET','events',null,'?order=event_date.asc,event_time.asc');
+    renderCalendar();
   } catch(e) { alert('更新失敗'); }
 }
 
