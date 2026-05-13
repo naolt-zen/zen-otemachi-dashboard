@@ -1664,6 +1664,51 @@ function renderEventDetail(dateStr) {
     +dayEvents.map(e=>renderEventCard(e)).join('');
 }
 
+function renderEventCard(e) {
+  const attendees = Array.isArray(e.attendees) ? e.attendees : [];
+  const targetStaffs = Array.isArray(e.target_staffs) && e.target_staffs.length > 0 ? e.target_staffs : ALL_STAFFS;
+  const isMandatory = e.event_type === 'mandatory';
+  const isBusiness  = e.event_type === 'business';
+  const isAttending = attendees.includes(myName);
+  const isMyEvent   = e.created_by === myName;
+  const borderColor = isMandatory ? '#C62828' : isBusiness ? '#F57F17' : '#1565C0';
+
+  const typeBadge = isMandatory
+    ? '<span class="event-type-badge event-type-mandatory">🔴 全員参加</span>'
+    : isBusiness
+    ? `<span class="event-type-badge event-type-business">🟡 業務内（${targetStaffs.join('・')}）</span>`
+    : '<span class="event-type-badge event-type-optional">🔵 自由参加</span>';
+
+  const displayAttendees = isMandatory
+    ? ALL_STAFFS.map(s => `<span class="attendee-chip mandatory">${s}</span>`).join('')
+    : isBusiness
+    ? targetStaffs.map(s => `<span class="attendee-chip mandatory">${s}</span>`).join('')
+    : attendees.map(s => `<span class="attendee-chip">${s}</span>`).join('');
+
+  const attendBtn = (isMandatory || isBusiness) ? '' :
+    isAttending
+      ? `<button class="btn-attending" onclick="toggleAttend('${e.id}',true)">✓ 参加する</button>`
+      : `<button class="btn-attend" onclick="toggleAttend('${e.id}',false)">参加する</button>`;
+
+  const deleteBtn = isMyEvent
+    ? `<button class="btn-trash" onclick="deleteItem('events','${e.id}')">🗑️</button>` : '';
+
+  return `<div style="background:white;border-radius:12px;padding:12px 14px;border:1px solid #E0E0E0;border-left:4px solid ${borderColor};box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-bottom:8px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">${typeBadge}${deleteBtn}</div>
+    <div style="font-size:15px;font-weight:700;color:#212121;margin-bottom:6px;">${e.title}</div>
+    <div style="font-size:12px;color:#757575;display:flex;flex-direction:column;gap:3px;margin-bottom:8px;">
+      ${e.event_time ? `<span>⏰ ${e.event_time}</span>` : ''}
+      ${e.url ? `<a href="${e.url}" target="_blank" style="color:#1565C0;">🔗 リンクを開く</a>` : ''}
+      ${e.memo ? `<span>📝 ${e.memo}</span>` : ''}
+      <span style="color:#BDBDBD;">投稿: ${e.created_by||''}</span>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div style="display:flex;flex-wrap:wrap;gap:4px;">${displayAttendees || '<span style="font-size:11px;color:#BDBDBD;">まだ参加者なし</span>'}</div>
+      ${attendBtn}
+    </div>
+  </div>`;
+}
+
 async function loadEvents() {
   try {
     calEvents = await api('GET','events',null,'?order=event_date.asc,event_time.asc');
