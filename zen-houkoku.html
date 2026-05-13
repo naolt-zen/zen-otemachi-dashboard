@@ -795,6 +795,11 @@
     <div id="kuchikomi-delete-list"><div class="loading">読み込み中...</div></div>
   </div>
 
+  <!-- 予定 -->
+  <div class="page" id="page-events">
+    <div id="event-list"><div class="loading">読み込み中...</div></div>
+  </div>
+
   <!-- タスク -->
   <div class="page" id="page-tasks">
     <div class="task-header">
@@ -1049,9 +1054,10 @@ function switchTab(tab) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(`page-${tab}`).classList.add('active');
   document.getElementById('fab').style.display = tab === 'moshiokuri' ? 'flex' : 'none';
-  document.getElementById('month-bar').style.display = tab === 'tasks' ? 'none' : 'flex';
+  document.getElementById('month-bar').style.display = (tab === 'tasks' || tab === 'events') ? 'none' : 'flex';
   if (tab === 'kuchikomi') { loadKuchikomistats(); loadKuchikomideleteList(); }
   if (tab === 'tasks') loadTasks();
+  if (tab === 'events') loadEvents();
 }
 
 // ════════════ 申し送り ════════════
@@ -1556,6 +1562,168 @@ async function submitAddTask() {
   } catch(e) { alert('追加失敗: ' + e.message); }
 }
 
+// ════════════ イベント・予定 ════════════
+const ALL_STAFFS = ['岩丸','行時','諸永','井上','岩崎','竹藤','原田','西田'];
+
+async function loadEvents() {
+  const el = document.getElementById('event-list');
+  try {
+    const data = await api('GET','events',null,'?order=event_date.asc,event_time.asc');
+    if (!data.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">予定がありません</div></div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;padding:14px;margin-top:12px;" onclick="openEventModal()">＋ 予定を追加</button>`;
+      return;
+    }
+
+    // 月ごとにグループ化
+    const groups = {};
+    data.forEach(e => {
+      const ym = (e.event_date || '').substring(0,7);
+      if (!groups[ym]) groups[ym] = [];
+      groups[ym].push(e);
+    });
+
+    let html = `<button class="btn btn-primary" style="width:100%;justify-content:center;padding:14px;margin-bottom:16px;" onclick="openEventModal()">＋ 予定を追加</button>`;
+
+    Object.keys(groups).sort().forEach(ym => {
+      const [y,m] = ym.split('-');
+      html += `<div class="event-month-header">📅 ${y}年${parseInt(m)}月</div>`;
+      groups[ym].forEach(e => {
+        const attendees = Array.isArray(e.attendees) ? e.attendees : [];
+        const isMandatory = e.event_type === 'mandatory';
+        const isBusiness  = e.event_type === 'business';
+        const targetStaffs = Array.isArray(e.target_staffs) && e.target_staffs.length > 0
+          ? e.target_staffs : ALL_STAFFS;
+        const isAttending = attendees.includes(myName);
+        const isMyEvent = e.created_by === myName;
+
+        const typeBadge = isMandatory
+          ? '<span class="event-type-badge event-type-mandatory">🔴 全員参加</span>'
+          : isBusiness
+          ? `<span class="event-type-badge event-type-business">🟡 業務内参加（${targetStaffs.join('・')}）</span>`
+          : '<span class="event-type-badge event-type-optional">🔵 自由参加</span>';
+
+        // 全員参加・業務内参加は対象スタッフを表示
+        const displayAttendees = isMandatory
+          ? ALL_STAFFS.map(s => `<span class="attendee-chip mandatory">${s}</span>`).join('')
+          : isBusiness
+          ? targetStaffs.map(s => `<span class="attendee-chip mandatory">${s}</span>`).join('')
+          : attendees.map(s => `<span class="attendee-chip">${s}</span>`).join('');
+
+        const attendBtn = (isMandatory || isBusiness) ? '' :
+          isAttending
+            ? `<button class="btn-attending" onclick="toggleAttend('${e.id}',true)">✓ 参加する</button>`
+            : `<button class="btn-attend" onclick="toggleAttend('${e.id}',false)">参加する</button>`;
+
+        const deleteBtn = isMyEvent
+          ? `<button class="btn-trash" onclick="deleteItem('events','${e.id}')" title="削除">🗑️</button>`
+          : '';
+
+        html += `<div class="event-card" id="event-${e.id}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>${typeBadge}</div>
+            ${deleteBtn}
+          </div>
+          <div class="event-title">${e.title}</div>
+          <div class="event-meta">
+            <span>📆 ${formatEventDate(e.event_date)} ${e.event_time ? '⏰ '+e.event_time : ''}</span>
+            ${e.url ? `<a href="${e.url}" target="_blank" style="color:var(--blue);font-size:13px;">🔗 リンクを開く</a>` : ''}
+            ${e.memo ? `<span style="color:var(--g600);">📝 ${e.memo}</span>` : ''}
+            <span style="font-size:11px;color:var(--g400);">投稿: ${e.created_by||''}</span>
+          </div>
+          ${isMandatory
+            ? '<div style="font-size:11px;color:var(--g600);margin-bottom:6px;">全スタッフ参加</div>'
+            : isBusiness
+            ? `<div style="font-size:11px;color:var(--g600);margin-bottom:6px;">業務内 対象${targetStaffs.length}名</div>`
+            : `<div style="font-size:11px;color:var(--g400);margin-bottom:6px;">参加予定 ${attendees.length}名</div>`}
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+            <div class="event-attendees">${displayAttendees}</div>
+            ${attendBtn}
+          </div>
+        </div>`;
+      });
+    });
+
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-text">読み込みエラー</div></div>`;
+  }
+}
+
+function formatEventDate(dateStr) {
+  if (!dateStr) return '日時未定';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('ja-JP', {month:'long', day:'numeric', weekday:'short'});
+}
+
+async function toggleAttend(id, isCurrentlyAttending) {
+  try {
+    const data = await api('GET',`events`,null,`?id=eq.${id}`);
+    if (!data.length) return;
+    let attendees = Array.isArray(data[0].attendees) ? [...data[0].attendees] : [];
+    if (isCurrentlyAttending) {
+      attendees = attendees.filter(s => s !== myName);
+    } else {
+      if (!attendees.includes(myName)) attendees.push(myName);
+    }
+    await api('PATCH',`events?id=eq.${id}`,{attendees});
+    loadEvents();
+  } catch(e) { alert('更新失敗'); }
+}
+
+// イベント追加モーダル
+let selectedTargetStaffs = [];
+
+function onEvTypeChange(val) {
+  document.getElementById('ev-target-group').style.display = val === 'business' ? 'block' : 'none';
+}
+
+function toggleTargetStaff(name, btn) {
+  if (selectedTargetStaffs.includes(name)) {
+    selectedTargetStaffs = selectedTargetStaffs.filter(s => s !== name);
+    btn.classList.remove('selected');
+  } else {
+    selectedTargetStaffs.push(name);
+    btn.classList.add('selected');
+  }
+}
+
+function openEventModal() {
+  document.getElementById('event-modal').classList.add('open');
+  const today = new Date();
+  document.getElementById('ev-date').value = today.toISOString().split('T')[0];
+  document.getElementById('ev-type').value = 'optional';
+  document.getElementById('ev-title').value = '';
+  document.getElementById('ev-time').value = '';
+  document.getElementById('ev-url').value = '';
+  document.getElementById('ev-memo').value = '';
+  document.getElementById('ev-target-group').style.display = 'none';
+  selectedTargetStaffs = [];
+  document.querySelectorAll('#ev-target-btns .staff-btn').forEach(b => b.classList.remove('selected'));
+}
+function closeEventModal() { document.getElementById('event-modal').classList.remove('open'); }
+
+async function submitEvent() {
+  const title = document.getElementById('ev-title').value.trim();
+  if (!title) { alert('タイトルを入力してください'); return; }
+  try {
+    const evType = document.getElementById('ev-type').value;
+    await api('POST','events',{
+      title,
+      event_date: document.getElementById('ev-date').value,
+      event_time: document.getElementById('ev-time').value,
+      url: document.getElementById('ev-url').value.trim(),
+      memo: document.getElementById('ev-memo').value.trim(),
+      event_type: evType,
+      target_staffs: evType === 'business' ? selectedTargetStaffs : [],
+      created_by: myName,
+      attendees: []
+    });
+    closeEventModal();
+    loadEvents();
+  } catch(e) { alert('追加失敗: '+e.message); }
+}
+
 async function toggleTask(id, currentDone) {
   try {
     await api('PATCH',`tasks?id=eq.${id}`,{done:!currentDone,done_at:!currentDone?new Date().toISOString():null});
@@ -1752,6 +1920,68 @@ async function seedSampleData() {
   } catch(e) { console.log('seed:', e); }
 }
 </script>
+
+<!-- イベント追加モーダル -->
+<div class="modal-overlay" id="event-modal" onclick="if(event.target===this)closeEventModal()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📅 予定を追加</div>
+
+    <div class="form-group">
+      <div class="form-label">種別</div>
+      <select class="form-select" id="ev-type" onchange="onEvTypeChange(this.value)">
+        <option value="optional">🔵 自由参加</option>
+        <option value="business">🟡 業務内全員参加</option>
+        <option value="mandatory">🔴 全員参加</option>
+      </select>
+    </div>
+
+    <div class="form-group" id="ev-target-group" style="display:none;">
+      <div class="form-label">対象スタッフ（複数選択）</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;" id="ev-target-btns">
+        <button class="staff-btn" onclick="toggleTargetStaff('岩丸',this)">岩丸</button>
+        <button class="staff-btn" onclick="toggleTargetStaff('行時',this)">行時</button>
+        <button class="staff-btn" onclick="toggleTargetStaff('諸永',this)">諸永</button>
+        <button class="staff-btn" onclick="toggleTargetStaff('井上',this)">井上</button>
+        <button class="staff-btn" onclick="toggleTargetStaff('岩崎',this)">岩崎</button>
+        <button class="staff-btn" onclick="toggleTargetStaff('竹藤',this)">竹藤</button>
+        <button class="staff-btn" onclick="toggleTargetStaff('原田',this)">原田</button>
+        <button class="staff-btn" onclick="toggleTargetStaff('西田',this)">西田</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">タイトル</div>
+      <input class="form-input" id="ev-title" placeholder="例：産後ケアZoomセミナー" type="text">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <div class="form-label">日付</div>
+        <input class="form-input" id="ev-date" type="date">
+      </div>
+      <div class="form-group">
+        <div class="form-label">時間</div>
+        <input class="form-input" id="ev-time" type="time" placeholder="19:00">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">URL（任意）</div>
+      <input class="form-input" id="ev-url" placeholder="https://zoom.us/..." type="url">
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">メモ（任意）</div>
+      <textarea class="form-textarea" id="ev-memo" placeholder="内容・持ち物など" style="min-height:60px;"></textarea>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeEventModal()">キャンセル</button>
+      <button class="btn btn-primary" style="flex:2;" onclick="submitEvent()">追加する</button>
+    </div>
+  </div>
+</div>
 
 <!-- タスク1件追加モーダル -->
 <div class="modal-overlay" id="add-task-modal" onclick="if(event.target===this)closeAddTaskModal()">
