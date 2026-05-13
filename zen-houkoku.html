@@ -1592,7 +1592,7 @@ function renderCalendar() {
   const prevLast = new Date(calYear, calMonth, 0).getDate();
 
   // 曜日ヘッダー
-  const dows = ['月','火','水','木','金','土','日'];
+  const dows = [日','月','火','水','木','金','土'];
   const dowColors = ['var(--g600)','var(--g600)','var(--g600)','var(--g600)','var(--g600)','#1565C0','#C62828'];
 
   let gridHTML = `<div style="display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid var(--g200);border-left:1px solid var(--g200);border-radius:10px 10px 0 0;overflow:hidden;">`;
