@@ -757,44 +757,38 @@ function updateBadges(){
 }
 
 function updateSalesTable(){
-  ['2','3','4'].forEach(mNum => {
-    const month = mNum+'月';
-    const key = Object.keys(importedMonths).find(k => k.endsWith('-'+month) || k === month);
-    const d = key ? importedMonths[key] : null;
+  const ORDER_SALES=['2','3','4'];
+  ORDER_SALES.forEach(mNum=>{
+    const mo=mNum+'月';
+    const k=Object.keys(importedMonths).find(k=>k.endsWith('-'+mo)||k===mo);
+    const d=k?importedMonths[k]:null;
     if(!d) return;
-    const setCell = (id,val)=>{ const el=document.getElementById(id); if(el) el.textContent=val?fmt(val):'—'; };
-    setCell(`sales_치료_${mNum}`, d.chiryo);
-    setCell(`sales_矯正_${mNum}`, d.kyosei);
-    setCell(`sales_エステ_${mNum}`, d.totalSales ? d.totalSales-(d.chiryo||0)-(d.kyosei||0) : null);
-    setCell(`sales_total_${mNum}`, d.totalSales);
+    const sc=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v?fmt(v):'—';};
+    sc('sales_치료_'+mNum, d.chiryo);
+    sc('sales_矯正_'+mNum, d.kyosei);
+    sc('sales_エステ_'+mNum, d.totalSales?(d.totalSales-(d.chiryo||0)-(d.kyosei||0)):null);
+    sc('sales_total_'+mNum, d.totalSales);
     if(d.memberTotal){
-      document.getElementById('kpi_member_count').textContent = d.memberTotal+'件';
-      document.getElementById('kpi_member_sub').textContent = `コアレ${d.koreaCurrent}件 + メンテ${d.mainteCurrent}件`;
+      document.getElementById('kpi_member_count').textContent=d.memberTotal+'件';
+      document.getElementById('kpi_member_sub').textContent='コアレ'+d.koreaCurrent+'件 + メンテ'+d.mainteCurrent+'件';
     }
   });
-  // NAOLTから4月データを追加反映
-  const _naolt = getNAOLT()?.kpi;
-  if(_naolt) {
-    ['3','4'].forEach(mn => {
-      const mo = mn+'月';
-      const _key = Object.keys(importedMonths).find(k=>k.endsWith('-'+mo)||k===mo);
-      if(_key) return;
+  // NAOLTからも反映
+  const _nk=getNAOLT()?.kpi;
+  if(_nk){
+    ORDER_SALES.forEach(mNum=>{
+      const mo=mNum+'月';
+      if(Object.keys(importedMonths).find(k=>k.endsWith('-'+mo)||k===mo)) return;
       const sc=(id,v)=>{const el=document.getElementById(id);if(el&&v)el.textContent=fmt(v);};
-      sc('sales_치료_'+mn, _naolt.chiryo?.[mo]);
-      sc('sales_矯正_'+mn, _naolt.kyoseiSales?.[mo]);
-      sc('sales_エステ_'+mn, _naolt.esteSales?.[mo]);
-      sc('sales_total_'+mn, _naolt.totalSales?.[mo]);
+      sc('sales_치료_'+mNum,_nk.chiryo?.[mo]);
+      sc('sales_矯正_'+mNum,_nk.kyoseiSales?.[mo]);
+      sc('sales_エステ_'+mNum,_nk.esteSales?.[mo]);
+      sc('sales_total_'+mNum,_nk.totalSales?.[mo]);
     });
   }
-  // 累計更新
-  const _grandEl=document.getElementById('sales_grand_total');
-  if(_grandEl){const D=buildMonthlyData();const s=D.totalSales.reduce((a,v)=>a+(v||0),0);if(s>0)_grandEl.textContent=fmt(s);}
+  const gEl=document.getElementById('sales_grand_total');
+  if(gEl){const D=buildMonthlyData();const s=D.totalSales.reduce((a,v)=>a+(v||0),0);if(s>0)gEl.textContent=fmt(s);}
 }
-
-const STAFF_COLORS = {'行時':'#4f8ef7','諸永':'#2dd4bf','田中':'#f97316','岩丸':'#a78bfa','西田':'#22c55e'};
-const STAFF_NAMES  = ['行時','諸永','田中','岩丸','西田'];
-const STAFF_CHARTS = {};
-const _staffDataCache = {};
 
 function getSortedMonthKeys(){ return [...new Set(Object.keys(importedMonths))].sort((a,b)=>monthSortKey(a)-monthSortKey(b)); }
 function initStaffChart(id, config){ if(STAFF_CHARTS[id]) STAFF_CHARTS[id].destroy(); const el=document.getElementById(id); if(el) STAFF_CHARTS[id]=new Chart(el,config); }
