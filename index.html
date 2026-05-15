@@ -1073,6 +1073,12 @@ function updateOverviewKPI(){
   const avgKyosei=kyoseiRates.length?Math.round(kyoseiRates.reduce((a,v)=>a+v,0)/kyoseiRates.length*10)/10:null;
   const el_kyosei=document.getElementById('kpi_kyosei_rate');
   if(el_kyosei&&avgKyosei) el_kyosei.textContent=avgKyosei+'%';
+  // タイトル動的更新
+  const titleEl=document.getElementById('overview_kpi_title');
+  if(titleEl&&validSales.length>=2){
+    const fm=validSales[0].m, lm=validSales[validSales.length-1].m;
+    titleEl.textContent='主要KPI（５期 2025.5～'+lm+' 実績）';
+  }
 }
 
 function updateFunnel(){
@@ -1316,14 +1322,14 @@ function buildMonthlyData(){
     chiryo:arr(BASE_DATA.chiryo,'chiryo'),kyosei:arr(BASE_DATA.kyosei,'kyosei'),este:arr(BASE_DATA.este,'este'),
     members:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);if(bi>=0) return BASE_DATA.members[bi];const d=getImported(m);return d&&d.memberTotal?d.memberTotal:null;}),
     shinChiryo:arr(BASE_DATA.shinChiryo,'shinChiryo'),shinKyosei:arr(BASE_DATA.shinKyosei,'shinKyosei'),shinEste:arr(BASE_DATA.shinEste,'shinEste'),
-    memberIn:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.memberIn[bi]:null;}),
-    memberOut:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.memberOut[bi]:null;}),
-    churnChiryo:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.churnChiryo[bi]:null;}),
+    memberIn:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);if(bi>=0)return BASE_DATA.memberIn[bi];const naolt=getNAOLT();return naolt?.kpi?.memberIn?.[m]??null;}),
+    memberOut:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);if(bi>=0)return BASE_DATA.memberOut[bi];const naolt=getNAOLT();const v=naolt?.kpi?.memberOut?.[m];return v!=null?v:null;}),
+    churnChiryo:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);if(bi>=0)return BASE_DATA.churnChiryo[bi];const naolt=getNAOLT();const v=naolt?.kpi?.['離反率']?.[m];return v!=null?Math.round(v*1000)/10:null;}),
     churnMember:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.churnMember[bi]:null;}),
     contractChiryo:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.contractChiryo[bi]:null;}),
     contractKyosei:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.contractKyosei[bi]:null;}),
     contractEste:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.contractEste[bi]:null;}),
-    targetDiff:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.targetDiff[bi]:null;}),
+    targetDiff:allMonths.map((m,i)=>{const bi=BASE_DATA.months.indexOf(m);if(bi>=0)return BASE_DATA.targetDiff[bi];const naolt=getNAOLT();const kpi=naolt?.kpi;if(kpi?.chiryo?.[m]!=null){const target=1987000;return(kpi.chiryo[m]||0)-target;}return null;}),
     roas_chiryo:allMonths.map((m,i)=>{const naolt=getNAOLT();const nv=naolt?.collection?.chiryo_roas?.[m];if(nv!=null)return Math.round(nv*100);const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.roas_chiryo[bi]:null;}),
     roas_kyosei:allMonths.map((m,i)=>{const naolt=getNAOLT();const nv=naolt?.collection?.sango_roas?.[m];if(nv!=null)return Math.round(nv*100);const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.roas_kyosei[bi]:null;}),
     roas_este:allMonths.map((m,i)=>{const naolt=getNAOLT();const nv=naolt?.collection?.este_roas?.[m];if(nv!=null)return Math.round(nv*100);const bi=BASE_DATA.months.indexOf(m);return bi>=0?BASE_DATA.roas_este[bi]:null;}),
