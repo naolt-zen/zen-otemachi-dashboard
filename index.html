@@ -757,7 +757,7 @@ function updateBadges(){
 }
 
 function updateSalesTable(){
-  ['2','3'].forEach(mNum => {
+  ['2','3','4'].forEach(mNum => {
     const month = mNum+'月';
     const key = Object.keys(importedMonths).find(k => k.endsWith('-'+month) || k === month);
     const d = key ? importedMonths[key] : null;
@@ -772,6 +772,23 @@ function updateSalesTable(){
       document.getElementById('kpi_member_sub').textContent = `コアレ${d.koreaCurrent}件 + メンテ${d.mainteCurrent}件`;
     }
   });
+  // NAOLTから4月データを追加反映
+  const _naolt = getNAOLT()?.kpi;
+  if(_naolt) {
+    ['3','4'].forEach(mn => {
+      const mo = mn+'月';
+      const _key = Object.keys(importedMonths).find(k=>k.endsWith('-'+mo)||k===mo);
+      if(_key) return;
+      const sc=(id,v)=>{const el=document.getElementById(id);if(el&&v)el.textContent=fmt(v);};
+      sc('sales_치료_'+mn, _naolt.chiryo?.[mo]);
+      sc('sales_矯正_'+mn, _naolt.kyoseiSales?.[mo]);
+      sc('sales_エステ_'+mn, _naolt.esteSales?.[mo]);
+      sc('sales_total_'+mn, _naolt.totalSales?.[mo]);
+    });
+  }
+  // 累計更新
+  const _grandEl=document.getElementById('sales_grand_total');
+  if(_grandEl){const D=buildMonthlyData();const s=D.totalSales.reduce((a,v)=>a+(v||0),0);if(s>0)_grandEl.textContent=fmt(s);}
 }
 
 const STAFF_COLORS = {'行時':'#4f8ef7','諸永':'#2dd4bf','田中':'#f97316','岩丸':'#a78bfa','西田':'#22c55e'};
