@@ -504,7 +504,7 @@
 <div class="modal-overlay" id="event-modal" onclick="if(event.target===this)closeEventModal()">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-title">📅 予定を追加</div>
+    <div class="modal-title" id="ev-modal-title">📅 予定を追加</div>
     <div class="form-group">
       <div class="form-label">種別</div>
       <select class="form-select" id="ev-type" onchange="onEvTypeChange(this.value)">
@@ -539,27 +539,60 @@
         <div class="form-label">時間</div>
         <select class="form-select" id="ev-time">
           <option value="">時間未定</option>
-          <option value="06:00">06:00</option><option value="07:00">07:00</option><option value="08:00">08:00</option>
-          <option value="09:00">09:00</option><option value="09:30">09:30</option><option value="10:00">10:00</option>
-          <option value="10:30">10:30</option><option value="11:00">11:00</option><option value="11:30">11:30</option>
-          <option value="12:00">12:00</option><option value="13:00">13:00</option><option value="14:00">14:00</option>
-          <option value="15:00">15:00</option><option value="16:00">16:00</option><option value="17:00">17:00</option>
-          <option value="18:00">18:00</option><option value="19:00">19:00</option><option value="20:00">20:00</option>
+          <option value="06:00">06:00</option>
+          <option value="06:30">06:30</option>
+          <option value="07:00">07:00</option>
+          <option value="07:30">07:30</option>
+          <option value="08:00">08:00</option>
+          <option value="08:30">08:30</option>
+          <option value="09:00">09:00</option>
+          <option value="09:30">09:30</option>
+          <option value="10:00">10:00</option>
+          <option value="10:30">10:30</option>
+          <option value="11:00">11:00</option>
+          <option value="11:30">11:30</option>
+          <option value="12:00">12:00</option>
+          <option value="12:30">12:30</option>
+          <option value="13:00">13:00</option>
+          <option value="13:30">13:30</option>
+          <option value="14:00">14:00</option>
+          <option value="14:30">14:30</option>
+          <option value="15:00">15:00</option>
+          <option value="15:30">15:30</option>
+          <option value="16:00">16:00</option>
+          <option value="16:30">16:30</option>
+          <option value="17:00">17:00</option>
+          <option value="17:30">17:30</option>
+          <option value="18:00">18:00</option>
+          <option value="18:30">18:30</option>
+          <option value="19:00">19:00</option>
+          <option value="19:30">19:30</option>
+          <option value="20:00">20:00</option>
+          <option value="20:30">20:30</option>
           <option value="21:00">21:00</option>
+          <option value="21:30">21:30</option>
+          <option value="22:00">22:00</option>
+          <option value="22:30">22:30</option>
+          <option value="23:00">23:00</option>
+          <option value="23:30">23:30</option>
         </select>
       </div>
     </div>
     <div class="form-group">
+      <div class="form-label">🔗 ZoomテキストをここにペーストするとURL・タイトル・メモを自動入力</div>
+      <textarea class="form-textarea" id="ev-zoom-paste" placeholder="「Zoom ミーティングに参加する」などのテキストをそのままペースト..." style="min-height:70px;font-size:13px;" oninput="parseZoomText(this.value)"></textarea>
+    </div>
+    <div class="form-group">
       <div class="form-label">URL（任意）</div>
-      <input class="form-input" id="ev-url" placeholder="https://zoom.us/..." type="url">
+      <input class="form-input" id="ev-url" placeholder="https://zoom.us/j/..." type="url">
     </div>
     <div class="form-group">
       <div class="form-label">メモ（任意）</div>
-      <textarea class="form-textarea" id="ev-memo" placeholder="内容・持ち物など" style="min-height:60px;"></textarea>
+      <textarea class="form-textarea" id="ev-memo" placeholder="ミーティングID・パスコード等" style="min-height:60px;"></textarea>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeEventModal()">キャンセル</button>
-      <button class="btn btn-primary" style="flex:2;" onclick="submitEvent()">追加する</button>
+      <button class="btn btn-primary" style="flex:2;" id="ev-submit-btn" onclick="submitEvent()">追加する</button>
     </div>
   </div>
 </div>
@@ -1021,7 +1054,7 @@ function evCard(e){
   const tb=isMandatory?`<span style="display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;background:#FFEBEE;color:#C62828;">🔴 全員参加</span>`:isBusiness?`<span style="display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;background:#FFF8E1;color:#F57F17;">🟡 業務内（${ts.join('・')}）</span>`:`<span style="display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;background:#E3F2FD;color:#1565C0;">🔵 自由参加</span>`;
   const da=(isMandatory||isBusiness)?(isMandatory?AL:ts).map(s=>`<span style="display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;background:var(--green-pale);color:var(--green-dark);">${s}</span>`).join(''):attendees.map(s=>`<span style="display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;background:var(--blue-pale);color:var(--blue);">${s}</span>`).join('');
   const ab=(isMandatory||isBusiness)?'':isAtt?`<button style="padding:7px 14px;border-radius:22px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:var(--green-pale);color:var(--green);font-family:'Noto Sans JP',sans-serif;" onclick="toggleAttend('${e.id}',true)">✓ 参加する</button>`:`<button style="padding:7px 14px;border-radius:22px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:var(--blue-pale);color:var(--blue);font-family:'Noto Sans JP',sans-serif;" onclick="toggleAttend('${e.id}',false)">参加する</button>`;
-  const db=isMyEv?`<button class="btn-trash" onclick="deleteItem('events','${e.id}')">🗑️</button>`:'';
+  const db=isMyEv?`<button class="btn-trash" onclick="openEventModal('${e.id}')" title="編集">✏️</button><button class="btn-trash" onclick="deleteItem('events','${e.id}')">🗑️</button>`:'' ;
   return`<div style="background:white;border-radius:12px;padding:12px 14px;border:1px solid #E0E0E0;border-left:4px solid ${bc};box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-bottom:8px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">${tb}${db}</div><div style="font-size:15px;font-weight:700;color:#212121;margin-bottom:6px;">${e.title}</div><div style="font-size:12px;color:#757575;display:flex;flex-direction:column;gap:3px;margin-bottom:8px;">${e.event_time?`<span>⏰ ${e.event_time}</span>`:''} ${e.url?`<a href="${e.url}" target="_blank" style="color:#1565C0;">🔗 リンクを開く</a>`:''} ${e.memo?`<span>📝 ${e.memo}</span>`:''}<span style="color:#BDBDBD;">投稿: ${e.created_by||''}</span></div><div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;"><div style="display:flex;flex-wrap:wrap;gap:4px;">${da||'<span style="font-size:11px;color:#BDBDBD;">まだ参加者なし</span>'}</div>${ab}</div></div>`;
 }
 async function loadEvents(){
@@ -1040,23 +1073,81 @@ async function toggleAttend(id,isAtt){
 let selectedTargetStaffs=[];
 function onEvTypeChange(val){document.getElementById('ev-target-group').style.display=val==='business'?'block':'none';}
 function toggleTargetStaff(name,btn){if(selectedTargetStaffs.includes(name)){selectedTargetStaffs=selectedTargetStaffs.filter(s=>s!==name);btn.classList.remove('selected');}else{selectedTargetStaffs.push(name);btn.classList.add('selected');}}
-function openEventModal(){
-  document.getElementById('event-modal').classList.add('open');
-  document.getElementById('ev-date').value=new Date().toISOString().split('T')[0];
-  document.getElementById('ev-type').value='optional';
-  ['ev-title','ev-url','ev-memo'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('ev-time').value='';
-  document.getElementById('ev-target-group').style.display='none';
-  selectedTargetStaffs=[];document.querySelectorAll('#ev-target-btns .staff-btn').forEach(b=>b.classList.remove('selected'));
+let editingEventId=null;
+
+function parseZoomText(text){
+  if(!text.trim())return;
+  // トピック抽出
+  const topicMatch=text.match(/トピック[:：]\s*(.+)/);
+  if(topicMatch){const t=document.getElementById('ev-title');if(!t.value)t.value=topicMatch[1].trim();}
+  // 時刻抽出
+  const timeMatch=text.match(/(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)/i);
+  if(timeMatch){
+    let h=parseInt(timeMatch[1]),m=timeMatch[2];
+    const isPM=timeMatch[3].toUpperCase()==='PM';
+    if(isPM&&h!==12)h+=12;if(!isPM&&h===12)h=0;
+    const tStr=`${String(h).padStart(2,'0')}:${m}`;
+    const sel=document.getElementById('ev-time');
+    [...sel.options].forEach(o=>{if(o.value===tStr)o.selected=true;});
+  }
+  // URL抽出（zoom join URL）
+  const urlMatch=text.match(/https:\/\/[^\s]+zoom\.us\/j\/[^\s]+/);
+  if(urlMatch)document.getElementById('ev-url').value=urlMatch[0];
+  // ミーティングID・パスコード抽出してメモに
+  const idMatch=text.match(/ミーティング\s*ID[:：]?\s*([\d\s]+)/);
+  const pwMatch=text.match(/パスコード[:：]?\s*(\S+)/);
+  const memoLines=[];
+  if(idMatch)memoLines.push(`ミーティングID: ${idMatch[1].trim()}`);
+  if(pwMatch)memoLines.push(`パスコード: ${pwMatch[1].trim()}`);
+  if(memoLines.length){const m=document.getElementById('ev-memo');if(!m.value)m.value=memoLines.join('
+');}
 }
-function closeEventModal(){document.getElementById('event-modal').classList.remove('open');}
+
+function openEventModal(editId=null){
+  editingEventId=editId;
+  document.getElementById('event-modal').classList.add('open');
+  document.getElementById('ev-zoom-paste').value='';
+  if(editId){
+    // 編集モード
+    const ev=calEvents.find(e=>e.id===editId);if(!ev)return;
+    document.getElementById('ev-modal-title').textContent='📅 予定を編集';
+    document.getElementById('ev-submit-btn').textContent='保存する';
+    document.getElementById('ev-title').value=ev.title||'';
+    document.getElementById('ev-date').value=ev.event_date||'';
+    document.getElementById('ev-time').value=ev.event_time||'';
+    document.getElementById('ev-url').value=ev.url||'';
+    document.getElementById('ev-memo').value=ev.memo||'';
+    document.getElementById('ev-type').value=ev.event_type||'optional';
+    onEvTypeChange(ev.event_type||'optional');
+    selectedTargetStaffs=Array.isArray(ev.target_staffs)?[...ev.target_staffs]:[];
+    document.querySelectorAll('#ev-target-btns .staff-btn').forEach(b=>{
+      b.classList.toggle('selected',selectedTargetStaffs.includes(b.textContent));
+    });
+  } else {
+    // 新規モード
+    document.getElementById('ev-modal-title').textContent='📅 予定を追加';
+    document.getElementById('ev-submit-btn').textContent='追加する';
+    document.getElementById('ev-date').value=new Date().toISOString().split('T')[0];
+    document.getElementById('ev-type').value='optional';
+    ['ev-title','ev-url','ev-memo'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('ev-time').value='';
+    document.getElementById('ev-target-group').style.display='none';
+    selectedTargetStaffs=[];document.querySelectorAll('#ev-target-btns .staff-btn').forEach(b=>b.classList.remove('selected'));
+  }
+}
+function closeEventModal(){document.getElementById('event-modal').classList.remove('open');editingEventId=null;}
 async function submitEvent(){
   const title=document.getElementById('ev-title').value.trim();if(!title){alert('タイトルを入力してください');return;}
+  const et=document.getElementById('ev-type').value;
+  const payload={title,event_date:document.getElementById('ev-date').value,event_time:document.getElementById('ev-time').value,url:document.getElementById('ev-url').value.trim(),memo:document.getElementById('ev-memo').value.trim(),event_type:et,target_staffs:et==='business'?selectedTargetStaffs:[]};
   try{
-    const et=document.getElementById('ev-type').value;
-    await api('POST','events',{title,event_date:document.getElementById('ev-date').value,event_time:document.getElementById('ev-time').value,url:document.getElementById('ev-url').value.trim(),memo:document.getElementById('ev-memo').value.trim(),event_type:et,target_staffs:et==='business'?selectedTargetStaffs:[],created_by:myName,attendees:[]});
+    if(editingEventId){
+      await api('PATCH',`events?id=eq.${editingEventId}`,payload);
+    } else {
+      await api('POST','events',{...payload,created_by:myName,attendees:[]});
+    }
     closeEventModal();loadEvents();
-  }catch(e){alert('追加失敗: '+e.message);}
+  }catch(e){alert('保存失敗: '+e.message);}
 }
 
 /* ── サンプルデータ ── */
