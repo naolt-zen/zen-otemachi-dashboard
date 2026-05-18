@@ -1099,8 +1099,7 @@ function parseZoomText(text){
   const memoLines=[];
   if(idMatch)memoLines.push(`ミーティングID: ${idMatch[1].trim()}`);
   if(pwMatch)memoLines.push(`パスコード: ${pwMatch[1].trim()}`);
-  if(memoLines.length){const m=document.getElementById('ev-memo');if(!m.value)m.value=memoLines.join('
-');}
+  if(memoLines.length){const m=document.getElementById('ev-memo');if(!m.value)m.value=memoLines.join('\n');}
 }
 
 function openEventModal(editId=null){
